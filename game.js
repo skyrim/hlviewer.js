@@ -453,7 +453,7 @@ Game.prototype.parseMap = function( file ) {
 	textures.miptex = new Array( textures.count );
 	var colorTable = new Array( 256 );
 	for( var i = 0, textureCount = textures.count; i < textureCount; ++i ) {
-		if( textures.offsets[i] === -1 ) {
+		if( textures.offsets[i] === -1 || textures.offsets[i] === 4294967295 ) {
 			textures.miptex[i] = {
 				name: "invalid",
 				width: 1,

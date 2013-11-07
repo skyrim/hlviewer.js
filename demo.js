@@ -17,8 +17,8 @@ Demo.prototype.parseDemo = function( file ) {
 	this.header = {
 		demoProtocol : file.readInt( ),
 		networkProtocol : file.readInt( ),
-		modName : file.readString( 260 ),
 		mapName : file.readString( 260 ),
+		modName : file.readString( 260 ),
 		mapCrc : file.readInt( ),
 		directoryOffset : file.readInt( )
 	};

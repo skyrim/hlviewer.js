@@ -202,33 +202,76 @@ Game.prototype.loadTextures = function( bsp ) {
 	}
 }
 
-Game.prototype.loadMap = function( event ) {
+
+Game.prototype.loadDemo = function( demo ) {
+	this.demoFile = new File( 'demos/' + demo + '.dem' );
+	this.demoFile.addEventListener( 'load', this.onLoadDemo.bind( this ) );
+	this.resourceManager.addResource( this.demoFile );
+	this.resourceManager.addEventListener( 'loadAll', this.onLoadAll.bind( this ) );
+}
+
+Game.prototype.onLoadDemo = function( event ) {
 	var file = event.data.file;
-	map = this.parseMap( file );
+	this.demo = new Demo( file );
+	
+	this.loadMap( this.demo.header.mapName );
+}
+
+Game.prototype.loadMap = function( map ) {
+	this.mapFile = new File( 'maps/' + map + '.bsp' );
+	this.mapFile.addEventListener( 'load', this.onLoadMap.bind( this ) );
+	this.resourceManager.addResource( this.mapFile );
+	//this.resourceManager.addEventListener( 'loadAll', this.onLoadAll.bind( this ) ); //?
+}
+
+Game.prototype.onLoadMap = function( event ) {
+	var file = event.data.file;
+	this.mapData = this.parseMap( file );
+	
+	if( this.mapData.textures.hasExternal && this.mapData.entities[0].wad !== undefined ) {
+		var wad = this.mapData.entities[0].wad[0].split( '\\' ).pop( );
+		this.loadWad( wad );
+	}
+}
+
+Game.prototype.loadWad = function( wad ) {
+	var file = new File( 'wads/' + wad );
+	file.addEventListener( 'load', this.onLoadWad.bind( this ) );
+	this.resourceManager.addResource( file );
+	
+	if( this.wadFiles === undefined ) {
+		this.wadFiles = [ ];
+	}
+	this.wadFiles.push( file );
+}
+
+Game.prototype.onLoadWad = function( event ) {
+	var file = event.data.file;
+	this.extractTexturesFromWad( file );
+	
+	var textures = this.mapData.textures;
+	for( var i = 0, textureCount = textures.count; i < textureCount; ++i ) {
+		var miptex = textures.miptex[i];
+		if( miptex.unavailable ) {
+			var wad = this.mapData.entities[0].wad[this.wadFiles.length];
+			if( wad !== undefined ) {
+				wad = wad.split( '\\' ).pop( );
+				this.loadWad( wad );
+			}
+		}
+	}
+}
+
+Game.prototype.onLoadAll = function( event ) {
+	this.setupScene( );
+}
+
+Game.prototype.setupScene = function( ) {
+	var map = this.mapData;
+	console.log(  );
 	this.entities = map.entities;
 	
 	this.loadTextures( map );
-	
-	// Stefan S.: Displays a list of images of all textures the map has.
-	// External textures stored in .wad files are not yet supported.
-	/*for( var i = 0, count = map.textures.count; i < count; ++i ) {
-		var textureContainer = document.createElement( "div" );
-		var textureCanvas = document.createElement( "canvas" );
-		textureCanvas.width = map.textures.miptex[i].width;
-		textureCanvas.height = map.textures.miptex[i].height;
-		var textureCanvasContext = textureCanvas.getContext( "2d" );
-		var textureCanvasImageData = textureCanvasContext.createImageData( textureCanvas.width, textureCanvas.height );
-		for( var j = 0, size = textureCanvas.width * textureCanvas.height * 4; j < size; j += 4 ) {
-			textureCanvasImageData.data[j] = map.textures.miptex[i].data[j];
-			textureCanvasImageData.data[j + 1] = map.textures.miptex[i].data[j + 1];
-			textureCanvasImageData.data[j + 2] = map.textures.miptex[i].data[j + 2];
-			textureCanvasImageData.data[j + 3] = map.textures.miptex[i].data[j + 3];
-		}
-		textureCanvasContext.putImageData( textureCanvasImageData, 0, 0 );
-		$( "#textures" )
-			.append( "<span>" + map.textures.miptex[i].name + " " + map.textures.miptex[i].width + "x" + map.textures.miptex[i].height + "</span>" )
-			.append( textureCanvas );
-	}*/
 	
 	// TODO: Edit ugly code in this loop
 	for( var i = 0, modelCount = map.models.length; i < modelCount; ++i ) {
@@ -252,9 +295,9 @@ Game.prototype.loadMap = function( event ) {
 			// Stefan S.: Above statement is almost correct. It is not that aaatrigger is not shown in game,
 			// it is that entities of certain type/classname are not visible ever in game, e.g. trigger_multiple.
 			// Other entities may also be invisible, but thats determined by rendermode and other attributes.
-			/*if( texture.name === "aaatrigger" ) {
-				console.log( entity["classname"] );
-			}*/
+			//if( texture.name === "aaatrigger" ) {
+			//	console.log( entity["classname"] );
+			//}
 			
 			var edges = [ ];
 			for( var k = 0, edgeCount = face.edgeCount; k < edgeCount; ++k ) {
@@ -288,9 +331,9 @@ Game.prototype.loadMap = function( event ) {
 				// Stefan S.: Sky textures are not actually textures,
 				// but some kind of a portal to a scene that contains only a sky box.
 				// TODO: This.
-				/*if( texture.name === "sky" ) {
-					materials[materialFound].visible = false;
-				}*/
+				//if( texture.name === "sky" ) {
+				//	materials[materialFound].visible = false;
+				//}
 				
 				// Stefan S.: This is awfull.
 				if( entity ) {
@@ -444,6 +487,7 @@ Game.prototype.parseMap = function( file ) {
 	// TEXTURES
 	file.seek( lumps[LUMP_TEXTURES].offset );
 	var textures = { };
+	textures.hasExternal = false;
 	textures.count = file.readUInt( );
 	textures.offsets = new Array( textures.count );
 	for( var i = 0, textureCount = textures.count; i < textureCount; ++i ) {
@@ -477,7 +521,10 @@ Game.prototype.parseMap = function( file ) {
 		
 		// Quaker: If offset is zero, it means the texture in stored in some .wad file.
 		if( textures.miptex[i].offsets[0] === 0 ) {
+			textures.hasExternal = true;
+			//console.log( textures.miptex[i].name );
 			// Quaker: Create black dummy texture.
+			textures.miptex[i].unavailable = true;
 			textures.miptex[i].width = 16;
 			textures.miptex[i].height = 16;
 			textures.miptex[i].data = new Uint8Array( 16 * 16 * 4 );
@@ -697,10 +744,10 @@ Game.prototype.parseEntities = function( string ) {
 	return entities;
 }
 
-Game.prototype.loadDemo = function( event ) {
+/*Game.prototype.onLoadDemo = function( event ) {
 	var file = event.data.file;
 	this.demo = new Demo( file );
-}
+}*/
 
 /**
  * Main loop
@@ -844,6 +891,39 @@ Game.prototype.init = function( ) {
 	};
 }
 
+/*Game.prototype.loadMap = function( map ) {
+	if( this.mapFile !== undefined && !this.mapFile.isOpen( ) ) {
+		this.mapFile.cancel( );
+	}
+	if( this.demoFile !== undefined && !this.demoFile.isOpen( ) ) {
+		this.demoFile.cancel( );
+	}
+	this.resourceManager.unloadAll( );
+	this.demo = null;
+	this.demoController.stop( );
+	this.entities = null;
+	this.scene = new THREE.Scene( );
+	this.models.length = 0;
+	this.textures.length = 0;
+
+	this.mapFile = new File( 'maps/' + map + '.bsp' );
+	this.mapFile.addEventListener( 'load', this.onLoadMap.bind( this ) );
+	this.resourceManager.addResource( this.mapFile );
+}
+
+Game.prototype.loadDemo = function( demo ) {
+	this.demoFile = new File( 'demos/' + demo + '.dem' );
+	this.demoFile.addEventListener( 'load', this.onLoadDemo.bind( this ) );
+	this.resourceManager.addResource( this.demoFile );
+
+	this.resourceManager.addEventListener( 'loadAll', this.onLoadAll.bind( this ) );
+}
+
+Game.prototype.onLoadAll = function( event ) {
+	this.demo.playDirectory( 1 );
+	this.demoController.play( );
+}*/
+
 function Game( ) {
 	this.entities;
 	this.textures = [ ];
@@ -884,6 +964,8 @@ $( function( ) {
 		"clintmo_bhoptoon": "clintmo_bhoptoon_aLeee_0033.61",
 		"clintmo_longjumper": "clintmo_longjumper_VNS_0058.82",
 		"kz_bkz_egyptbhop": "kz_bkz_egyptbhop_eightbO_0215.09",
+		"kz_cellblock": "kz_cellblock_LEWLY_0319.70",
+		"kz_cellblock_hard": "kz_cellblock_hard_LEWLY_0324.06",
 		"kz_cfl_jost_ez": "kz_cfl_jost_ez_ajuhhhhh_0626.67",
 		"kz_cg_lavacliff": "kz_cg_lavacliff_Nukk_0229.04",
 		"kz_ea_canals": "kz_ea_canals_LEWLY_0305.37",
@@ -952,20 +1034,9 @@ $( function( ) {
 			return;
 		}
 		
-		game.resourceManager.unloadAll( );
-		
-		var mapFile = new File( 'maps/' + map + '.bsp' );
-		mapFile.addEventListener( 'load', game.loadMap.bind( game ) );
-		game.resourceManager.addResource( mapFile );
-		
-		var demoFile = new File( 'demos/' + mapsAndDemos[map] + '.dem' );
-		demoFile.addEventListener( 'load', game.loadDemo.bind( game ) );
-		game.resourceManager.addResource( demoFile );
-		
-		game.resourceManager.addEventListener( 'loadAll', function( event ) {
-			game.demo.playDirectory( 1 );
-			game.demoController.play( );
-		} );
+		/*game.loadMap( map );
+		game.loadDemo( mapsAndDemos[map] );*/
+		game.loadDemo( mapsAndDemos[map] );
 	} );
 	$( window ).trigger( 'hashchange' );
 } );

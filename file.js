@@ -198,3 +198,15 @@ File.prototype.readArray = function( count, readFunction ) {
 	
 	return result;
 }
+
+File.prototype.isOpen = function( ) {
+	if( this.request.status === 200 ) {
+		return true;
+	}
+	
+	return false;
+}
+
+File.prototype.cancel = function( ) {
+	this.request.abort( );
+}

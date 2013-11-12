@@ -258,6 +258,7 @@ Game.prototype.onLoadWad = function( event ) {
 				wad = wad.split( '\\' ).pop( );
 				this.loadWad( wad );
 			}
+			break;
 		}
 	}
 }

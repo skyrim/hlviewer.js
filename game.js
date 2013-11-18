@@ -1,4 +1,4 @@
-function displayTexture( texture ) {
+﻿function displayTexture( texture ) {
 	var textureContainer = document.createElement( "div" );
 	var textureCanvas = document.createElement( "canvas" );
 	textureCanvas.width = texture.width;
@@ -177,9 +177,9 @@ Game.prototype.findEntities = function( key, value ) {
  * @param	{QHLBSP}	Map object from which the textures are to be taken.
  */
 Game.prototype.loadTextures = function( bsp ) {
-	var textures = bsp.textures;
-	for( var i = 0, textureCount = textures.count; i < textureCount; ++i ) {
-		var texture = textures.miptex[i];
+	var textures = new Array( bsp.textures.count );
+	for( var i = 0, textureCount = bsp.textures.count; i < textureCount; ++i ) {
+		var texture = bsp.textures.miptex[i];
 		
 		// Stefan S.: WebGL supports only textures with power of two dimensions. Bellow, I resize the texture
 		// to the power of two and save the ratio between original and new dimension.
@@ -194,17 +194,19 @@ Game.prototype.loadTextures = function( bsp ) {
 			texture.height = nh;
 		}
 		
-		this.textures.push( new THREE.DataTexture( texture.data, texture.width, texture.height, THREE.RGBAFormat ) );
-		this.textures[i].name = texture.name;
-		this.textures[i].wrapS = THREE.RepeatWrapping;
-		this.textures[i].wrapT = THREE.RepeatWrapping;
-		this.textures[i].needsUpdate = true;
+		textures[i] = new THREE.DataTexture( texture.data, texture.width, texture.height, THREE.RGBAFormat );
+		textures[i].name = texture.name;
+		textures[i].wrapS = THREE.RepeatWrapping;
+		textures[i].wrapT = THREE.RepeatWrapping;
+		textures[i].needsUpdate = true;
 	}
+	
+	return textures;
 }
 
 
 Game.prototype.loadDemo = function( demo ) {
-	this.demoFile = new File( 'demos/' + demo + '.dem' );
+	this.demoFile = new File( Game.PATH_REPLAYS + demo + '.dem' );
 	this.demoFile.addEventListener( 'load', this.onLoadDemo.bind( this ) );
 	this.resourceManager.addResource( this.demoFile );
 	this.resourceManager.addEventListener( 'loadAll', this.onLoadAll.bind( this ) );
@@ -218,7 +220,7 @@ Game.prototype.onLoadDemo = function( event ) {
 }
 
 Game.prototype.loadMap = function( map ) {
-	this.mapFile = new File( 'maps/' + map + '.bsp' );
+	this.mapFile = new File( Game.PATH_MAPS + map + '.bsp' );
 	this.mapFile.addEventListener( 'load', this.onLoadMap.bind( this ) );
 	this.resourceManager.addResource( this.mapFile );
 	//this.resourceManager.addEventListener( 'loadAll', this.onLoadAll.bind( this ) ); //?
@@ -235,7 +237,7 @@ Game.prototype.onLoadMap = function( event ) {
 }
 
 Game.prototype.loadWad = function( wad ) {
-	var file = new File( 'wads/' + wad );
+	var file = new File( Game.PATH_WADS + wad );
 	file.addEventListener( 'load', this.onLoadWad.bind( this ) );
 	this.resourceManager.addResource( file );
 	
@@ -265,15 +267,37 @@ Game.prototype.onLoadWad = function( event ) {
 
 Game.prototype.onLoadAll = function( event ) {
 	this.setupScene( );
+	this.replayController.load( this.demo );
+	this.hud.replay.show( );
 }
 
 Game.prototype.setupScene = function( ) {
 	var map = this.mapData;
 	console.log(  );
 	this.entities = map.entities;
+	/*for( var i = 1, modelCount = map.models.length; i < modelCount; ++i ) { // skip 0 because it is the map
+		var entity = this.findEntity( 'model', '*' + i );
+		if( entity === null ) {
+			continue;
+		}
+		
+		entity['mins'] = map.models[i].mins;
+		entity['maxs'] = map.models[i].maxs;
+		if( entity['origin'] === undefined ) {
+			entity["origin"] = [
+				entity['mins'][0] + ( entity['maxs'][0] - entity['mins'][0] ) / 2,
+				entity['mins'][1] + ( entity['maxs'][1] - entity['mins'][1] ) / 2,
+				entity['mins'][2] + ( entity['maxs'][2] - entity['mins'][2] ) / 2
+			];
+		}
+	}*/
 	
-	this.loadTextures( map );
+	var textures = this.loadTextures( map );
 	
+	this.scene = new THREE.Scene( );
+	this.scene.add( this.camera );
+	
+	var models = new Array( map.models.length );
 	// TODO: Edit ugly code in this loop
 	for( var i = 0, modelCount = map.models.length; i < modelCount; ++i ) {
 		var model = map.models[i];
@@ -314,15 +338,15 @@ Game.prototype.setupScene = function( ) {
 			}
 			if( materialFound === -1 ) {
 				var textureFound;
-				for( var k = 0, textureCount = this.textures.length; k < textureCount; ++k ) {
-					if( this.textures[k].name === texture.name ) {
+				for( var k = 0, textureCount = textures.length; k < textureCount; ++k ) {
+					if( textures[k].name === texture.name ) {
 						textureFound = k;
 						break;
 					}
 				}
 				materials.push( new THREE.MeshLambertMaterial( {
 					name: texture.name,
-					map: this.textures[textureFound]
+					map: textures[textureFound]
 				} ) );
 				materialFound = materials.length - 1;
 				if( texture.name[0] === "{" ) {
@@ -356,7 +380,6 @@ Game.prototype.setupScene = function( ) {
 							else {
 								materials[materialFound].opacity = entity["renderamt"] / 255;
 							}
-							
 							break;
 						
 						case 4:
@@ -425,8 +448,13 @@ Game.prototype.setupScene = function( ) {
 			}
 		}
 		
-		this.models.push( new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) ) );
-		this.scene.add( this.models[this.models.length - 1] );
+		models[i] = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+		if( entity.origin !== undefined ) {
+			models[i].position.x = entity.origin[0];
+			models[i].position.y = entity.origin[1];
+			models[i].position.z = entity.origin[2];
+		}
+		this.scene.add( models[i] );
 	}
 	
 	// TODO: Find out the default ambient light level.
@@ -577,7 +605,7 @@ Game.prototype.parseMap = function( file ) {
 				console.error( colorIndex );
 				console.error( textures.miptex[i].offsets[0] );
 				console.error( file.offset );
-				console.error( file.data.length );
+				console.error( file.length );
 			}
 			
 			// Quaker: Pure blue color (0,0,255) must be replaced with transparent pixels.
@@ -649,6 +677,7 @@ Game.prototype.parseMap = function( file ) {
 		vertices[i] = [file.readFloat( ), file.readFloat( ), file.readFloat( )];
 	}
 	
+	// TEXTURE INFO
 	file.seek( lumps[LUMP_TEXINFO].offset );
 	texinfo = new Array( lumps[LUMP_TEXINFO].length / 40 );
 	for( var i = 0, textureCount = texinfo.length; i < textureCount; ++i ) {
@@ -745,40 +774,43 @@ Game.prototype.parseEntities = function( string ) {
 	return entities;
 }
 
-/*Game.prototype.onLoadDemo = function( event ) {
-	var file = event.data.file;
-	this.demo = new Demo( file );
-}*/
-
 /**
  * Main loop
  */
 Game.prototype.loop = function( ) {
 	requestAnimationFrame( this.loop.bind( this ) );
 	
-	if( this.demoController.playing ) {
-		var currentTime = (new Date( )).getTime( );
-		var deltaTime = ( currentTime - this.demoController.startTime ) / 1000;
-		
-		var macro;
-		while( this.demo.isTimeForNextMacro( deltaTime ) ) {
-			macro = this.demo.getMacro( );
-		}
-		
-		switch( macro.id ) {
-			case 0:
-			case 1:
-				this.camera.position.x = macro.camera.position[0];
-				this.camera.position.y = macro.camera.position[1];
-				this.camera.position.z = macro.camera.position[2];
+	if( this.replayController.started ) {
+		if( !this.replayController.paused ) {
+			var currentTime = (new Date( )).getTime( );
+			var deltaTime = ( currentTime - this.replayController.startTime ) / 1000;
+			
+			var macro;
+			while( this.demo.isTimeForNextMacro( deltaTime ) ) {
+				macro = this.demo.getMacro( );
 				
-				this.camera.rotation.y = ( 0.0174 * macro.camera.orientation[1] ) - 1.57;
-				
-				break;
-				
-			case 5:
-				this.demoController.playing = false;
-				break;
+				if( macro.id === 3 && macro.command === '+use' ) {
+					console.log( this.camera.position );
+				}
+			}
+			
+			switch( macro.id ) {
+				case 0:
+				case 1:
+					this.camera.position.x = macro.camera.position[0];
+					this.camera.position.y = macro.camera.position[1];
+					this.camera.position.z = macro.camera.position[2];
+					
+					this.camera.rotation.y = ( 0.0174 * macro.camera.orientation[1] ) - 1.57;
+					
+					break;
+					
+				case 5:
+					this.replayController.stop( );
+					break;
+			}
+			
+			this.hud.replay.update( );
 		}
 	}
 	else {
@@ -821,8 +853,10 @@ Game.prototype.loop = function( ) {
 		this.mouse.delta[0] = 0;
 		this.mouse.delta[1] = 0;
 	}
-	
-	this.renderer.render( this.scene, this.camera );
+
+	if( this.scene !== undefined ) {
+		this.renderer.render( this.scene, this.camera );
+	}
 }
 
 Game.prototype.mousedown = function( e ) {
@@ -863,7 +897,6 @@ Game.prototype.keyup = function( e ) {
  * Initializes stuff
  */
 Game.prototype.init = function( ) {
-	this.scene = new THREE.Scene( );
 	this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 8128 );
 	this.camera.rotation.x = 1.57;
 	this.renderer = new THREE.WebGLRenderer( );
@@ -878,18 +911,43 @@ Game.prototype.init = function( ) {
 	$( document ).keyup( this.keyup.bind( this ) );
 	
 	this.resourceManager = new ResourceManager( );
-	this.demoController = {
-		playing: false,
-		startTime: 0.0,
-		play: function( ) {
-			this.playing = true;
-			this.startTime = (new Date( )).getTime( );
-		},
-		stop: function( ) {
-			this.playing = false;
-			this.startTime = 0.0;
-		}
-	};
+	
+	this.replayController = new Demo.Controller( );
+	
+	this.hud = { };
+	this.hud.replay = new UI.Replay( this.replayController );
+	
+	this.audio = new AudioSystem( );
+	var f = new File( Game.PATH_SOUNDS + 'pl_step1.wav' );
+	f.addEventListener( 'load', this.onLoadSound.bind( this ) );
+}
+
+Game.prototype.onLoadSound = function( event ) {
+	this.audio.addSound( event.data.file );
+}
+
+AudioSystem = function( ) {
+	if( typeof AudioContext !== "undefined" ) {
+		this.context = new AudioContext( );
+	} else if( typeof webkitAudioContext !== "undefined" ) {
+		this.context = new webkitAudioContext( );
+	} else {
+		console.log( 'Audio not supported by the browser.' );
+	}
+	this.sounds = { };
+}
+
+AudioSystem.prototype.addSound = function( file ) {
+	var path = file.path;
+	var filename = path.split( '/' ).pop( );
+	this.sounds[filename] = file;
+}
+
+AudioSystem.prototype.play = function( file ) {
+	var source = this.context.createBufferSource( );
+	source.buffer = this.context.createBuffer( file.data, true );
+	source.connect( this.context.destination );
+	source.start( 0 );
 }
 
 /*Game.prototype.loadMap = function( map ) {
@@ -918,11 +976,6 @@ Game.prototype.loadDemo = function( demo ) {
 	this.resourceManager.addResource( this.demoFile );
 
 	this.resourceManager.addEventListener( 'loadAll', this.onLoadAll.bind( this ) );
-}
-
-Game.prototype.onLoadAll = function( event ) {
-	this.demo.playDirectory( 1 );
-	this.demoController.play( );
 }*/
 
 function Game( ) {
@@ -948,6 +1001,13 @@ function Game( ) {
 		key: Array( 256 )
 	};
 }
+
+Game.PATH_IMAGES = 'res/images/';
+Game.PATH_SOUNDS = 'res/sounds/';
+Game.PATH_MAPS = 'res/maps/';
+Game.PATH_WADS = 'res/wads/';
+Game.PATH_REPLAYS = 'res/replays/';
+Game.RESIZE_DELAY = 200;
 
 /**
  * Entry point.
@@ -1022,7 +1082,7 @@ $( function( ) {
 			game.renderer.setSize( window.innerWidth, window.innerHeight );
 			game.camera.aspect = window.innerWidth / window.innerHeight;
 			game.camera.updateProjectionMatrix( );
-		}, 300 );
+		}, Game.RESIZE_DELAY );
 	} );
 
 	$( window ).on( 'hashchange', function( event ) {
@@ -1035,9 +1095,119 @@ $( function( ) {
 			return;
 		}
 		
-		/*game.loadMap( map );
-		game.loadDemo( mapsAndDemos[map] );*/
 		game.loadDemo( mapsAndDemos[map] );
 	} );
 	$( window ).trigger( 'hashchange' );
 } );
+
+UI = { };
+UI.FADE_DELAY = 300;
+UI.Replay = function( replayController ) {
+	this.controller = replayController;
+	this._srcStart = Game.PATH_IMAGES + 'start.png';
+	this._srcPause = Game.PATH_IMAGES + 'pause.png';
+	this._srcStop = Game.PATH_IMAGES + 'stop.png';
+	
+	const height = '30px';
+	
+	this.container = document.createElement( 'div' );
+	this.container.style.position = 'absolute';
+	this.container.style.display = 'none';
+	this.container.style.left = '0px';
+	this.container.style.right = '0px';
+	this.container.style.bottom = '0px';
+	this.container.style.background = 'rgba(255, 255, 255, 0.8)';
+	this.container.style.borderRadius = '2px';
+	this.container.style.padding = '10px 4px 4px 4px';
+	this.container.style.height = height;
+	
+	this.playButton = document.createElement( 'img' );
+	this.playButton.src = this._srcStart;
+	this.playButton.style.width = height;
+	$( this.playButton ).on( 'click', this._onClickPlay.bind( this ) );
+	
+	this.stopButton = document.createElement( 'img' );
+	this.stopButton.src = this._srcStop;
+	this.stopButton.style.width = height;
+	$( this.stopButton ).on( 'click', this._onClickStop.bind( this ) );
+	
+	this.progressBar = document.createElement( 'div' );
+	this.progressBar.style.position = 'absolute';
+	this.progressBar.style.top = '0px';
+	this.progressBar.style.left = '0px';
+	this.progressBar.style.display = 'block';
+	this.progressBar.style.width = '100%';
+	this.progressBar.style.height = '6px';
+	
+	this.progressBarLine = document.createElement( 'p' );
+	this.progressBarLine.style.position = 'absolute';
+	this.progressBarLine.style.left = '0px';
+	this.progressBarLine.style.top = '0px';
+	this.progressBarLine.style.background = 'rgba(64, 64, 64, 0.7)';
+	this.progressBarLine.style.height = '100%';
+	this.progressBarLine.style.width = '0%';
+	this.progressBarLine.style.fontSize = '0px';
+	this.progressBarLine.innerHTML = '&nbsp';
+	
+	this.container.appendChild( this.playButton );
+	this.container.appendChild( this.stopButton );
+	this.progressBar.appendChild( this.progressBarLine );
+	this.container.appendChild( this.progressBar );
+	document.body.appendChild( this.container );
+	
+	$( this.progressBar ).on( 'click', this._onClickProgressBar.bind( this ) );
+	
+	$( this.container ).hover(
+		function( ) {
+			 $( this ).stop( ).animate( {'opacity': 1} );
+		},
+		function( ) {
+			 $( this ).stop( ).animate( {'opacity': 0} );
+		}
+	);
+}
+UI.Replay.prototype.toggle = function( ) {
+	$( this.container ).fadeToggle( UI.FADE_DELAY );
+}
+UI.Replay.prototype._onClickPlay = function( event ) {
+	this.controller.play( );
+	this.playButton.src = this.controller.paused ? this._srcStart : this._srcPause;
+}
+UI.Replay.prototype._onClickStop = function( event ) {
+	this.controller.stop( );
+	this.playButton.src = this._srcStart;
+}
+UI.Replay.prototype._onClickProgressBar = function( event ) {
+	var x = event.pageX - $( this.progressBar ).offset( ).left;
+	var percent = x / $( this.progressBar ).width( );
+	this.controller.seekPercent( percent );
+}
+UI.Replay.prototype.show = function( ) {
+	$( this.container ).fadeIn( UI.FADE_DELAY );
+}
+UI.Replay.prototype.hide = function( ) {
+	$( this.container ).fadeOut( UI.FADE_DELAY );
+}
+UI.Replay.prototype.update = function( ) {
+	if( this.controller.started ) {
+		if( this.controller.paused ) {
+			this.playButton.src = this._srcStart;
+		}
+		else {
+			this.playButton.src = this._srcPause;
+		}
+	}
+	else {
+		this.playButton.src = this._srcStart;
+	}
+	
+	var progress = 0;
+	if( this.controller.paused ) {
+		progress = ( ( this.controller.pauseTime - this.controller.startTime ) / 1000 ) / this.controller.length * 100;
+		
+	}
+	else {
+		progress = ( ( (new Date( )).getTime( ) - this.controller.startTime ) / 1000 ) / this.controller.length * 100;
+	}
+	this.progressBarLine.style.width = progress + '%';
+}

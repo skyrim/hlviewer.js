@@ -4,20 +4,23 @@
  */
 File = function( path ) {
 	this.path = path;
-	this.request = new XMLHttpRequest( );
-	var self = this;
-	this.request.addEventListener( "load", function( event ) {
-		self.offset = 0;
-		self.data = new Uint8Array( event.currentTarget.response );
-	} );
-	this.request.open( "GET", path );
-	this.request.responseType = "arraybuffer";
-	this.request.send( null );
+	this._request = new XMLHttpRequest( );
+	this._request.addEventListener( "load", this._onLoad.bind( this ) );
+	this._request.open( "GET", path );
+	this._request.responseType = "arraybuffer";
+	this._request.send( null );
+}
+
+File.prototype._onLoad = function( event ) {
+	this.offset = 0;
+	this.data = event.currentTarget.response;
+	this.view = new DataView( this.data );
+	this.length = this.view.byteLength;
 }
 
 File.prototype.addEventListener = function( eventType, listener, useCapture ) {
 	var self = this;
-	this.request.addEventListener( eventType, function( event ) {
+	this._request.addEventListener( eventType, function( event ) {
 		event.data = { };
 		event.data.file = self;
 		listener( event );
@@ -39,7 +42,7 @@ File.buffer_float =	 	new Float32Array( File.buffer );
  * @param	{int}	position	The position.
  */
 File.prototype.seek = function( position ) {
-	if( position < 0 || position > this.data.length ) {
+	if( position < 0 || position > this.length ) {
 		this.offset = 0;
 	}
 	else {
@@ -53,7 +56,7 @@ File.prototype.seek = function( position ) {
  */
 File.prototype.skip = function( i ) {
 	this.offset += i;
-	if( this.offset < 0 || this.offset > this.data.length ) {
+	if( this.offset < 0 || this.offset > this.length ) {
 		this.offset = 0;
 	}
 }
@@ -71,7 +74,7 @@ File.prototype.tell = function( ) {
  * @return	{int}	Size of the file.
  */
 File.prototype.size = function( ) {
-	return this.data.length;
+	return this.length;
 }
 
 /**
@@ -79,8 +82,9 @@ File.prototype.size = function( ) {
  * @return	{int}	Signed byte.
  */
 File.prototype.readByte = function( ) {
-	File.buffer_byte[0] = this.data[this.offset++];
-	return File.buffer_byte[0];
+	var r = this.view.getInt8( this.offset );
+	this.offset += 1;
+	return r;
 }
 
 /**
@@ -88,8 +92,9 @@ File.prototype.readByte = function( ) {
  * @return	{int}	Unsigned byte.
  */
 File.prototype.readUByte = function( ) {
-	File.buffer_byte[0] = this.data[this.offset++];
-	return File.buffer_ubyte[0];
+	var r = this.view.getUint8( this.offset );
+	this.offset += 1;
+	return r;
 }
 
 /**
@@ -97,12 +102,9 @@ File.prototype.readUByte = function( ) {
  * @return	{int}	Signed short.
  */
 File.prototype.readShort = function( ) {
-	var data = this.data;
-	var offset = this.offset;
-	File.buffer_byte[0] = data[offset];
-	File.buffer_byte[1] = data[offset + 1];
+	var r = this.view.getInt16( this.offset, true );
 	this.offset += 2;
-	return File.buffer_short[0];
+	return r;
 }
 
 /**
@@ -110,12 +112,9 @@ File.prototype.readShort = function( ) {
  * @return {int}	Unsigned short.
  */
 File.prototype.readUShort = function( ) {
-	var data = this.data;
-	var offset = this.offset;
-	File.buffer_byte[0] = data[offset];
-	File.buffer_byte[1] = data[offset + 1];
+	var r = this.view.getUint16( this.offset, true );
 	this.offset += 2;
-	return File.buffer_ushort[0];
+	return r;
 }
 
 /**
@@ -123,14 +122,9 @@ File.prototype.readUShort = function( ) {
  * @return	{int}	Signed integer.
  */
 File.prototype.readInt = function( ) {
-	var data = this.data;
-	var offset = this.offset;
-	File.buffer_byte[0] = data[offset];
-	File.buffer_byte[1] = data[offset + 1];
-	File.buffer_byte[2] = data[offset + 2];
-	File.buffer_byte[3] = data[offset + 3];
+	var r = this.view.getInt32( this.offset, true );
 	this.offset += 4;
-	return File.buffer_int[0];
+	return r;
 }
 
 /**
@@ -138,14 +132,9 @@ File.prototype.readInt = function( ) {
  * @return	{int}	Unsigned integer.
  */
 File.prototype.readUInt = function( ) {
-	var data = this.data;
-	var offset = this.offset;
-	File.buffer_byte[0] = data[offset];
-	File.buffer_byte[1] = data[offset + 1];
-	File.buffer_byte[2] = data[offset + 2];
-	File.buffer_byte[3] = data[offset + 3];
+	var r = this.view.getUint32( this.offset, true );
 	this.offset += 4;
-	return File.buffer_uint[0];
+	return r;
 }
 
 /**
@@ -153,14 +142,19 @@ File.prototype.readUInt = function( ) {
  * @return	{float}	Float.
  */
 File.prototype.readFloat = function( ) {
-	var data = this.data;
-	var offset = this.offset;
-	File.buffer_byte[0] = data[offset];
-	File.buffer_byte[1] = data[offset + 1];
-	File.buffer_byte[2] = data[offset + 2];
-	File.buffer_byte[3] = data[offset + 3];
+	var r = this.view.getFloat32( this.offset, true );
 	this.offset += 4;
-	return File.buffer_float[0];
+	return r;
+}
+
+/**
+ * Read a double.
+ * @return	{double}	Double.
+ */
+File.prototype.readDouble = function( ) {
+	var r = this.view.getFloat64( this.offset, true );
+	this.offset += 8;
+	return r;
 }
 
 /**
@@ -200,7 +194,7 @@ File.prototype.readArray = function( count, readFunction ) {
 }
 
 File.prototype.isOpen = function( ) {
-	if( this.request.status === 200 ) {
+	if( this._request.status === 200 ) {
 		return true;
 	}
 	
@@ -208,5 +202,5 @@ File.prototype.isOpen = function( ) {
 }
 
 File.prototype.cancel = function( ) {
-	this.request.abort( );
+	this._request.abort( );
 }

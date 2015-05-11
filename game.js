@@ -11,7 +11,7 @@
 		textureCanvasImageData.data[4 * j + 2] = texture.data[4 * j + 2];
 		textureCanvasImageData.data[4 * j + 3] = 255;
 	}
-	
+
 	textureCanvasContext.putImageData( textureCanvasImageData, 0, 0 );
 	$( "body" ).append( textureCanvas );//.append( "<br>" );
 }
@@ -28,10 +28,10 @@ function isNumber( n ) {
 /**
  * Resizes the image. Usefull to convert NPOT to POT textures, which WebGL supports.
  * @params	{Uint8Array}	imagedata		Array containing pixel data of image in RGBA format.
- * @params	{number}		width			
- * @params	{number}		height			
- * @params	{number}		newWidth		
- * @params	{number}		newHeight		
+ * @params	{number}		width
+ * @params	{number}		height
+ * @params	{number}		newWidth
+ * @params	{number}		newHeight
  * @return	{Uint8Array}					Image data of the resized image.
  */
 function resizeTexture( data, w, h, nw, nh ) {
@@ -39,12 +39,12 @@ function resizeTexture( data, w, h, nw, nh ) {
 	var ctx = c.getContext( "2d" );
 	c.width = w;
 	c.height = h;
-	
+
 	var nc = document.createElement( "canvas" );
 	var nctx = nc.getContext( "2d" );
 	nc.width = nw;
 	nc.height = nh;
-	
+
 	var cid = ctx.createImageData( w, h );
 	for( var i = 0, size = w * h * 4; i < size; i += 4 ) {
 		cid.data[i] = data[i];
@@ -53,9 +53,9 @@ function resizeTexture( data, w, h, nw, nh ) {
 		cid.data[i + 3] = data[i + 3];
 	}
 	ctx.putImageData( cid, 0, 0 );
-	
+
 	nctx.drawImage( c, 0, 0, nw, nh );
-	
+
 	return new Uint8Array( nctx.getImageData( 0, 0, nw, nh ).data );
 }
 
@@ -118,7 +118,7 @@ var INVISIBLE_ENTITIES = [
 Game.prototype.findEntity = function( key, value ) {
 	var entities = this.entities;
 	var entityCount = entities.length;
-	
+
 	if( value ) {
 		for( var i = 0; i < entityCount; ++i ) {
 			var entity = entities[i];
@@ -135,7 +135,7 @@ Game.prototype.findEntity = function( key, value ) {
 			}
 		}
 	}
-	
+
 	return null;
 }
 
@@ -151,7 +151,7 @@ Game.prototype.findEntities = function( key, value ) {
 	var entities = this.entities;
 	var entityCount = entities.length;
 	var result = [ ];
-	
+
 	if( value ) {
 		for( var i = 0; i < entityCount; ++i ) {
 			var entity = entities[i];
@@ -168,7 +168,7 @@ Game.prototype.findEntities = function( key, value ) {
 			}
 		}
 	}
-	
+
 	return result;
 }
 
@@ -180,7 +180,7 @@ Game.prototype.loadTextures = function( bsp ) {
 	var textures = new Array( bsp.textures.count );
 	for( var i = 0, textureCount = bsp.textures.count; i < textureCount; ++i ) {
 		var texture = bsp.textures.miptex[i];
-		
+
 		// Stefan S.: WebGL supports only textures with power of two dimensions. Bellow, I resize the texture
 		// to the power of two and save the ratio between original and new dimension.
 		// Those ratios are later used when I'm doing UV mapping.
@@ -193,14 +193,14 @@ Game.prototype.loadTextures = function( bsp ) {
 			texture.width = nw;
 			texture.height = nh;
 		}
-		
+
 		textures[i] = new THREE.DataTexture( texture.data, texture.width, texture.height, THREE.RGBAFormat );
 		textures[i].name = texture.name;
 		textures[i].wrapS = THREE.RepeatWrapping;
 		textures[i].wrapT = THREE.RepeatWrapping;
 		textures[i].needsUpdate = true;
 	}
-	
+
 	return textures;
 }
 
@@ -215,7 +215,7 @@ Game.prototype.loadDemo = function( demo ) {
 Game.prototype.onLoadDemo = function( event ) {
 	var file = event.data.file;
 	this.demo = new Demo( file );
-	
+
 	this.loadMap( this.demo.header.mapName );
 }
 
@@ -229,7 +229,7 @@ Game.prototype.loadMap = function( map ) {
 Game.prototype.onLoadMap = function( event ) {
 	var file = event.data.file;
 	this.mapData = this.parseMap( file );
-	
+
 	if( this.mapData.textures.hasExternal && this.mapData.entities[0].wad !== undefined ) {
 		var wad = this.mapData.entities[0].wad[0].split( '\\' ).pop( );
 		this.loadWad( wad );
@@ -240,7 +240,7 @@ Game.prototype.loadWad = function( wad ) {
 	var file = new File( Game.PATH_WADS + wad );
 	file.addEventListener( 'load', this.onLoadWad.bind( this ) );
 	this.resourceManager.addResource( file );
-	
+
 	if( this.wadFiles === undefined ) {
 		this.wadFiles = [ ];
 	}
@@ -250,7 +250,7 @@ Game.prototype.loadWad = function( wad ) {
 Game.prototype.onLoadWad = function( event ) {
 	var file = event.data.file;
 	this.extractTexturesFromWad( file );
-	
+
 	var textures = this.mapData.textures;
 	for( var i = 0, textureCount = textures.count; i < textureCount; ++i ) {
 		var miptex = textures.miptex[i];
@@ -273,14 +273,13 @@ Game.prototype.onLoadAll = function( event ) {
 
 Game.prototype.setupScene = function( ) {
 	var map = this.mapData;
-	console.log(  );
 	this.entities = map.entities;
 	/*for( var i = 1, modelCount = map.models.length; i < modelCount; ++i ) { // skip 0 because it is the map
 		var entity = this.findEntity( 'model', '*' + i );
 		if( entity === null ) {
 			continue;
 		}
-		
+
 		entity['mins'] = map.models[i].mins;
 		entity['maxs'] = map.models[i].maxs;
 		if( entity['origin'] === undefined ) {
@@ -291,31 +290,31 @@ Game.prototype.setupScene = function( ) {
 			];
 		}
 	}*/
-	
+
 	var textures = this.loadTextures( map );
-	
+
 	this.scene = new THREE.Scene( );
 	this.scene.add( this.camera );
-	
+
 	var models = new Array( map.models.length );
 	// TODO: Edit ugly code in this loop
 	for( var i = 0, modelCount = map.models.length; i < modelCount; ++i ) {
 		var model = map.models[i];
 		var entity = i ? this.findEntity( "modelindex", i ) : this.entities[0];
-		
+
 		var geometry = new THREE.Geometry( );
 		var materials = [ ];
-		
+
 		// TODO: Get a list of entities that are not visible (like trigger_multiple, info_player_start, ... )
 		// and set their material's visibility to false.
-		
+
 		var temp = [0, 0, 0];
 		var edgeIndex, v, vert0, vert1, vert2;
 		for( var j = 0, faceCount = model.faceCount; j < faceCount; ++j ) {
 			var face = map.faces[model.firstFace + j];
 			var texinfo = map.texinfo[face.textureInfo];
 			var texture = map.textures.miptex[texinfo.miptex];
-			
+
 			// Stefan S.: "aaatrigger" textures is used only in editors and should not be shown in game.
 			// Stefan S.: Above statement is almost correct. It is not that aaatrigger is not shown in game,
 			// it is that entities of certain type/classname are not visible ever in game, e.g. trigger_multiple.
@@ -323,12 +322,12 @@ Game.prototype.setupScene = function( ) {
 			//if( texture.name === "aaatrigger" ) {
 			//	console.log( entity["classname"] );
 			//}
-			
+
 			var edges = [ ];
 			for( var k = 0, edgeCount = face.edgeCount; k < edgeCount; ++k ) {
 				edges.push( map.surfedges[face.firstEdge + k] );
 			}
-			
+
 			var materialFound = -1;
 			for( var k = 0, materialCount = materials.length; k < materialCount; ++k ) {
 				if( materials[k].name === texture.name ) {
@@ -352,14 +351,14 @@ Game.prototype.setupScene = function( ) {
 				if( texture.name[0] === "{" ) {
 					materials[materialFound].transparent = true;
 				}
-				
+
 				// Stefan S.: Sky textures are not actually textures,
 				// but some kind of a portal to a scene that contains only a sky box.
 				// TODO: This.
 				//if( texture.name === "sky" ) {
 				//	materials[materialFound].visible = false;
 				//}
-				
+
 				// Stefan S.: This is awfull.
 				if( entity ) {
 					if( INVISIBLE_ENTITIES.indexOf( entity["classname"] ) > -1 ) {
@@ -381,12 +380,12 @@ Game.prototype.setupScene = function( ) {
 								materials[materialFound].opacity = entity["renderamt"] / 255;
 							}
 							break;
-						
+
 						case 4:
 							materials[materialFound].transparent = true;
 							//materials[materialFound].depthWrite = false; // almost made it work
 							break;
-						
+
 						case 5:
 							materials[materialFound].blending = THREE.AdditiveBlending;
 							materials[materialFound].transparent = true;
@@ -396,7 +395,7 @@ Game.prototype.setupScene = function( ) {
 					}
 				}
 			}
-			
+
 			edgeIndex = edges[0];
 			v = edgeIndex > 0 ? 0 : 1;
 			temp[0] = map.edges[Math.abs(edgeIndex)][v];
@@ -427,9 +426,9 @@ Game.prototype.setupScene = function( ) {
 					( vert2[0] * texinfo.vS[0] ) + ( vert2[1] * texinfo.vS[1] ) + ( vert2[2] * texinfo.vS[2] ) + texinfo.fSShift,
 					( vert2[0] * texinfo.vT[0] ) + ( vert2[1] * texinfo.vT[1] ) + ( vert2[2] * texinfo.vT[2] ) + texinfo.fTShift,
 				];
-				
+
 				// TODO: Replace "sky" texture with entity[0].sky texture
-				
+
 				// Stefan S.: Notice the order 0, 2, 1. There's something wrong with vertex winding.
 				var omg = geometry.vertices.length;
 				geometry.faces.push( new THREE.Face3( omg - k - 1, omg - 1, omg - 2 ) );
@@ -447,7 +446,7 @@ Game.prototype.setupScene = function( ) {
 				uv1 = uv2;
 			}
 		}
-		
+
 		models[i] = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
 		if( entity.origin !== undefined ) {
 			models[i].position.x = entity.origin[0];
@@ -456,11 +455,11 @@ Game.prototype.setupScene = function( ) {
 		}
 		this.scene.add( models[i] );
 	}
-	
+
 	// TODO: Find out the default ambient light level.
 	// Hint: Entity #0 (classname: "worldspawn") has light attribute.
 	this.scene.add( new THREE.AmbientLight( 0xc8c8c8 ) );
-	
+
 	var player_start = this.findEntity( "classname", "info_player_start" )["origin"];
 	this.camera.position.x = player_start[0];
 	this.camera.position.y = player_start[1];
@@ -473,7 +472,7 @@ Game.prototype.parseMap = function( file ) {
 		console.error( "Unknown .bsp map file format version: %d", version );
 		return;
 	}
-	
+
 	const LUMP_ENTITIES		= 0;
 	const LUMP_PLANES		= 1;
 	const LUMP_TEXTURES		= 2;
@@ -489,7 +488,7 @@ Game.prototype.parseMap = function( file ) {
 	const LUMP_EDGES		= 12;
 	const LUMP_SURFEDGES	= 13;
 	const LUMP_MODELS		= 14;
-	
+
 	var lumps = Array( 15 );
 	for( var i = 0; i < 15; ++i ) {
 		lumps[i] = {
@@ -497,11 +496,11 @@ Game.prototype.parseMap = function( file ) {
 			length: file.readUInt( )
 		}
 	}
-	
+
 	// ENTITIES
 	file.seek( lumps[LUMP_ENTITIES].offset );
 	var entities = this.parseEntities( file.readString( ) );
-	
+
 	// PLANES
 	file.seek( lumps[LUMP_PLANES].offset );
 	var planes = new Array( lumps[LUMP_PLANES].length / 20 );
@@ -512,7 +511,7 @@ Game.prototype.parseMap = function( file ) {
 			type: file.readUInt( )
 		};
 	}
-	
+
 	// TEXTURES
 	file.seek( lumps[LUMP_TEXTURES].offset );
 	var textures = { };
@@ -522,7 +521,7 @@ Game.prototype.parseMap = function( file ) {
 	for( var i = 0, textureCount = textures.count; i < textureCount; ++i ) {
 		textures.offsets[i] = file.readUInt( );
 	}
-	
+
 	textures.miptex = new Array( textures.count );
 	var colorTable = new Array( 256 );
 	for( var i = 0, textureCount = textures.count; i < textureCount; ++i ) {
@@ -535,10 +534,10 @@ Game.prototype.parseMap = function( file ) {
 				offsets: [0, 0, 0, 0],
 				data: new Uint8Array( [0, 0, 0, 0] )
 			};
-			
+
 			continue;
 		}
-		
+
 		file.seek( lumps[LUMP_TEXTURES].offset + textures.offsets[i] );
 		textures.miptex[i] = {
 			name: file.readString( 16 ),
@@ -547,7 +546,7 @@ Game.prototype.parseMap = function( file ) {
 			resizeRatio: [1, 1], // Stefan S.: This will be needed later.
 			offsets: [file.readUInt( ), file.readUInt( ), file.readUInt( ), file.readUInt( )]
 		};
-		
+
 		// Quaker: If offset is zero, it means the texture in stored in some .wad file.
 		if( textures.miptex[i].offsets[0] === 0 ) {
 			textures.hasExternal = true;
@@ -557,7 +556,7 @@ Game.prototype.parseMap = function( file ) {
 			textures.miptex[i].width = 16;
 			textures.miptex[i].height = 16;
 			textures.miptex[i].data = new Uint8Array( 16 * 16 * 4 );
-			
+
 			for( var x = 0; x < 16; ++x ) {
 				for( var y = 0; y < 16; ++y ) {
 					if( x % 8 === 0 ) {
@@ -565,7 +564,7 @@ Game.prototype.parseMap = function( file ) {
 						textures.miptex[i].data[4 * (x * 16 + y) + 1] = 128;
 						textures.miptex[i].data[4 * (x * 16 + y) + 2] = 0;
 						textures.miptex[i].data[4 * (x * 16 + y) + 3] = 255;
-						
+
 						continue;
 					}
 					else if( y % 8 === 0 ) {
@@ -573,43 +572,43 @@ Game.prototype.parseMap = function( file ) {
 						textures.miptex[i].data[4 * (x * 16 + y) + 1] = 128;
 						textures.miptex[i].data[4 * (x * 16 + y) + 2] = 0;
 						textures.miptex[i].data[4 * (x * 16 + y) + 3] = 255;
-						
+
 						continue;
 					}
-					
+
 					textures.miptex[i].data[4 * (x * 16 + y)] = 250;
 					textures.miptex[i].data[4 * (x * 16 + y) + 1] = 250;
 					textures.miptex[i].data[4 * (x * 16 + y) + 2] = 250;
 					textures.miptex[i].data[4 * (x * 16 + y) + 3] = 255;
 				}
 			}
-			
+
 			continue;
 		}
-		
+
 		// say whaaaaaaaa!?
 		file.seek( lumps[LUMP_TEXTURES].offset + textures.offsets[i] + textures.miptex[i].offsets[3] + ( textures.miptex[i].width / 8 * textures.miptex[i].height / 8 ) + 2 );
 		// Quaker: Read this texture's color table which is located after all 4 miptextures.
 		for( var j = 0; j < 256; ++j ) {
 			colorTable[j] = [file.readUByte( ), file.readUByte( ), file.readUByte( )];
 		}
-		
+
 		// Quaker: Get only the original texture, because we don't need tiny textures. It's not 1998.
 		file.seek( lumps[LUMP_TEXTURES].offset + textures.offsets[i] + textures.miptex[i].offsets[0] );
 		textures.miptex[i].data = new Uint8Array( textures.miptex[i].width * textures.miptex[i].height * 4 );
 		var colorIndex;
 		for( var j = 0, pixelCount = textures.miptex[i].width * textures.miptex[i].height; j < pixelCount; ++j ) {
 			colorIndex = file.readUByte( );
-			
+
 			if( colorTable[colorIndex] === undefined ) {
 				console.error( colorIndex );
 				console.error( textures.miptex[i].offsets[0] );
 				console.error( file.offset );
 				console.error( file.length );
 			}
-			
+
 			// Quaker: Pure blue color (0,0,255) must be replaced with transparent pixels.
-			if( colorTable[colorIndex][0] == 0 && 
+			if( colorTable[colorIndex][0] == 0 &&
 				colorTable[colorIndex][1] == 0 &&
 				colorTable[colorIndex][2] == 255 ) {
 				textures.miptex[i].data[4 * j] = 0;
@@ -625,7 +624,7 @@ Game.prototype.parseMap = function( file ) {
 			}
 		}
 	}
-	
+
 	// MODELS
 	file.seek( lumps[LUMP_MODELS].offset );
 	var models = Array( lumps[LUMP_MODELS].length / 64 );
@@ -640,7 +639,7 @@ Game.prototype.parseMap = function( file ) {
 			faceCount: file.readInt( )
 		};
 	}
-	
+
 	// FACES
 	file.seek( lumps[LUMP_FACES].offset );
 	var faces = Array( lumps[LUMP_FACES].length / 20 );
@@ -655,28 +654,28 @@ Game.prototype.parseMap = function( file ) {
 			lightmapOffset: file.readInt( )
 		};
 	}
-	
+
 	// EDGES
 	file.seek( lumps[LUMP_EDGES].offset );
 	var edges = Array( lumps[LUMP_EDGES].length / 4 );
 	for( var i = 0, count = edges.length; i < count; ++i ) {
 		edges[i] = [ file.readShort( ), file.readShort( ) ];
 	}
-	
+
 	// SURFEDGES
 	file.seek( lumps[LUMP_SURFEDGES].offset );
 	var surfedges = Array( lumps[LUMP_SURFEDGES].length / 4 );
 	for( var i = 0, count = surfedges.length; i < count; ++i ) {
 		surfedges[i] = file.readInt( );
 	}
-	
+
 	// VERTICES
 	file.seek( lumps[LUMP_VERTICES].offset );
 	var vertices = Array( lumps[LUMP_VERTICES].length / 12 );
 	for( var i = 0, count = vertices.length; i < count; ++i ) {
 		vertices[i] = [file.readFloat( ), file.readFloat( ), file.readFloat( )];
 	}
-	
+
 	// TEXTURE INFO
 	file.seek( lumps[LUMP_TEXINFO].offset );
 	texinfo = new Array( lumps[LUMP_TEXINFO].length / 40 );
@@ -690,7 +689,7 @@ Game.prototype.parseMap = function( file ) {
 			flags: file.readInt( )
 		};
 	}
-	
+
 	return {
 		entities: entities,
 		planes: planes,
@@ -714,17 +713,17 @@ Game.prototype.parseMap = function( file ) {
 Game.prototype.parseEntities = function( string ) {
 	// Stefan S.: I have copied the code for entity properties parsing from another code, but it didn't work in some cases.
 	// So, I modified it a little until it started working on all maps. I'm not proud of some of the things I did.
-	
+
 	var entities = [ ];
 	var entries = string.match( /{[^}]+}/g );
 
 	for( var i = 0; i < entries.length; i++ ) {
 		var entry = entries[i];
 		var entity = { };
-		
+
 		var p = entry.substring( 2, entry.length - 2 );
 		var q = p.split( "\n" );
-		
+
 		for( var j = 0; j < q.length; j++ ) {
 			// Stefan S.: Wtf!?
 			var pivot = q[j].indexOf( " " );
@@ -733,7 +732,7 @@ Game.prototype.parseEntities = function( string ) {
 			if( value.indexOf( "\"" ) > -1 ) {
 				value = value.replace( "\"", "" );
 			}
-			
+
 			// Stefan S.: Parse a little more. This will make things easier later.
 			if( key === "wad" ) {
 				value = value.split( ";" );
@@ -746,7 +745,7 @@ Game.prototype.parseEntities = function( string ) {
 			}
 			else if( value.indexOf( " " ) > -1 ) {
 				value = value.split( " " );
-				
+
 				 // Stefan S.: Check array if all strings actually represent numbers. If yes convert string array to number array.
 				var numericValues = 0;
 				var length = value.length;
@@ -764,13 +763,13 @@ Game.prototype.parseEntities = function( string ) {
 			else if( isNumber( value ) ) {
 				value = parseFloat( value );
 			}
-			
+
 			entity[key] = value;
 		}
 
 		entities.push( entity );
 	}
-	
+
 	return entities;
 }
 
@@ -779,68 +778,80 @@ Game.prototype.parseEntities = function( string ) {
  */
 Game.prototype.loop = function( ) {
 	requestAnimationFrame( this.loop.bind( this ) );
-	
+
 	if( this.replayController.started ) {
 		if( !this.replayController.paused ) {
 			var currentTime = (new Date( )).getTime( );
 			var deltaTime = ( currentTime - this.replayController.startTime ) / 1000;
-			
+
 			var macro;
 			while( this.demo.isTimeForNextMacro( deltaTime ) ) {
 				macro = this.demo.getMacro( );
-				
-				if( macro.id === 3 && macro.command === '+use' ) {
-					console.log( this.camera.position );
+			}
+
+			if ( macro ) {
+				switch( macro.id ) {
+					case 0:
+					case 1:
+						this.camera.position.x = macro.camera.position[0];
+						this.camera.position.y = macro.camera.position[1];
+						this.camera.position.z = macro.camera.position[2];
+
+						// 0.0147 is Math.PI / 180
+						// x rotation goes from -90 (UP) to 90 (DOWN)
+						this.camera.rotation.x = (90 - macro.camera.orientation[0]) * 0.0174;
+						this.camera.rotation.z = ( 0.0174 * macro.camera.orientation[1] ) - 1.57;
+
+						break;
+
+					case 5:
+						this.replayController.stop( );
+						break;
 				}
 			}
-			
-			switch( macro.id ) {
-				case 0:
-				case 1:
-					this.camera.position.x = macro.camera.position[0];
-					this.camera.position.y = macro.camera.position[1];
-					this.camera.position.z = macro.camera.position[2];
-					
-					this.camera.rotation.y = ( 0.0174 * macro.camera.orientation[1] ) - 1.57;
-					
-					break;
-					
-				case 5:
-					this.replayController.stop( );
-					break;
-			}
-			
+
 			this.hud.replay.update( );
 		}
 	}
 	else {
 		if( this.mouse.click ) {
-			this.camera.rotation.y -= this.mouse.delta[0] / 100;
+			var mX = this.mouse.delta[1] / 100;
+			var mY = this.mouse.delta[0] / 100;
+
+			var x = this.camera.rotation.x - mX;
+			x = Math.max( 0.05, Math.min( 3.09, x ) );
+			var y = this.camera.rotation.z - mY;
+
+			this.camera.rotation.x = x;
+			this.camera.rotation.z = y;
+
+			// this.camera.rotation.x -= this.mouse.delta[1] / 100;
+			// this.camera.rotation.y -= this.mouse.delta[0] / 100;
 		}
-		
+
 		if( this.keyboard.key['W'.charCodeAt(0)] && this.keyboard.key['S'.charCodeAt(0)] ) {
 		}
 		else if( this.keyboard.key['W'.charCodeAt(0)] ) {
-			this.camera.position.y += Math.cos( this.camera.rotation.y ) * 10;
-			this.camera.position.x -= Math.sin( this.camera.rotation.y ) * 10;
+			this.camera.position.y += Math.cos( this.camera.rotation.z ) * 10;
+			this.camera.position.x -= Math.sin( this.camera.rotation.z ) * 10;
 		}
 		else if( this.keyboard.key['S'.charCodeAt(0)] ) {
-			this.camera.position.y -= Math.cos( this.camera.rotation.y ) * 10;
-			this.camera.position.x += Math.sin( this.camera.rotation.y ) * 10;
+			this.camera.position.y -= Math.cos( this.camera.rotation.z ) * 10;
+			this.camera.position.x += Math.sin( this.camera.rotation.z ) * 10;
 			//this.camera.position.z += Math.cos( this.camera.rotation.x ) * 20;
 		}
-		
+
 		if( this.keyboard.key['A'.charCodeAt(0)] && this.keyboard.key['D'.charCodeAt(0)] ) {
 		}
 		else if( this.keyboard.key['A'.charCodeAt(0)] ) {
-			this.camera.position.y += Math.cos( this.camera.rotation.y + 1.57 ) * 10;
-			this.camera.position.x -= Math.sin( this.camera.rotation.y + 1.57 ) * 10;
+			this.camera.position.y += Math.cos( this.camera.rotation.z + 1.57 ) * 10;
+			this.camera.position.x -= Math.sin( this.camera.rotation.z + 1.57 ) * 10;
 		}
 		else if( this.keyboard.key['D'.charCodeAt(0)] ) {
-			this.camera.position.y += Math.cos( this.camera.rotation.y - 1.57 ) * 10;
-			this.camera.position.x -= Math.sin( this.camera.rotation.y - 1.57 ) * 10;
+			this.camera.position.y += Math.cos( this.camera.rotation.z - 1.57 ) * 10;
+			this.camera.position.x -= Math.sin( this.camera.rotation.z - 1.57 ) * 10;
 		}
-		
+
 		if( this.keyboard.key['R'.charCodeAt(0)] && this.keyboard.key['F'.charCodeAt(0)] ) {
 		}
 		else if( this.keyboard.key['R'.charCodeAt(0)] ) {
@@ -849,7 +860,7 @@ Game.prototype.loop = function( ) {
 		else if( this.keyboard.key['F'.charCodeAt(0)] ) {
 			this.camera.position.z -= 10;
 		}
-		
+
 		this.mouse.delta[0] = 0;
 		this.mouse.delta[1] = 0;
 	}
@@ -861,7 +872,7 @@ Game.prototype.loop = function( ) {
 
 Game.prototype.mousedown = function( e ) {
 	e.preventDefault( );
-	
+
 	this.mouse.click = true;
 }
 
@@ -873,17 +884,17 @@ Game.prototype.mouseup = function( e ) {
 
 Game.prototype.mousemove = function( e ) {
 	e.preventDefault( );
-	
+
 	this.mouse.delta[0] = e.pageX - this.mouse.position[0];
 	this.mouse.delta[1] = e.pageY - this.mouse.position[1];
-	
+
 	this.mouse.position[0] = e.pageX;
 	this.mouse.position[1] = e.pageY;
 }
 
 Game.prototype.keydown = function( e ) {
 	e.preventDefault( );
-	
+
 	this.keyboard.key[e.which] = true;
 }
 
@@ -899,24 +910,27 @@ Game.prototype.keyup = function( e ) {
 Game.prototype.init = function( ) {
 	this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 8128 );
 	this.camera.rotation.x = 1.57;
-	this.renderer = new THREE.WebGLRenderer( );
+	this.camera.rotation.order = "ZXY";
+
+	this.renderer = new THREE.WebGLRenderer();
 	this.renderer.setSize( window.innerWidth, window.innerHeight );
 	document.body.appendChild( this.renderer.domElement );
+
 	this.clock = new THREE.Clock( );
-	
+
 	$( document ).mousedown( this.mousedown.bind( this ) );
 	$( document ).mouseup( this.mouseup.bind( this ) );
 	$( document ).mousemove( this.mousemove.bind( this ) );
 	$( document ).keydown( this.keydown.bind( this ) );
 	$( document ).keyup( this.keyup.bind( this ) );
-	
+
 	this.resourceManager = new ResourceManager( );
-	
+
 	this.replayController = new Demo.Controller( );
-	
+
 	this.hud = { };
 	this.hud.replay = new UI.Replay( this.replayController );
-	
+
 	this.audio = new AudioSystem( );
 	var f = new File( Game.PATH_SOUNDS + 'pl_step1.wav' );
 	f.addEventListener( 'load', this.onLoadSound.bind( this ) );
@@ -982,13 +996,13 @@ function Game( ) {
 	this.entities;
 	this.textures = [ ];
 	this.models = [ ];
-	
+
 	this.scene;
 	this.camera;
 	this.renderer;
 	this.controls;
 	this.clock;
-	
+
 	this.mouse = {
 		click: false,
 		leftClick: false,
@@ -996,7 +1010,7 @@ function Game( ) {
 		position: [0, 0],
 		delta: [0, 0]
 	};
-	
+
 	this.keyboard = {
 		key: Array( 256 )
 	};
@@ -1020,43 +1034,7 @@ $( function( ) {
 	// I wrote the code on this page as fast as I could just to make it work.
 	// I do not accept any responsibility for this shit.
 	mapsAndDemos = {
-		"bkm_tbt_londonstation": "bkm_tbt_londonstation_eclipzh_0017.57",
-		"cg_gridblock": "cg_gridblock_LEWLY_0334.39",
-		"clintmo_bhoptoon": "clintmo_bhoptoon_aLeee_0033.61",
-		"clintmo_longjumper": "clintmo_longjumper_VNS_0058.82",
-		"kz_bkz_egyptbhop": "kz_bkz_egyptbhop_eightbO_0215.09",
-		"kz_cellblock": "kz_cellblock_LEWLY_0319.70",
-		"kz_cellblock_hard": "kz_cellblock_hard_LEWLY_0324.06",
-		"kz_cfl_jost_ez": "kz_cfl_jost_ez_ajuhhhhh_0626.67",
-		"kz_cg_lavacliff": "kz_cg_lavacliff_Nukk_0229.04",
-		"kz_ea_canals": "kz_ea_canals_LEWLY_0305.37",
-		"kz_ea_harbor": "kz_ea_harbor_Toffifee_0240.29",
-		"kz_ep_gigablock_b01": "kz_ep_gigablock_b01_kayne_0206.57",
-		"kz_kzfr_kubz": "kz_kzfr_kubz_Toffifee_0350.03",
-		"kz_kzfr_rabbithighway": "kz_kzfr_rabbithighway[-1337]_Flibo_0322.32",
-		"kz_kzno_travel": "kz_kzno_travel_pizza^_0339.07",
-		"kz_kzse_natureblock": "kz_kzse_natureblock[hard]_VertikO_0401.68",
-		"kz_luonto": "kz_luonto_kayne_0325.93",
-		"kz_m3_xmas_b00": "kz_m3_xmas_b00_ajuhhhhh_0105.52",
-		"kz_man_nasa": "kz_man_nasa_pl1_0122.38",
-		"kz_man_owtcity": "kz_man_owtcity_kayne_0316.37",
-		"kz_man_temple": "kz_man_temple_kropeq_0540.53",
-		"kz_shrubhop_ez": "kz_shrubhop_ez_toytoy_0059.27",
-		"kz_spain": "kz_spain_Toffifee_0303.36",
-		"kz_summercliff2": "kz_summercliff2_pizza^_0502.41",
-		"kz_underblock_ez": "kz_underblock_ez_Toffifee_0817.73",
-		"kz_xj_communityblock": "kz_xj_communityblock_Spider1_2441.44",
-		"kz_xj_ezbrickjump": "kz_xj_ezbrickjump_VNS_0159.54",
-		"kzfr_bhop_backalley": "kzfr_bhop_backalley_Beginner_0016.93",
-		"kzfr_bhop_leetyard": "kzfr_bhop_leetyard_Beginner_0020.82",
-		"kzm_fineblock": "kzm_fineblock_DeathClaw_0236.75",
-		"kzlt_village": "kzlt_village_VNS_0155.21",
-		"kzra_crystal_palace": "kzra_crystal_palace_kropeq_0354.48",
-		"nobkz_mst_honduras": "nobkz_mst_honduras_HitMan_1306.70",
-		"ph_k_after": "ph_k_after_eclipzh_0319.96",
-		"prochallenge_bhop": "prochallenge_bhop_kayne_0144.64",
-		"risk_treasure_island": "risk_treasure_island_DeathClaw_0224.89",
-		"zr_hetablock": "zr_hetablock[hard]_3B_0119.61"
+		"kz_cellblock": "kz_cellblock_LEWLY_0319.70"
 	};
 
 	$( function( ) {
@@ -1073,11 +1051,11 @@ $( function( ) {
 		if( game === undefined ) {
 			return;
 		}
-		
+
 		if( resizeTimeout !== 0 ) {
 			clearTimeout( resizeTimeout );
 		}
-		
+
 		resizeTimeout = setTimeout( function( ) {
 			game.renderer.setSize( window.innerWidth, window.innerHeight );
 			game.camera.aspect = window.innerWidth / window.innerHeight;
@@ -1089,12 +1067,12 @@ $( function( ) {
 		if( location.hash.length === 0 ) {
 			return;
 		}
-		
+
 		var map = location.hash.slice( 1 );
 		if( mapsAndDemos[map] === undefined ) {
 			return;
 		}
-		
+
 		game.loadDemo( mapsAndDemos[map] );
 	} );
 	$( window ).trigger( 'hashchange' );
@@ -1107,9 +1085,9 @@ UI.Replay = function( replayController ) {
 	this._srcStart = Game.PATH_IMAGES + 'start.png';
 	this._srcPause = Game.PATH_IMAGES + 'pause.png';
 	this._srcStop = Game.PATH_IMAGES + 'stop.png';
-	
+
 	const height = '30px';
-	
+
 	this.container = document.createElement( 'div' );
 	this.container.style.position = 'absolute';
 	this.container.style.display = 'none';
@@ -1120,17 +1098,17 @@ UI.Replay = function( replayController ) {
 	this.container.style.borderRadius = '2px';
 	this.container.style.padding = '10px 4px 4px 4px';
 	this.container.style.height = height;
-	
+
 	this.playButton = document.createElement( 'img' );
 	this.playButton.src = this._srcStart;
 	this.playButton.style.width = height;
 	$( this.playButton ).on( 'click', this._onClickPlay.bind( this ) );
-	
+
 	this.stopButton = document.createElement( 'img' );
 	this.stopButton.src = this._srcStop;
 	this.stopButton.style.width = height;
 	$( this.stopButton ).on( 'click', this._onClickStop.bind( this ) );
-	
+
 	this.progressBar = document.createElement( 'div' );
 	this.progressBar.style.position = 'absolute';
 	this.progressBar.style.top = '0px';
@@ -1138,7 +1116,7 @@ UI.Replay = function( replayController ) {
 	this.progressBar.style.display = 'block';
 	this.progressBar.style.width = '100%';
 	this.progressBar.style.height = '6px';
-	
+
 	this.progressBarLine = document.createElement( 'p' );
 	this.progressBarLine.style.position = 'absolute';
 	this.progressBarLine.style.left = '0px';
@@ -1148,15 +1126,15 @@ UI.Replay = function( replayController ) {
 	this.progressBarLine.style.width = '0%';
 	this.progressBarLine.style.fontSize = '0px';
 	this.progressBarLine.innerHTML = '&nbsp';
-	
+
 	this.container.appendChild( this.playButton );
 	this.container.appendChild( this.stopButton );
 	this.progressBar.appendChild( this.progressBarLine );
 	this.container.appendChild( this.progressBar );
 	document.body.appendChild( this.container );
-	
+
 	$( this.progressBar ).on( 'click', this._onClickProgressBar.bind( this ) );
-	
+
 	$( this.container ).hover(
 		function( ) {
 			 $( this ).stop( ).animate( {'opacity': 1} );
@@ -1200,11 +1178,11 @@ UI.Replay.prototype.update = function( ) {
 	else {
 		this.playButton.src = this._srcStart;
 	}
-	
+
 	var progress = 0;
 	if( this.controller.paused ) {
 		progress = ( ( this.controller.pauseTime - this.controller.startTime ) / 1000 ) / this.controller.length * 100;
-		
+
 	}
 	else {
 		progress = ( ( (new Date( )).getTime( ) - this.controller.startTime ) / 1000 ) / this.controller.length * 100;

@@ -1,0 +1,29 @@
+{
+  "name": "hlviewer.js",
+  "version": "0.1.0",
+  "description": "hlviewer.js\r -----------",
+  "main": "src/game.js",
+  "scripts": {
+    "build": "webpack",
+    "build-min": "webpack --config webpack.config.min.js",
+    "build-all": "webpack && webpack --config webpack.config.min.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skyrim/hlviewer.js.git"
+  },
+  "author": "Stefan Stojkovic",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/skyrim/hlviewer.js/issues"
+  },
+  "homepage": "https://github.com/skyrim/hlviewer.js#readme",
+  "devDependencies": {
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1"
+  },
+  "dependencies": {
+    "jquery": "^2.2.4",
+    "three-js": "^76.0.2"
+  }
+}

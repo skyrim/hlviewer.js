@@ -976,7 +976,7 @@ module.exports = (function () {
         // I wrote the code on this page as fast as I could just to make it work.
         // I do not accept any responsibility for this shit.
         var mapsAndDemos = {
-            "kz_cellblock": "kz_cellblock_LEWLY_0319.70"
+            "kz_a2_godspeed": "kz_a2_godspeed_puppetz_0506.52"
         };
 
         $(function () {

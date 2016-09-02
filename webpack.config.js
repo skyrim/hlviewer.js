@@ -1,8 +1,8 @@
 module.exports = {
     entry: './src/game.js',
     output: {
-        path: './dist',
-        filename: 'hlviewer.js'
+        path: './public',
+        filename: 'app.js'
     },
     plugins: []
 };

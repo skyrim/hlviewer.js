@@ -58,6 +58,10 @@ function getFileList(file) {
     return textureInfoArray;
 }
 
+/**
+ * @param {File} file
+ * @return {Object}
+ */
 function getTexture(file, offset) {
     var initialOffset = file.offset;
 

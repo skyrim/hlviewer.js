@@ -5,8 +5,7 @@
   "main": "src/game.js",
   "scripts": {
     "build": "webpack",
-    "build-min": "webpack --config webpack.config.min.js",
-    "build-all": "webpack && webpack --config webpack.config.min.js"
+    "build-min": "webpack --config webpack.config.min.js"
   },
   "repository": {
     "type": "git",
@@ -19,11 +18,12 @@
   },
   "homepage": "https://github.com/skyrim/hlviewer.js#readme",
   "devDependencies": {
-    "webpack": "^1.13.1",
-    "webpack-dev-server": "^1.14.1"
   },
   "dependencies": {
+    "express": "^4.14.0",
     "jquery": "^3.1.0",
-    "three-js": "^79.0.0"
+    "three-js": "*",
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1"
   }
 }

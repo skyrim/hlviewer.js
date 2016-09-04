@@ -16,8 +16,6 @@ function Game() {
     this.scene = null;
     this.camera = null;
     this.renderer = null;
-    //this.controls = null;
-    //this.clock = null;
 
     this.mouse = {
         click: false,
@@ -56,15 +54,6 @@ var INVISIBLE_ENTITIES = [
     "func_ladder"
 ];
 
-/**
- * Searches for entity with given key-value pair.
- * There may be more than one entities with this key-value pair,
- * but this function returns only the first one.
- * Use findEntities function to get all entities.
- * @param    {string}        key        Entity attribute name.
- * @param    {*}                value    Entity attribute value.
- * @return    {Object|null}            Returns the found entity or null.
- */
 Game.prototype.findEntity = function (key, value) {
     var i, entity,
         entities = this.entities,
@@ -89,14 +78,6 @@ Game.prototype.findEntity = function (key, value) {
     return null;
 };
 
-/**
- * Searches for entities by key or key-value, depending whether
- * the second argument is passed.
- * @param    {String}    key        Entity attribute name.
- * @param    {*}            value    Entity attribute value.
- *                                Do not pass the parameter to include all values.
- * @return    {Array}                Array with zero or more entities.
- */
 Game.prototype.findEntities = function (key, value) {
     var i, entity,
         entities = this.entities,
@@ -122,18 +103,11 @@ Game.prototype.findEntities = function (key, value) {
     return result;
 };
 
-/**
- * Takes textures from QHLBSP object and puts them in Game.textures array.
- * @param {object} bsp
- */
 Game.prototype.loadTextures = function (bsp) {
     var textures = new Array(bsp.textures.count);
     for (var i = 0, textureCount = bsp.textures.count; i < textureCount; ++i) {
         var texture = bsp.textures.miptex[i];
 
-        // Stefan S.: WebGL supports only textures with power of two dimensions. Bellow, I resize the texture
-        // to the power of two and save the ratio between original and new dimension.
-        // Those ratios are later used when I'm doing UV mapping.
         if (!Common.isPowerOfTwo(texture.width) || !Common.isPowerOfTwo(texture.height)) {
             var nw = Common.nextHighestPowerOfTwo(texture.width);
             var nh = Common.nextHighestPowerOfTwo(texture.height);
@@ -175,7 +149,6 @@ Game.prototype.loadMap = function (map) {
     this.mapFile = new File(Game.PATH_MAPS + map + '.bsp');
     this.mapFile.addEventListener('load', this.onLoadMap.bind(this));
     this.resourceManager.addResource(this.mapFile);
-    //this.resourceManager.addEventListener( 'loadAll', this.onLoadAll.bind( this ) ); //?
 };
 
 Game.prototype.onLoadMap = function (event) {
@@ -250,7 +223,7 @@ Game.prototype.setupScene = function () {
     this.scene.add(this.camera);
 
     var models = new Array(map.models.length);
-    // TODO: Edit ugly code in this loop
+    
     for (i = 0, modelCount = map.models.length; i < modelCount; ++i) {
         var model = map.models[i];
         var entity = i ? this.findEntity("modelindex", i) : this.entities[0];
@@ -258,23 +231,12 @@ Game.prototype.setupScene = function () {
         var geometry = new THREE.Geometry();
         var materials = [];
 
-        // TODO: Get a list of entities that are not visible (like trigger_multiple, info_player_start, ... )
-        // and set their material's visibility to false.
-
         var temp = [0, 0, 0];
         var edgeIndex, v, vert0, vert1, vert2;
         for (j = 0, faceCount = model.faceCount; j < faceCount; ++j) {
             var face = map.faces[model.firstFace + j];
             var texinfo = map.texinfo[face.textureInfo];
             var texture = map.textures.miptex[texinfo.miptex];
-
-            // Stefan S.: "aaatrigger" textures is used only in editors and should not be shown in game.
-            // Stefan S.: Above statement is almost correct. It is not that aaatrigger is not shown in game,
-            // it is that entities of certain type/classname are not visible ever in game, e.g. trigger_multiple.
-            // Other entities may also be invisible, but thats determined by rendermode and other attributes.
-            //if( texture.name === "aaatrigger" ) {
-            //    console.log( entity["classname"] );
-            //}
 
             var edges = [];
             for (k = 0, edgeCount = face.edgeCount; k < edgeCount; ++k) {
@@ -305,26 +267,14 @@ Game.prototype.setupScene = function () {
                     materials[materialFound].transparent = true;
                 }
 
-                // Stefan S.: Sky textures are not actually textures,
-                // but some kind of a portal to a scene that contains only a sky box.
-                // TODO: This.
-                //if( texture.name === "sky" ) {
-                //    materials[materialFound].visible = false;
-                //}
-
-                // Stefan S.: This is awfull.
                 if (entity) {
                     if (INVISIBLE_ENTITIES.indexOf(entity["classname"]) > -1) {
                         materials[materialFound].visible = false;
                     }
                     else if (entity["rendermode"]) {
-                        // Stefan S.: I couldn't figure out transparency.
-                        // I think it has to do something with the render order.
-                        // Try for example kz_exn_ezjungle.bsp and look at the transparent stuff.
                         switch (entity["rendermode"]) {
                             case 2:
                                 materials[materialFound].transparent = true;
-                                //materials[materialFound].depthWrite = false; // almost made it work
                                 if (entity["renderamt"] === undefined) {
                                     materials[materialFound].opacity = 0;
                                     materials[materialFound].visible = false;
@@ -377,8 +327,6 @@ Game.prototype.setupScene = function () {
                     ( vert2[0] * texinfo.vS[0] ) + ( vert2[1] * texinfo.vS[1] ) + ( vert2[2] * texinfo.vS[2] ) + texinfo.fSShift,
                     ( vert2[0] * texinfo.vT[0] ) + ( vert2[1] * texinfo.vT[1] ) + ( vert2[2] * texinfo.vT[2] ) + texinfo.fTShift
                 ];
-
-                // TODO: Replace "sky" texture with entity[0].sky texture
 
                 // Stefan S.: Notice the order 0, 2, 1. There's something wrong with vertex winding.
                 var omg = geometry.vertices.length;
@@ -495,15 +443,12 @@ Game.prototype.parseMap = function (file) {
             name: file.readString(16),
             width: file.readUInt(),
             height: file.readUInt(),
-            resizeRatio: [1, 1], // Stefan S.: This will be needed later.
+            resizeRatio: [1, 1],
             offsets: [file.readUInt(), file.readUInt(), file.readUInt(), file.readUInt()]
         };
 
-        // Quaker: If offset is zero, it means the texture in stored in some .wad file.
         if (textures.miptex[i].offsets[0] === 0) {
             textures.hasExternal = true;
-            //console.log( textures.miptex[i].name );
-            // Quaker: Create black dummy texture.
             textures.miptex[i].unavailable = true;
             textures.miptex[i].width = 16;
             textures.miptex[i].height = 16;
@@ -538,14 +483,11 @@ Game.prototype.parseMap = function (file) {
             continue;
         }
 
-        // say whaaaaaaaa!?
         file.seek(lumps[LUMP_TEXTURES].offset + textures.offsets[i] + textures.miptex[i].offsets[3] + ( textures.miptex[i].width / 8 * textures.miptex[i].height / 8 ) + 2);
-        // Quaker: Read this texture's color table which is located after all 4 miptextures.
         for (j = 0; j < 256; ++j) {
             colorTable[j] = [file.readUByte(), file.readUByte(), file.readUByte()];
         }
 
-        // Quaker: Get only the original texture, because we don't need tiny textures. It's not 1998.
         file.seek(lumps[LUMP_TEXTURES].offset + textures.offsets[i] + textures.miptex[i].offsets[0]);
         textures.miptex[i].data = new Uint8Array(textures.miptex[i].width * textures.miptex[i].height * 4);
         var colorIndex;
@@ -559,7 +501,6 @@ Game.prototype.parseMap = function (file) {
                 console.error(file.length);
             }
 
-            // Quaker: Pure blue color (0,0,255) must be replaced with transparent pixels.
             if (colorTable[colorIndex][0] == 0 &&
                 colorTable[colorIndex][1] == 0 &&
                 colorTable[colorIndex][2] == 255) {
@@ -655,17 +596,7 @@ Game.prototype.parseMap = function (file) {
     };
 };
 
-/**
- * Parses string which contains information about all initial entities on the map
- * and generates an array of entity objects. Objects contain key-value pairs of
- * attribute and of that attribute.
- * @param    {string}            string    String to be parsed.
- * @return    {Array.<Object>}    Array of entity objects
- */
 Game.prototype.parseEntities = function (string) {
-    // Stefan S.: I have copied the code for entity properties parsing from another code, but it didn't work in some cases.
-    // So, I modified it a little until it started working on all maps. I'm not proud of some of the things I did.
-
     function isNumber(n) {
         return !isNaN(parseFloat(n)) && isFinite(n);
     }
@@ -682,7 +613,6 @@ Game.prototype.parseEntities = function (string) {
         var q = p.split("\n");
 
         for (j = 0; j < q.length; j++) {
-            // Stefan S.: Wtf!?
             var pivot = q[j].indexOf(" ");
             var key = q[j].substring(1, pivot - 1);
             var value = q[j].substring(pivot + 2, q[j].length - 1);
@@ -690,7 +620,6 @@ Game.prototype.parseEntities = function (string) {
                 value = value.replace("\"", "");
             }
 
-            // Stefan S.: Parse a little more. This will make things easier later.
             if (key === "wad") {
                 value = value.split(";");
                 value.pop();
@@ -703,7 +632,6 @@ Game.prototype.parseEntities = function (string) {
             else if (value.indexOf(" ") > -1) {
                 value = value.split(" ");
 
-                // Stefan S.: Check array if all strings actually represent numbers. If yes convert string array to number array.
                 var numericValues = 0;
                 length = value.length;
                 for (k = 0; k < length; ++k) {
@@ -754,10 +682,8 @@ Game.prototype.loop = function () {
                         this.camera.position.y = macro.camera.position[1];
                         this.camera.position.z = macro.camera.position[2];
 
-                        // 0.0147 is Math.PI / 180
-                        // x rotation goes from -90 (UP) to 90 (DOWN)
                         this.camera.rotation.x = (90 - macro.camera.orientation[0]) * 0.0174;
-                        this.camera.rotation.z = ( 0.0174 * macro.camera.orientation[1] ) - 1.57;
+                        this.camera.rotation.z = (0.0174 * macro.camera.orientation[1]) - 1.57;
 
                         break;
 
@@ -781,9 +707,6 @@ Game.prototype.loop = function () {
 
             this.camera.rotation.x = x;
             this.camera.rotation.z = y;
-
-            // this.camera.rotation.x -= this.mouse.delta[1] / 100;
-            // this.camera.rotation.y -= this.mouse.delta[0] / 100;
         }
 
         if (this.keyboard.key['W'.charCodeAt(0)] && this.keyboard.key['S'.charCodeAt(0)]) {
@@ -795,7 +718,6 @@ Game.prototype.loop = function () {
         else if (this.keyboard.key['S'.charCodeAt(0)]) {
             this.camera.position.y -= Math.cos(this.camera.rotation.z) * 10;
             this.camera.position.x += Math.sin(this.camera.rotation.z) * 10;
-            //this.camera.position.z += Math.cos( this.camera.rotation.x ) * 20;
         }
 
         if (this.keyboard.key['A'.charCodeAt(0)] && this.keyboard.key['D'.charCodeAt(0)]) {
@@ -874,8 +796,6 @@ Game.prototype.init = function () {
     this.renderer = new THREE.WebGLRenderer({canvas: canvas});
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(this.renderer.domElement);
-
-    //this.clock = new THREE.Clock();
 
     $(document).mousedown(this.mousedown.bind(this));
     $(document).mouseup(this.mouseup.bind(this));

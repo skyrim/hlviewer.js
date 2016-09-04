@@ -1,14 +1,5 @@
 var File = require('./file.js');
 
-/**
- * @param {int} offset
- * @param {int} diskSize
- * @param {int} size
- * @param {int} type
- * @param {boolean} compression
- * @param {string} name
- * @constructor
- */
 function WadFileDescriptor(offset, diskSize, size, type, compression, name) {
     this.offset = offset;
     this.diskSize = diskSize;
@@ -18,10 +9,6 @@ function WadFileDescriptor(offset, diskSize, size, type, compression, name) {
     this.name = name;
 }
 
-/**
- * @param {File} file
- * @returns {WadFileDescriptor}
- */
 function readAndCreateTextureInfo(file) {
     var nFilePos = file.readUInt();
     var nDiskSize = file.readUInt();
@@ -34,12 +21,6 @@ function readAndCreateTextureInfo(file) {
     return new WadFileDescriptor(nFilePos, nDiskSize, nSize, nType, bCompression, szName);
 }
 
-/**
- * Returns array of all files contained in a given WAD file.
- *
- * @param {File} file
- * @return {Array}
- */
 function getFileList(file) {
     var initialOffset = file.offset;
 
@@ -58,10 +39,6 @@ function getFileList(file) {
     return textureInfoArray;
 }
 
-/**
- * @param {File} file
- * @return {Object}
- */
 function getTexture(file, offset) {
     var initialOffset = file.offset;
 

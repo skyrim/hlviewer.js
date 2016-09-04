@@ -1,5 +1,5 @@
 module.exports = {
-    entry: './src/game.js',
+    entry: './src/index.js',
     output: {
         path: './public',
         filename: 'app.js'

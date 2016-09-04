@@ -1,5 +1,5 @@
 ﻿var $ = require('jquery');
-var THREE = require('three-js')();
+var THREE = require('three');
 
 var Wad = require('./wad.js');
 var File = require('./file.js');

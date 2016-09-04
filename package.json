@@ -17,12 +17,12 @@
     "url": "https://github.com/skyrim/hlviewer.js/issues"
   },
   "homepage": "https://github.com/skyrim/hlviewer.js#readme",
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "dependencies": {
+    "body-parser": "^1.15.2",
     "express": "^4.14.0",
     "jquery": "^3.1.0",
-    "three-js": "*",
+    "three": "^0.80.1",
     "webpack": "^1.13.1",
     "webpack-dev-server": "^1.14.1"
   }

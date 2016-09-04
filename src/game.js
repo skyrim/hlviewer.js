@@ -6,63 +6,7 @@ var File = require('./file.js');
 var ResourceManager = require('./resource_manager.js');
 var Demo = require('./demo.js');
 var AudioSystem = require('./audio-system.js');
-
-/**
- * Resizes the image. Usefull to convert NPOT to POT textures, which WebGL supports.
- * @params    {Uint8Array}    imagedata        Array containing pixel data of image in RGBA format.
- * @params    {number}        width
- * @params    {number}        height
- * @params    {number}        newWidth
- * @params    {number}        newHeight
- * @return    {Uint8Array}                    Image data of the resized image.
- */
-function resizeTexture(data, w, h, nw, nh) {
-    var c = document.createElement("canvas");
-    var ctx = c.getContext("2d");
-    c.width = w;
-    c.height = h;
-
-    var nc = document.createElement("canvas");
-    var nctx = nc.getContext("2d");
-    nc.width = nw;
-    nc.height = nh;
-
-    var cid = ctx.createImageData(w, h);
-    for (var i = 0, size = w * h * 4; i < size; i += 4) {
-        cid.data[i] = data[i];
-        cid.data[i + 1] = data[i + 1];
-        cid.data[i + 2] = data[i + 2];
-        cid.data[i + 3] = data[i + 3];
-    }
-    ctx.putImageData(cid, 0, 0);
-
-    nctx.drawImage(c, 0, 0, nw, nh);
-
-    return new Uint8Array(nctx.getImageData(0, 0, nw, nh).data);
-}
-
-/**
- * Check whether the number given is the power of two.
- * @param  {number}  number  Number to be checked.
- * @return {boolean}    Is the number power of two.
- */
-function isPowerOfTwo(number) {
-    return (number & (number - 1)) == 0;
-}
-
-/**
- * Given the number it returns the closest bigger number
- * that is the power of two.
- * @param    {number}    number    Number.
- * @return    {number}        Closest, bigger, power of two number.
- */
-function nextHighestPowerOfTwo(number) {
-    --number;
-    for (var i = 1; i < 32; i <<= 1) {
-        number = number | number >> i;
-    }
-    return number + 1;
-}
+var Common = require('./common.js');
 
 function Game() {
     this.entities = null;
@@ -190,12 +134,12 @@ Game.prototype.loadTextures = function (bsp) {
         // Stefan S.: WebGL supports only textures with power of two dimensions. Bellow, I resize the texture
         // to the power of two and save the ratio between original and new dimension.
         // Those ratios are later used when I'm doing UV mapping.
-        if (!isPowerOfTwo(texture.width) || !isPowerOfTwo(texture.height)) {
-            var nw = nextHighestPowerOfTwo(texture.width);
-            var nh = nextHighestPowerOfTwo(texture.height);
+        if (!Common.isPowerOfTwo(texture.width) || !Common.isPowerOfTwo(texture.height)) {
+            var nw = Common.nextHighestPowerOfTwo(texture.width);
+            var nh = Common.nextHighestPowerOfTwo(texture.height);
             texture.resizeRatio[0] = nw / texture.width;
             texture.resizeRatio[1] = nh / texture.height;
-            texture.data = resizeTexture(texture.data, texture.width, texture.height, nw, nh);
+            texture.data = Common.resizeTexture(texture.data, texture.width, texture.height, nw, nh);
             texture.width = nw;
             texture.height = nh;
         }

@@ -5,7 +5,6 @@ var Wad = require('./wad.js');
 var File = require('./file.js');
 var ResourceManager = require('./resource_manager.js');
 var Demo = require('./demo.js');
-var AudioSystem = require('./audio-system.js');
 var Common = require('./common.js');
 
 function Game() {
@@ -132,13 +131,24 @@ Game.prototype.loadTextures = function (bsp) {
 };
 
 Game.prototype.loadDemo = function (demo) {
-    this.demoFile = new File(Game.PATH_REPLAYS + demo + '.dem');
-    this.demoFile.addEventListener('load', this.onLoadDemo.bind(this));
-    this.resourceManager.addResource(this.demoFile);
-    this.resourceManager.addEventListener('loadAll', this.onLoadAll.bind(this));
+    function onLoadDemo(file) {
+        this.demo = new Demo(file);
+        return File.load(Game.PATH_MAPS + this.demo.header.mapName + '.bsp');
+    }
+    
+    function onLoadMap(file) {
+        this.mapData = this.parseMap(file);
+        this.setupScene();
+        this.replayController.load(this.demo);
+        this.hud.replay.show();
+    }
+    
+    File.load(Game.PATH_REPLAYS + demo + '.dem')
+    .then(onLoadDemo.bind(this))
+    .then(onLoadMap.bind(this));
 };
 
-Game.prototype.onLoadDemo = function (event) {
+/*Game.prototype.onLoadDemo = function (event) {
     var file = event.data.file;
     this.demo = new Demo(file);
 
@@ -210,7 +220,7 @@ Game.prototype.onLoadAll = function () {
     this.setupScene();
     this.replayController.load(this.demo);
     this.hud.replay.show();
-};
+};*/
 
 Game.prototype.setupScene = function () {
     var i, j, k, modelCount, faceCount, edgeCount, materialCount, textureCount;
@@ -808,16 +818,7 @@ Game.prototype.init = function () {
     this.replayController = new Demo.Controller();
 
     this.hud = {};
-
-    this.audio = new AudioSystem();
-    var f = new File(Game.PATH_SOUNDS + 'pl_step1.wav');
-    f.addEventListener('load', this.onLoadSound.bind(this));
 };
-
-Game.prototype.onLoadSound = function (event) {
-    this.audio.addSound(event.data.file);
-};
-
 
 Game.PATH_IMAGES = 'res/images/';
 Game.PATH_SOUNDS = 'res/sounds/';

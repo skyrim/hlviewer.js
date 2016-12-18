@@ -9,7 +9,8 @@ $(function () {
     game.hud.replay = new UI.Replay(game.replayController);
 
     var mapsAndDemos = {
-        "kz_a2_godspeed": "kz_a2_godspeed_puppetz_0506.52"
+        'kz_a2_godspeed': 'kz_a2_godspeed_puppetz_0506.52',
+        'kz_cellblock': 'kz_cellblock_LEWLY_0319.70'
     };
 
     $(function () {
@@ -47,7 +48,7 @@ $(function () {
         if (mapsAndDemos[map] === undefined) {
             return;
         }
-
+        
         game.loadDemo(mapsAndDemos[map]);
     });
     $(window).trigger('hashchange');

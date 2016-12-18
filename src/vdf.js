@@ -1,4 +1,4 @@
-function parseVDF(input) {
+export default (input) => {
 	var state = 0;
 	var objects = [];
 	var key, val;
@@ -10,64 +10,54 @@ function parseVDF(input) {
 		case 0: // ROOT
 			if (c === ' ' || c === '\n' || c === '\t') {
 				continue;
-			}
-			else if (c === '{') {
+			} else if (c === '{') {
 				objects.push({});
 				state = 1;
-			}
-			else {
+			} else {
 				return null;
 			}
-			break;
+		break;
 			
 		case 1: // OBJECT
 			if (c === ' ' || c === '\n' || c === '\t') {
 				continue;
-			}
-			else if (c === '}') {
+			} else if (c === '}') {
 				state = 0;
-			}
-			else if (c === '"') {
+			} else if (c === '"') {
 				key = '';
 				state = 2;
-			}
-			else {
+			} else {
 				return null;
 			}
-			break;
+		break;
 			
 		case 2: // KEY
 			if (c === '"') {
 				state = 3;
-			}
-			else {
+			} else {
 				key += c;
 			}
-			break;
+		break;
 			
 		case 3: // BETWEEN KEY AND VALUE
 			if (c === ' ' || c === '\n' || c === '\t') {
 				continue;
-			}
-			else if (c === '"') {
+			} else if (c === '"') {
 				val = '';
 				state = 4;
 			}
-			break;
+		break;
 			
 		case 4: // VALUE
 			if (c === '"') {
 				objects[objects.length - 1][key] = val;
 				state = 1;
-			}
-			else {
+			} else {
 				val += c;
 			}
-			break;
+		break;
 		}
 	}
 	
 	return objects;
 }
-
-module.exports = parseVDF;

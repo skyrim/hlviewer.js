@@ -1,10 +1,13 @@
-module.exports = (function() {
-	if (!window.performance) {
-		window.performance = {};
-	}
-	var perf = window.performance;
-	
-	return {
-		now: perf.now || perf.mozNow || perf.msNow || perf.oNow || perf.webkitNow || Date.now || function() { return new Date().getTime(); }
-	};
-}());
+export default function Time() {}
+
+if (typeof window === 'undefined') {global['window'] = {}}
+window.performance = window.performance || {}
+Time.now = window.performance.now
+	|| window.performance.mozNow
+	|| window.performance.msNow
+	|| window.performance.oNow
+	|| window.performance.webkitNow
+	|| Date.now
+	|| function() {return new Date().getTime() }
+
+module.exports = Time

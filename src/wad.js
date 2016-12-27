@@ -1,116 +1,110 @@
-var File = require('./file.js');
+import xhr from './xhr.js'
+import Reader from './reader.js'
 
-function WadFileDescriptor(offset, diskSize, size, type, compression, name) {
-    this.offset = offset;
-    this.diskSize = diskSize;
-    this.size = size;
-    this.type = type;
-    this.compression = compression;
-    this.name = name;
+function parseMipMaps(r, width, height) {
+    let mipmaps = [0, 0, 0, 0].map((m, i) => r.arr((width * height) / Math.pow(1<<i, 2), r.ub.bind(r)))
+        
+    r.skip(2)
+
+    let palette = r.arr(256 * 3, r.ub.bind(r))
+
+    return mipmaps.map(m => {
+        let pixels = new Uint8Array(m.length * 4)
+
+        for (let i = 0; i < m.length; ++i) {
+            let r = palette[m[i] * 3]
+            let g = palette[m[i] * 3 + 1]
+            let b = palette[m[i] * 3 + 2]
+
+            if (r === 0 && g === 0 && b === 255) {
+                pixels[4 * i]     = 0
+                pixels[4 * i + 1] = 0
+                pixels[4 * i + 2] = 0
+                pixels[4 * i + 3] = 0
+            } else {
+                pixels[4 * i]     = r
+                pixels[4 * i + 1] = g
+                pixels[4 * i + 2] = b
+                pixels[4 * i + 3] = 255
+            }
+        }
+
+        return pixels
+    })
 }
 
-function readAndCreateTextureInfo(file) {
-    var nFilePos = file.readUInt();
-    var nDiskSize = file.readUInt();
-    var nSize = file.readUInt();
-    var nType = file.readByte();
-    var bCompression = file.readByte();
-    file.skip(2); // unused
-    var szName = file.readString(16);
+function parseTexture(r, entry) {
+    let baseOffset = r.tell()
 
-    return new WadFileDescriptor(nFilePos, nDiskSize, nSize, nType, bCompression, szName);
+    let name = r.nstr(16)
+    let texture = {
+        width: r.ui(),
+        height: r.ui(),
+        mipmaps: []
+    }
+
+    let mipmapOffset = r.ui()
+    r.seek(baseOffset + mipmapOffset)
+    texture.mipmaps = parseMipMaps(r, texture.width, texture.height)
+
+    return { texture }
 }
 
-function getFileList(file) {
-    var initialOffset = file.offset;
+function parseEntry(r, entry) {
+    r.seek(entry.offset)
+    switch (entry.type) {
+        case 67:
+            return parseTexture(r, entry)
+        break
 
-    file.offset = 0;
-    file.skip(4); // magic
-    var count = file.readUInt();
-    file.offset = file.readUInt();
-
-    var textureInfoArray = [];
-    for (var i = 0; i < count; ++i) {
-        textureInfoArray.push(readAndCreateTextureInfo(file));
+        default:
+            // unknown data type; return array of bytes
+            return r.arr(entry.length, r.ub.bind(r))
+        break
     }
-
-    file.offset = initialOffset;
-
-    return textureInfoArray;
 }
 
-function getTexture(file, offset) {
-    var initialOffset = file.offset;
-
-    file.offset = offset;
-
-    var name = file.readString(16);
-    var width = file.readInt();
-    var height = file.readInt();
-    var data = new Array(4);
-    data[0] = new Uint8Array(4 * width * height);
-    data[1] = new Uint8Array(4 * width * height / 4);
-    data[2] = new Uint8Array(4 * width * height / 16);
-    data[3] = new Uint8Array(4 * width * height / 64);
-
-    file.skip(16 + ((85 * width * height) / 64) + 2);
-
-    var palette = file.readArray(768, File.prototype.readUByte);
-
-    file.skip( - (((85 * width * height) / 64) + 2 + 768));
-
-    var i, paletteRef = 0;
-    for (i = 0; i < (4 * width * height); i += 4) {
-        paletteRef = file.readUByte();
-
-        var r = palette[3 * paletteRef];
-        var g = palette[3 * paletteRef + 1];
-        var b = palette[3 * paletteRef + 2];
-
-        data[0][i    ] = r;
-        data[0][i + 1] = g;
-        data[0][i + 2] = b;
-        // TODO: Remove, refactor? I dunno.
-        if (r === 0 && g === 0 && b === 255)
-            data[0][i + 3] = 0;
-        else
-            data[0][i + 3] = 255;
-    }
-    for (i = 0; i < (4 * width * height / 4); i += 4) {
-        paletteRef = file.readUByte();
-        data[1][i    ] = palette[3 * paletteRef];
-        data[1][i + 1] = palette[3 * paletteRef + 1];
-        data[1][i + 2] = palette[3 * paletteRef + 2];
-        data[1][i + 3] = 255;
-    }
-    for (i = 0; i < (4 * width * height / 16); i += 4) {
-        paletteRef = file.readUByte();
-        data[2][i    ] = palette[3 * paletteRef];
-        data[2][i + 1] = palette[3 * paletteRef + 1];
-        data[2][i + 2] = palette[3 * paletteRef + 2];
-        data[2][i + 3] = 255;
-    }
-    for (i = 0; i < (4 * width * height / 64); i += 4) {
-        paletteRef = file.readUByte();
-        data[3][i    ] = palette[3 * paletteRef];
-        data[3][i + 1] = palette[3 * paletteRef + 1];
-        data[3][i + 2] = palette[3 * paletteRef + 2];
-        data[3][i + 3] = 255;
+export default class Wad {
+    constructor(entries) {
+        this.entries = entries.map(e => ({
+            name: e.name,
+            data: e.data
+        }))
     }
 
-    file.offset = initialOffset;
+    static parseFromArrayBuffer(buffer) {
+        let r = new Reader(buffer)
 
-    return {
-        name: name,
-        width: width,
-        height: height,
-        data: data
-    };
+        let magic = r.nstr(4)
+        if (magic !== 'WAD3') {
+            throw new Error('Invalid WAD file format')
+        }
+
+        let entryCount = r.ui()
+        let directoryOffset = r.ui()
+        r.seek(directoryOffset)
+        let entries = []
+        for (let i = 0; i < entryCount; ++i) {
+            let entry = {
+                offset: r.ui(),
+                diskLength: r.ui(),
+                length: r.ui(),
+                type: r.b(),
+                isCompressed: r.b()
+            }
+            r.skip(2)
+            entry.name = r.nstr(16)
+            entries.push(entry)
+        }
+
+        entries.forEach(e => {
+            e.data = parseEntry(r, e)
+        })
+
+        return new Wad(entries)
+    }
+
+    static loadFromUrl(url) {
+        return xhr(url, {isBinary: true}).then(response => Wad.parseFromArrayBuffer(response))
+    }
 }
-
-module.exports = {
-    WadFileDescriptor: WadFileDescriptor,
-
-    getFileList: getFileList,
-    getTexture: getTexture
-};

@@ -1,5 +1,6 @@
 import Reader from './reader.js'
-import Vdf from './vdf.js'
+import vdf from './vdf.js'
+import xhr from './xhr.js'
 import Path from 'path'
 
 const LUMP_ENTITIES     = 0
@@ -43,8 +44,54 @@ const INVISIBLE_ENTITIES = [
     'func_ladder"'
 ]
 
+function parseEntities(r, lumps) {
+    r.seek(lumps[LUMP_ENTITIES].offset)
+    let entities = new vdf(r.nstr(lumps[LUMP_ENTITIES].length))
+
+    const VECTOR_ATTRS = ['origin', 'angles', '_diffuse_light', '_light', 'rendercolor', 'avelocity']
+    const NUMBER_ATTRS = ['renderamt', 'rendermode']
+
+    entities[0].wad = entities[0].wad.split(';').filter(w => w.length).map(w => w.replace(/\\/g, '/')).map(w => Path.basename(w))
+
+    entities.forEach(e => {
+        if (e.model) {
+            e.model = Number.parseInt(e.model.substr(1))
+        }
+
+        VECTOR_ATTRS.forEach(attr => {
+            if (e[attr]) {
+                e[attr] = e[attr].split(' ').map(v => Number.parseFloat(v))
+            }
+        })
+
+        NUMBER_ATTRS.forEach(attr => {
+            if (e[attr]) {
+                e[attr] = Number.parseFloat(e[attr])
+            }
+        })
+    })
+
+    return entities
+}
+
 export default class Map {
-    constructor(buffer) {
+    constructor(entities, textures, models) {
+        this.entities = entities
+        this.textures = textures
+        this.models = models
+    }
+
+    hasMissingTextures() {
+        for (let i = 0; i < this.textures.length; ++i) {
+            if (this.textures[i].mipmaps.length === 0) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    static parseFromArrayBuffer(buffer) {
         let r = new Reader(buffer)
         let version = r.ui()
         if (version !== 30) {
@@ -57,36 +104,6 @@ export default class Map {
                 offset: r.ui(),
                 length: r.ui()
             })
-        }
-
-        let parseEntities = (r) => {
-            r.seek(lumps[LUMP_ENTITIES].offset)
-            let entities = new Vdf(r.nstr(lumps[LUMP_ENTITIES].length))
-
-            const VECTOR_ATTRS = ['origin', 'angles', '_diffuse_light', '_light', 'rendercolor', 'avelocity']
-            const NUMBER_ATTRS = ['renderamt', 'rendermode']
-
-            entities[0].wad = entities[0].wad.split(';').filter(w => w.length).map(w => w.replace(/\\/g, '/')).map(w => Path.basename(w))
-
-            entities.forEach(e => {
-                if (e.model) {
-                    e.model = Number.parseInt(e.model.substr(1))
-                }
-
-                VECTOR_ATTRS.forEach(attr => {
-                    if (e[attr]) {
-                        e[attr] = e[attr].split(' ').map(v => Number.parseFloat(v))
-                    }
-                })
-
-                NUMBER_ATTRS.forEach(attr => {
-                    if (e[attr]) {
-                        e[attr] = Number.parseFloat(e[attr])
-                    }
-                })
-            })
-
-            return entities
         }
 
         let parseTextures = (r) => {
@@ -245,8 +262,8 @@ export default class Map {
             return texinfo
         }
 
-        this.entities = parseEntities(r)
-        this.textures = parseTextures(r)
+        let entities = parseEntities(r, lumps)
+        let textures = parseTextures(r)
 
         let models = loadModels(r, lumps[LUMP_MODELS].offset, lumps[LUMP_MODELS].length)
         let faces = loadFaces(r, lumps[LUMP_FACES].offset, lumps[LUMP_FACES].length)
@@ -255,7 +272,7 @@ export default class Map {
         let vertices = loadVertices(r, lumps[LUMP_VERTICES].offset, lumps[LUMP_VERTICES].length)
         let texinfo = loadTexInfo(r, lumps[LUMP_TEXINFO].offset, lumps[LUMP_TEXINFO].length)
 
-        this.models = ((models, faces, edges, surfEdges, vertices, texinfo, textures, entities) => models
+        let parsedModels = ((models, faces, edges, surfEdges, vertices, texinfo, textures, entities) => models
             .filter((model, modelIndex) => {
                 let entity
                 for (let i = 0; i < entities.length; ++i) {
@@ -310,6 +327,12 @@ export default class Map {
                     textureIndices: modelTextureIndices
                 }
             }
-        ))(models, faces, edges, surfEdges, vertices, texinfo, this.textures, this.entities)
+        ))(models, faces, edges, surfEdges, vertices, texinfo, textures, entities)
+
+        return new Map(entities, textures, parsedModels)
+    }
+
+    static loadFromUrl(url) {
+        return xhr(url, {isBinary: true}).then(response => Map.parseFromArrayBuffer(response))
     }
 }

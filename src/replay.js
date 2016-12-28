@@ -1,7 +1,13 @@
 import Reader from './reader.js'
+import xhr from './xhr.js'
 
-export class ReplayBuilder {
-    static fromArrayBuffer(buffer) {
+export default class Replay {
+    constructor(header, directories) {
+        this.header = header
+        this.directories = directories
+    }
+
+    static parseFromArrayBuffer(buffer) {
         let r = new Reader(buffer)
         let magic = r.nstr(8)
         if (magic !== 'HLDEMO') {
@@ -103,11 +109,8 @@ export class ReplayBuilder {
 
         return new Replay(header, directories)
     }
-}
 
-export default class Replay {
-    constructor(header, directories) {
-        this.header = header
-        this.directories = directories
+    static loadFromUrl(url) {
+        return xhr(url, {isBinary: true}).then(response => Replay.parseFromArrayBuffer(response))
     }
 }

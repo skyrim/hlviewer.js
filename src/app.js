@@ -1,8 +1,9 @@
+import Promise from 'bluebird'
+import * as THREE from 'three'
 import xhr from './xhr.js'
 import Map from './map.js'
-import Replay, {ReplayBuilder} from './replay.js'
-import Promise from 'bluebird'
-let THREE = require('three')
+import Wad from './wad.js'
+import Replay from './replay.js'
 
 let ui_template =
 `<div id="hlv">
@@ -110,16 +111,34 @@ class UI {
         let mapObject
 
         Promise.resolve()
-        /*.then(() => xhr({url: replay.replayUrl, isBinary: true}))
+        /*.then(() => xhr(replay.replayUrl, {isBinary: true}))
         .then((response) => {
             replayObject = ReplayBuilder.fromArrayBuffer(response)
             console.log(replayObject)
         })*/
-        .then(() => xhr({url: replay.mapUrl, isBinary: true}))
-        .then((response) => {
-            mapObject = new Map(response)
-            console.log(mapObject);
+        //.then(() => Replay.loadFromUrl(replay.replayUrl))
+        //.then((replay) => {replayObject = replay})
+        .then(() => Map.loadFromUrl(replay.mapUrl))
+        .then((map) => {
+            mapObject = map
+            console.log(map);
 
+            if (map.hasMissingTextures()) {
+                let promises = map.entities[0].wad.map(w => Wad.loadFromUrl(`res/wads/${w}`, {isBinary: true})
+                    .then(w => {
+                        for (let i = 0; i < w.entries.length; ++i) {
+                            for (let j = 0; j < map.textures.length; ++j) {
+                                if (w.entries[i].name.toLowerCase() === map.textures[j].name.toLowerCase()) {
+                                    map.textures[j].mipmaps = w.entries[i].data.texture.mipmaps
+                                }
+                            }
+                        }
+                    }))
+                return Promise.all(promises)
+            }
+            return Promise.resolve()
+        })
+        .then(() => {
             ((game, map) => {
                 /* setup scene for three.js */
 
@@ -172,7 +191,6 @@ class UI {
                         }
 
                         texture = new THREE.DataTexture(new Uint8Array(map.textures[i].mipmaps[0]), map.textures[i].width, map.textures[i].height, THREE.RGBAFormat)
-                        texture.name = map.textures[i].name
                         texture.magFilter = THREE.LinearFilter;
                         texture.minFilter = THREE.LinearFilter;
                         texture.anisotropy = game.renderer.getMaxAnisotropy()
@@ -184,13 +202,16 @@ class UI {
                         texture.magFilter = THREE.NearestFilter;
                         texture.minFilter = THREE.NearestFilter;
                     }
+                    texture.name = map.textures[i].name
                     texture.wrapS = THREE.RepeatWrapping;
                     texture.wrapT = THREE.RepeatWrapping;
                     texture.repeat.y = -1;
                     texture.needsUpdate = true;
 
-                    materials.push(new THREE.MeshLambertMaterial({map: texture, transparent: true, alphaTest: 0.75}))
+                    materials.push(new THREE.MeshLambertMaterial({map: texture, transparent: true, alphaTest: 0.95}))
                 }
+
+                const INVISIBLE_TEXTURES = ['aaatrigger', 'clip', 'null', 'hint', 'nodraw', 'invisible', 'skip', 'trigger', 'sky', 'fog']
 
                 let meshes = []
                 for (let i = 0; i < map.models.length; ++i) {
@@ -206,7 +227,7 @@ class UI {
                     let faces = model.faces
                     for (let j = 0; j < faces.length; ++j) {
                         let materialIndex = model.textureIndices[j]
-                        if (materials[materialIndex].map.name === 'aaatrigger') {
+                        if (INVISIBLE_TEXTURES.indexOf(materials[materialIndex].map.name.toLowerCase()) > -1) {
                             continue
                         }
 
@@ -252,15 +273,10 @@ class UI {
                     meshes.push(mesh)
                 }
 
-                let light = new THREE.AmbientLight(0xdddddd)
-                let lightEntity = map.entities.find(e => e.classname === 'light_environment')
-                if (lightEntity) {
-                    light.intensity = lightEntity._light[3] / 255
-                }
-                game.scene.add(light)
+                game.worldScene.add(new THREE.AmbientLight(0xdddddd))
 
                 for (let i = 0; i < meshes.length; ++i) {
-                    game.scene.add(meshes[i])
+                    game.worldScene.add(meshes[i])
                 }
             })(this.game, mapObject)
         })
@@ -298,15 +314,17 @@ class Game {
         this.camera.position.y = 0
         this.camera.rotation.x = 1.57;
 
-        this.scene = new THREE.Scene()
+        this.worldScene = new THREE.Scene()
+        this.skyScene = new THREE.Scene()
+        this.skyScene.add(new THREE.Mesh(new THREE.BoxGeometry(1000, 1000, 1000), new THREE.MeshBasicMaterial({color:0x88aae2})))
+        this.skyScene.children[0].geometry.scale(-1, 1, 1)
 
         this.renderer = new THREE.WebGLRenderer({
             antialias: true,
             alpha: true,
             stencil: false
         })
-        this.renderer.autoClearColor = false
-        this.renderer.autoClearStencil = false
+        this.renderer.autoClear = false
         this.renderer.setPixelRatio(window.devicePixelRatio)
         this.renderer.setSize(this.width, this.height)
 
@@ -314,6 +332,8 @@ class Game {
     }
 
     draw() {
+        requestAnimationFrame(this.draw.bind(this))
+
         let canvas = this.renderer.domElement
         let parent = canvas.parentNode
         if (parent) {
@@ -327,10 +347,31 @@ class Game {
         }
 
         this.update()
+        
+        this.renderer.clear()
+        this.drawSkyBox()
+        this.drawWorld()
+    }
 
-        this.renderer.render(this.scene, this.camera)
+    drawSkyBox() {
+        let posx = this.camera.position.x
+        let posy = this.camera.position.y
+        let posz = this.camera.position.z
 
-        requestAnimationFrame(this.draw.bind(this))
+        this.camera.position.x = 0
+        this.camera.position.y = 0
+        this.camera.position.z = 0
+
+        this.renderer.render(this.skyScene, this.camera)
+        this.renderer.clearDepth()
+
+        this.camera.position.x = posx
+        this.camera.position.y = posy
+        this.camera.position.z = posz
+    }
+
+    drawWorld() {
+        this.renderer.render(this.worldScene, this.camera)
     }
 
     update() {
@@ -425,7 +466,7 @@ export default class App {
 
         this.game = new Game(this.root)
         this.ui = new UI(this.root, this.game)
-        xhr({url: 'replays.json'}).then((response) => {
+        xhr('replays.json').then((response) => {
             try {
                 let replays = JSON.parse(response)
                 this.ui.addReplaysToList(replays)

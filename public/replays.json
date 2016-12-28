@@ -16,4 +16,7 @@
 }, {
     "name": "bkz_goldbhop",
     "mapUrl": "res/maps/bkz_goldbhop.bsp"
+}, {
+    "name": "kz_a2_godspeed",
+    "mapUrl": "res/maps/kz_a2_godspeed.bsp"
 }]

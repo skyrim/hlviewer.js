@@ -139,15 +139,31 @@ function createMeshes(map, materials) {
     return meshes
 }
 
-export default class SceneBuilder {
-    static createWorldScene(map) {
+export default class WorldScene {
+    constructor() {
+        this.scene = new THREE.Scene()
+        this.scene.add(new THREE.AmbientLight(0xdddddd))
+    }
+
+    changeMap(map) {
+        this.scene.children
+        .filter(child => child instanceof THREE.Mesh)
+        .forEach(mesh => {
+            mesh.geometry.dispose()
+            mesh.material.materials.forEach(material => {
+                material.map.dispose()
+                material.dispose()
+            })
+
+            this.scene.remove(mesh)
+        })
+
         let materials = createMaterials(map)
         let meshes = createMeshes(map, materials)
+        meshes.forEach(m => this.scene.add(m))
+    }
 
-        let scene = new THREE.Scene()
-        scene.add(new THREE.AmbientLight(0xdddddd))
-        meshes.forEach(m => scene.add(m))
-
-        return scene
+    draw(renderer, camera) {
+        renderer.render(this.scene, camera)
     }
 }

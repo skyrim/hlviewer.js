@@ -4,7 +4,8 @@ import xhr from './xhr.js'
 import Map from './map.js'
 import Wad from './wad.js'
 import Replay from './replay.js'
-import SceneBuilder from './scene-builder.js'
+import WorldScene from './world-scene.js'
+import SkyScene from './sky-scene.js'
 
 let ui_template =
 `<div id="hlv">
@@ -140,7 +141,8 @@ class UI {
             return Promise.resolve()
         })
         .then(() => {
-            this.game.worldScene = SceneBuilder.createWorldScene(mapObject)
+            this.game.worldScene.changeMap(mapObject)
+            this.game.skyScene.change()
         })
     }
 }
@@ -176,10 +178,8 @@ class Game {
         this.camera.position.y = 0
         this.camera.rotation.x = 1.57;
 
-        this.worldScene = new THREE.Scene()
-        this.skyScene = new THREE.Scene()
-        this.skyScene.add(new THREE.Mesh(new THREE.BoxGeometry(1000, 1000, 1000), new THREE.MeshBasicMaterial({color:0x88aae2})))
-        this.skyScene.children[0].geometry.scale(-1, 1, 1)
+        this.worldScene = new WorldScene()
+        this.skyScene = new SkyScene()
 
         this.renderer = new THREE.WebGLRenderer({
             antialias: true,
@@ -211,29 +211,8 @@ class Game {
         this.update()
         
         this.renderer.clear()
-        this.drawSkyBox()
-        this.drawWorld()
-    }
-
-    drawSkyBox() {
-        let posx = this.camera.position.x
-        let posy = this.camera.position.y
-        let posz = this.camera.position.z
-
-        this.camera.position.x = 0
-        this.camera.position.y = 0
-        this.camera.position.z = 0
-
-        this.renderer.render(this.skyScene, this.camera)
-        this.renderer.clearDepth()
-
-        this.camera.position.x = posx
-        this.camera.position.y = posy
-        this.camera.position.z = posz
-    }
-
-    drawWorld() {
-        this.renderer.render(this.worldScene, this.camera)
+        this.skyScene.draw(this.renderer, this.camera)
+        this.worldScene.draw(this.renderer, this.camera)
     }
 
     update() {

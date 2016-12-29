@@ -112,19 +112,11 @@ class UI {
         let replayObject
         let mapObject
 
-        Promise.resolve()
-        /*.then(() => xhr(replay.replayUrl, {isBinary: true}))
-        .then((response) => {
-            replayObject = ReplayBuilder.fromArrayBuffer(response)
-            console.log(replayObject)
-        })*/
-        //.then(() => Replay.loadFromUrl(replay.replayUrl))
-        //.then((replay) => {replayObject = replay})
-        .then(() => Map.loadFromUrl(replay.mapUrl))
+        /*Replay.loadFromUrl(replay.replayUrl)
+        .then((replay) => {replayObject = replay})
+        .then(() => */Map.loadFromUrl(replay.mapUrl)/*)*/
         .then((map) => {
             mapObject = map
-            console.log(map)
-
             if (map.hasMissingTextures()) {
                 let promises = map.entities[0].wad.map(w => Wad.loadFromUrl(`res/wads/${w}`, {isBinary: true})
                     .then(w => {
@@ -141,6 +133,13 @@ class UI {
             return Promise.resolve()
         })
         .then(() => {
+            let startEntity = mapObject.entities.find(e => e.classname === 'info_player_start')
+            if (startEntity) {
+                this.game.camera.position.x = startEntity.origin[0]
+                this.game.camera.position.y = startEntity.origin[1]
+                this.game.camera.position.z = startEntity.origin[2]
+            }
+            
             this.game.worldScene.changeMap(mapObject)
             this.game.skyScene.change()
         })
@@ -174,9 +173,8 @@ class Game {
 
         this.camera = new THREE.PerspectiveCamera(70, 1, 1, 100000)
         this.camera.rotation.order = 'ZXY'
-        this.camera.position.x = 0
-        this.camera.position.y = 0
         this.camera.rotation.x = 1.57;
+        this.camera.position.y = 0
 
         this.worldScene = new WorldScene()
         this.skyScene = new SkyScene()

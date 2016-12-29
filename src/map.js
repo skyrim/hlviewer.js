@@ -51,7 +51,10 @@ function parseEntities(r, lumps) {
     const VECTOR_ATTRS = ['origin', 'angles', '_diffuse_light', '_light', 'rendercolor', 'avelocity']
     const NUMBER_ATTRS = ['renderamt', 'rendermode']
 
-    entities[0].wad = entities[0].wad.split(';').filter(w => w.length).map(w => w.replace(/\\/g, '/')).map(w => Path.basename(w))
+    let worldSpawn = entities[0]
+    if (worldSpawn.wad) {
+        worldSpawn.wad = worldSpawn.wad.split(';').filter(w => w.length).map(w => w.replace(/\\/g, '/')).map(w => Path.basename(w))
+    }
 
     entities.forEach(e => {
         if (e.model) {

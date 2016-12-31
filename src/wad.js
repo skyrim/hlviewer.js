@@ -66,10 +66,7 @@ function parseEntry(r, entry) {
 
 export default class Wad {
     constructor(entries) {
-        this.entries = entries.map(e => ({
-            name: e.name,
-            data: e.data
-        }))
+        this.entries = entries
     }
 
     static parseFromArrayBuffer(buffer) {
@@ -101,7 +98,10 @@ export default class Wad {
             e.data = parseEntry(r, e)
         })
 
-        return new Wad(entries)
+        return new Wad(entries.map(e => ({
+            name: e.name,
+            data: e.data
+        })))
     }
 
     static loadFromUrl(url) {

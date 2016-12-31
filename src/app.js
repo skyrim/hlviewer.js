@@ -112,9 +112,11 @@ class UI {
         let replayObject
         let mapObject
 
-        /*Replay.loadFromUrl(replay.replayUrl)
-        .then((replay) => {replayObject = replay})
-        .then(() => */Map.loadFromUrl(replay.mapUrl)/*)*/
+        Replay.loadFromUrl(replay.replayUrl)
+        .then((replay) => {
+            replayObject = replay
+        })
+        .then(() => Map.loadFromUrl(replay.mapUrl))
         .then((map) => {
             mapObject = map
             if (map.hasMissingTextures()) {

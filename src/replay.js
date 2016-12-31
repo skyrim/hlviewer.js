@@ -69,11 +69,7 @@ export default class Replay {
                     break
 
                     case 4:
-                        macro.camera = {
-                            position: [r.f(), r.f(), r.f()],
-                            orientation: [r.f(), r.f(), r.f()]
-                        }
-                        r.skip(8)
+                        r.skip(32)
                     break
 
                     case 5:

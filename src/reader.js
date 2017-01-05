@@ -1,3 +1,14 @@
+export const TYPE_UB   = 0
+export const TYPE_B    = 1
+export const TYPE_US   = 2
+export const TYPE_S    = 3
+export const TYPE_UI   = 4
+export const TYPE_I    = 5
+export const TYPE_F    = 6
+export const TYPE_LF   = 7
+export const TYPE_NSTR = 8
+export const TYPE_STR  = 9
+
 export default class Reader {
     constructor(data) {
         if (data.byteLength === 0) {
@@ -105,6 +116,68 @@ export default class Reader {
         let r = []
         while (n-- > 0) {
             r.push(f())
+        }
+
+        return r
+    }
+
+    arrx(n, type, nstrlen = 0) {
+        let r
+
+        switch (type) {
+        case TYPE_UB:
+            r = new Uint8Array(this.data.buffer, this.tell(), n)
+            this.skip(n)
+        break
+
+        case TYPE_B:
+            r = new Int8Array(this.data.buffer, this.tell(), n)
+            this.skip(n)
+        break
+
+        case TYPE_US:
+            r = new Uint16Array(this.data.buffer, this.tell(), n)
+            this.skip(n * 2)
+        break
+
+        case TYPE_S:
+            r = new Int16Array(this.data.buffer, this.tell(), n)
+            this.skip(n * 2)
+        break
+
+        case TYPE_UI:
+            r = new Uint32Array(this.data.buffer, this.tell(), n)
+            this.skip(n * 4)
+        break
+
+        case TYPE_I:
+            r = new Int32Array(this.data.buffer, this.tell(), n)
+            this.skip(n * 4)
+        break
+
+        case TYPE_F:
+            r = new Float32Array(this.data.buffer, this.tell(), n)
+            this.skip(n * 4)
+        break
+
+        case TYPE_LF:
+            r = new Float64Array(this.data.buffer, this.tell(), n)
+            this.skip(n * 8)
+        break
+
+        case TYPE_NSTR:
+            r = []
+            while (n-- > 0) {
+                r.push(r.nstr(nstrlen))
+            }
+        break
+
+        case TYPE_STR:
+            r = []
+            while (n-- > 0) {
+                r.push(r.str())
+            }
+        break
         }
 
         return r

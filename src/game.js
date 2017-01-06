@@ -67,67 +67,62 @@ export default class Game {
     }
 
     update() {
-        if (this.mouse.click) {
-            let mX = this.mouse.delta[1] / 100
-            let mY = this.mouse.delta[0] / 100
+        let camera = this.camera
+        let keyboard = this.keyboard
+        let mouse = this.mouse
 
-            let x = Math.max(0.05, Math.min(3.09, this.camera.rotation.x - mX))
-            let y = this.camera.rotation.z - mY
+        if (mouse.click) {
+            let mX = mouse.delta[1] / 100
+            let mY = mouse.delta[0] / 100
 
-            this.camera.rotation.x = x
-            this.camera.rotation.z = y
+            let x = Math.max(0.05, Math.min(3.09, camera.rotation.x - mX))
+            let y = camera.rotation.z - mY
+
+            camera.rotation.x = x
+            camera.rotation.z = y
         }
 
-        if (this.keyboard.key['W'.charCodeAt(0)] !== this.keyboard.key['S'.charCodeAt(0)]) {
-            if (this.keyboard.key['W'.charCodeAt(0)]) {
-                this.camera.position.y += Math.cos(this.camera.rotation.z) * 10
-                this.camera.position.x -= Math.sin(this.camera.rotation.z) * 10
-            }
-            else if (this.keyboard.key['S'.charCodeAt(0)]) {
-                this.camera.position.y += Math.cos(this.camera.rotation.z - 3.14) * 10
-                this.camera.position.x -= Math.sin(this.camera.rotation.z - 3.14) * 10
-            }
-        }
-
-        if (this.keyboard.key['A'.charCodeAt(0)] !== this.keyboard.key['D'.charCodeAt(0)]) {
-            if (this.keyboard.key['A'.charCodeAt(0)]) {
-                this.camera.position.y += Math.cos(this.camera.rotation.z + 1.57) * 10
-                this.camera.position.x -= Math.sin(this.camera.rotation.z + 1.57) * 10
-            }
-            else if (this.keyboard.key['D'.charCodeAt(0)]) {
-                this.camera.position.y += Math.cos(this.camera.rotation.z - 1.57) * 10
-                this.camera.position.x -= Math.sin(this.camera.rotation.z - 1.57) * 10
+        if (keyboard.key['W'.charCodeAt(0)] !== keyboard.key['S'.charCodeAt(0)]) {
+            if (keyboard.key['W'.charCodeAt(0)]) {
+                camera.position.y += Math.cos(camera.rotation.z) * 10
+                camera.position.x -= Math.sin(camera.rotation.z) * 10
+            } else if (keyboard.key['S'.charCodeAt(0)]) {
+                camera.position.y += Math.cos(camera.rotation.z - 3.14) * 10
+                camera.position.x -= Math.sin(camera.rotation.z - 3.14) * 10
             }
         }
 
-        if (this.keyboard.key['R'.charCodeAt(0)] !== this.keyboard.key['F'.charCodeAt(0)]) {
-            if (this.keyboard.key['R'.charCodeAt(0)]) {
-                this.camera.position.z += 10
-            }
-            else if (this.keyboard.key['F'.charCodeAt(0)]) {
-                this.camera.position.z -= 10
+        if (keyboard.key['A'.charCodeAt(0)] !== keyboard.key['D'.charCodeAt(0)]) {
+            if (keyboard.key['A'.charCodeAt(0)]) {
+                camera.position.y += Math.cos(camera.rotation.z + 1.57) * 10
+                camera.position.x -= Math.sin(camera.rotation.z + 1.57) * 10
+            } else if (keyboard.key['D'.charCodeAt(0)]) {
+                camera.position.y += Math.cos(camera.rotation.z - 1.57) * 10
+                camera.position.x -= Math.sin(camera.rotation.z - 1.57) * 10
             }
         }
 
-        this.mouse.delta[0] = 0
-        this.mouse.delta[1] = 0
+        if (keyboard.key['R'.charCodeAt(0)] !== keyboard.key['F'.charCodeAt(0)]) {
+            if (keyboard.key['R'.charCodeAt(0)]) {
+                camera.position.z += 10
+            } else if (keyboard.key['F'.charCodeAt(0)]) {
+                camera.position.z -= 10
+            }
+        }
+
+        mouse.delta[0] = 0
+        mouse.delta[1] = 0
     }
 
-    mousedown(e) {
-        e.preventDefault()
-
+    mousedown() {
         this.mouse.click = true
     }
 
-    mouseup(e) {
-        e.preventDefault();
-
+    mouseup() {
         this.mouse.click = false
     }
 
     mousemove(e) {
-        e.preventDefault();
-
         this.mouse.delta[0] = e.pageX - this.mouse.position[0]
         this.mouse.delta[1] = e.pageY - this.mouse.position[1]
 

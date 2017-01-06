@@ -107,6 +107,7 @@ export default class Replay {
     }
 
     static loadFromUrl(url) {
-        return xhr(url, {isBinary: true}).then(response => Replay.parseFromArrayBuffer(response))
+        return xhr(url, {isBinary: true})
+            .then(response => Replay.parseFromArrayBuffer(response))
     }
 }

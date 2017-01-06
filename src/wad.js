@@ -1,12 +1,13 @@
 import xhr from './xhr.js'
-import Reader from './reader.js'
+import Reader, {TYPE_UB} from './reader.js'
 
 function parseMipMaps(r, width, height) {
-    let mipmaps = [0, 0, 0, 0].map((m, i) => r.arr((width * height) / Math.pow(1<<i, 2), r.ub.bind(r)))
+    let mipmaps = [0, 0, 0, 0]
+        .map((m, i) => r.arrx((width * height) / Math.pow(1<<i, 2), TYPE_UB))
         
     r.skip(2)
 
-    let palette = r.arr(256 * 3, r.ub.bind(r))
+    let palette = r.arrx(256 * 3, TYPE_UB)
 
     return mipmaps.map(m => {
         let pixels = new Uint8Array(m.length * 4)
@@ -105,6 +106,7 @@ export default class Wad {
     }
 
     static loadFromUrl(url) {
-        return xhr(url, {isBinary: true}).then(response => Wad.parseFromArrayBuffer(response))
+        return xhr(url, {isBinary: true})
+            .then(response => Wad.parseFromArrayBuffer(response))
     }
 }

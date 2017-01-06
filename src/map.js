@@ -1,4 +1,4 @@
-import Reader from './reader.js'
+import Reader, {TYPE_UB} from './reader.js'
 import vdf from './vdf.js'
 import xhr from './xhr.js'
 import Path from 'path'
@@ -48,12 +48,19 @@ function parseEntities(r, lumps) {
     r.seek(lumps[LUMP_ENTITIES].offset)
     let entities = new vdf(r.nstr(lumps[LUMP_ENTITIES].length))
 
-    const VECTOR_ATTRS = ['origin', 'angles', '_diffuse_light', '_light', 'rendercolor', 'avelocity']
+    const VECTOR_ATTRS = [
+        'origin', 'angles', '_diffuse_light',
+        '_light', 'rendercolor', 'avelocity'
+    ]
     const NUMBER_ATTRS = ['renderamt', 'rendermode']
 
     let worldSpawn = entities[0]
     if (worldSpawn.wad) {
-        worldSpawn.wad = worldSpawn.wad.split(';').filter(w => w.length).map(w => w.replace(/\\/g, '/')).map(w => Path.basename(w))
+        worldSpawn.wad = worldSpawn.wad
+            .split(';')
+            .filter(w => w.length)
+            .map(w => w.replace(/\\/g, '/'))
+            .map(w => Path.basename(w))
     }
 
     entities.forEach(e => {
@@ -98,7 +105,7 @@ export default class Map {
         let r = new Reader(buffer)
         let version = r.ui()
         if (version !== 30) {
-            throw new Error(`Invalid map version. Expected 30, given ${version}`)
+            throw new Error('Invalid map version')
         }
 
         let lumps = []
@@ -112,11 +119,13 @@ export default class Map {
         let parseTextures = (r) => {
             let parseTexture = (r) => {
                 let parseMipMaps = (r, w, h) => {
-                    let mipmaps = [0, 0, 0, 0].map((m, i) => r.arr((w * h) / Math.pow(1<<i, 2), r.ub.bind(r)))
+                    let mipmaps = [0, 0, 0, 0].map(
+                        (m, i) => r.arrx((w * h) / Math.pow(1 << i, 2), TYPE_UB)
+                    )
                     
                     r.skip(2)
 
-                    let palette = r.arr(256 * 3, r.ub.bind(r))
+                    let palette = r.arrx(256 * 3, TYPE_UB)
 
                     let data = mipmaps.map(m => {
                         let t = new Uint8Array(m.length * 4)
@@ -174,9 +183,18 @@ export default class Map {
 
             let textures = []
             for (let i = 0; i < count; ++i) {
-                r.seek(lumps[LUMP_TEXTURES].offset + offsets[i])
-
-                textures.push(parseTexture(r))
+                if (offsets[i] === 0xffffffff) {
+                    let mipmap = new Uint8Array([0, 255, 0, 255])
+                    textures.push({
+                        name: 'ERROR404',
+                        width: 1,
+                        height: 1,
+                        mipmaps: [mipmap, mipmap, mipmap, mipmap]
+                    })
+                } else {
+                    r.seek(lumps[LUMP_TEXTURES].offset + offsets[i])
+                    textures.push(parseTexture(r))
+                }
             }
 
             return textures
@@ -286,7 +304,7 @@ export default class Map {
 
                 return !(entity && !(INVISIBLE_ENTITIES.indexOf(entity.classname) > -1) && !(entity.renderamt))
             })
-            .map((model,lewl) => {
+            .map(model => {
                 let modelVertices = []
                 let modelUVs = []
                 let modelTextureIndices = []
@@ -299,19 +317,43 @@ export default class Map {
 
                     let v1 = vertices[edges[Math.abs(faceSurfEdges[0])][faceSurfEdges[0] > 0 ? 0 : 1]]
                     modelVertices.push(v1)
-                    let uv1 = [(v1[0] * faceTexInfo.s[0] + v1[1] * faceTexInfo.s[1] + v1[2] * faceTexInfo.s[2] + faceTexInfo.sShift) / faceTexture.width,
-                               (v1[0] * faceTexInfo.t[0] + v1[1] * faceTexInfo.t[1] + v1[2] * faceTexInfo.t[2] + faceTexInfo.tShift) / faceTexture.height]
+                    let uv1 = [(v1[0] * faceTexInfo.s[0]
+                              + v1[1] * faceTexInfo.s[1]
+                              + v1[2] * faceTexInfo.s[2]
+                              + faceTexInfo.sShift)
+                              / faceTexture.width,
+                               (v1[0] * faceTexInfo.t[0]
+                              + v1[1] * faceTexInfo.t[1]
+                              + v1[2] * faceTexInfo.t[2]
+                              + faceTexInfo.tShift)
+                              / faceTexture.height]
 
                     let v2 = vertices[edges[Math.abs(faceSurfEdges[1])][faceSurfEdges[1] > 0 ? 0 : 1]]
                     modelVertices.push(v2)
 
-                    let uv2 = [(v2[0] * faceTexInfo.s[0] + v2[1] * faceTexInfo.s[1] + v2[2] * faceTexInfo.s[2] + faceTexInfo.sShift) / faceTexture.width,
-                               (v2[0] * faceTexInfo.t[0] + v2[1] * faceTexInfo.t[1] + v2[2] * faceTexInfo.t[2] + faceTexInfo.tShift) / faceTexture.height]
+                    let uv2 = [(v2[0] * faceTexInfo.s[0]
+                              + v2[1] * faceTexInfo.s[1]
+                              + v2[2] * faceTexInfo.s[2]
+                              + faceTexInfo.sShift)
+                              / faceTexture.width,
+                               (v2[0] * faceTexInfo.t[0]
+                              + v2[1] * faceTexInfo.t[1]
+                              + v2[2] * faceTexInfo.t[2]
+                              + faceTexInfo.tShift)
+                              / faceTexture.height]
 
                     for (let j = 2; j < faces[i].edgeCount; ++j) {
                         let v3 = vertices[edges[Math.abs(faceSurfEdges[j])][faceSurfEdges[j] > 0 ? 0 : 1]]
-                        let uv3 = [(v3[0] * faceTexInfo.s[0] + v3[1] * faceTexInfo.s[1] + v3[2] * faceTexInfo.s[2] + faceTexInfo.sShift) / faceTexture.width,
-                                   (v3[0] * faceTexInfo.t[0] + v3[1] * faceTexInfo.t[1] + v3[2] * faceTexInfo.t[2] + faceTexInfo.tShift) / faceTexture.height]
+                        let uv3 = [(v3[0] * faceTexInfo.s[0]
+                                  + v3[1] * faceTexInfo.s[1]
+                                  + v3[2] * faceTexInfo.s[2]
+                                  + faceTexInfo.sShift)
+                                  / faceTexture.width,
+                                   (v3[0] * faceTexInfo.t[0]
+                                  + v3[1] * faceTexInfo.t[1]
+                                  + v3[2] * faceTexInfo.t[2]
+                                  + faceTexInfo.tShift)
+                                  / faceTexture.height]
                         
                         modelVertices.push(v3)
                         modelUVs.push([uv1, uv3, uv2])
@@ -336,6 +378,7 @@ export default class Map {
     }
 
     static loadFromUrl(url) {
-        return xhr(url, {isBinary: true}).then(response => Map.parseFromArrayBuffer(response))
+        return xhr(url, {isBinary: true})
+            .then(response => Map.parseFromArrayBuffer(response))
     }
 }

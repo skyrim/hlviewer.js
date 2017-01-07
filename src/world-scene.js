@@ -54,8 +54,9 @@ function createTexture(data, renderer) {
     
     let texture = new THREE.DataTexture(pixels, w, h, THREE.RGBAFormat)
     texture.magFilter = THREE.LinearFilter
-    texture.minFilter = THREE.LinearFilter
+    texture.minFilter = THREE.LinearMipMapLinearFilter
     texture.anisotropy = renderer.getMaxAnisotropy()
+    texture.generateMipmaps = true
 
     return texture
 }

@@ -30,9 +30,6 @@ export default class Game {
         this.camera.rotation.x = 1.57;
         this.camera.position.y = 0
 
-        this.worldScene = new WorldScene()
-        this.skyScene = new SkyScene()
-
         this.renderer = new THREE.WebGLRenderer({
             antialias: true,
             alpha: true,
@@ -41,6 +38,9 @@ export default class Game {
         this.renderer.autoClear = false
         this.renderer.setPixelRatio(window.devicePixelRatio)
         this.renderer.setSize(this.width, this.height)
+
+        this.worldScene = new WorldScene(this.renderer)
+        this.skyScene = new SkyScene(this.renderer)
 
         this.draw.bind(this)()
     }
@@ -62,8 +62,8 @@ export default class Game {
 
         this.update()
         
-        this.skyScene.draw(this.renderer, this.camera)
-        this.worldScene.draw(this.renderer, this.camera)
+        this.skyScene.draw(this.camera)
+        this.worldScene.draw(this.camera)
     }
 
     update() {

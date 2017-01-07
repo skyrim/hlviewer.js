@@ -39,7 +39,7 @@ function nextPowerOfTwo(n) {
     return n + 1;
 }
 
-function createTexture(data) {
+function createTexture(data, renderer) {
     let pixels = data.mipmaps[0]
     let w = data.width
     let h = data.height
@@ -55,7 +55,7 @@ function createTexture(data) {
     let texture = new THREE.DataTexture(pixels, w, h, THREE.RGBAFormat)
     texture.magFilter = THREE.LinearFilter
     texture.minFilter = THREE.LinearFilter
-    //texture.anisotropy = game.renderer.getMaxAnisotropy()
+    texture.anisotropy = renderer.getMaxAnisotropy()
 
     return texture
 }
@@ -72,7 +72,7 @@ function createMissingTexture() {
     return texture
 }
 
-function createMaterials(map) {
+function createMaterials(map, renderer) {
     const INVISIBLE_TEXTURES = [
         'aaatrigger', 'clip', 'null', 'hint', 'nodraw',
         'invisible', 'skip', 'trigger', 'sky', 'fog'
@@ -81,7 +81,7 @@ function createMaterials(map) {
     return map.textures.map(data => {
         let texture
         if (data.mipmaps.length > 0) {
-            texture = createTexture(data)
+            texture = createTexture(data, renderer)
         } else {
             texture = createMissingTexture()
         }
@@ -153,7 +153,8 @@ function createMeshes(map, materials) {
 }
 
 export default class WorldScene {
-    constructor() {
+    constructor(renderer) {
+        this.renderer = renderer
         let basicLight = new THREE.AmbientLight(0xdddddd)
         this.scene = new THREE.Scene()
         this.scene.add(basicLight)
@@ -161,23 +162,23 @@ export default class WorldScene {
 
     changeMap(map) {
         this.scene.children
-        .filter(child => child instanceof THREE.Mesh)
-        .forEach(mesh => {
-            mesh.geometry.dispose()
-            mesh.material.materials.forEach(material => {
-                material.map.dispose()
-                material.dispose()
+            .filter(child => child instanceof THREE.Mesh)
+            .forEach(mesh => {
+                mesh.geometry.dispose()
+                mesh.material.materials.forEach(material => {
+                    material.map.dispose()
+                    material.dispose()
+                })
+
+                this.scene.remove(mesh)
             })
 
-            this.scene.remove(mesh)
-        })
-
-        let materials = createMaterials(map)
+        let materials = createMaterials(map, this.renderer)
         let meshes = createMeshes(map, materials)
         meshes.forEach(m => this.scene.add(m))
     }
 
-    draw(renderer, camera) {
-        renderer.render(this.scene, camera)
+    draw(camera) {
+        this.renderer.render(this.scene, camera)
     }
 }

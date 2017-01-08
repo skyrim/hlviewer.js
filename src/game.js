@@ -175,20 +175,27 @@ export default class Game {
         }
 
         if (this.keyboard.key[17]) {
-            let r = new THREE.Raycaster()
-            let m = new THREE.Vector2()
-            m.x = (e.clientX / window.innerWidth) * 2 - 1
-            m.y = - (e.clientY / window.innerHeight) * 2 + 1
-            r.setFromCamera(m, this.camera)
-            let objects = r.intersectObjects(this.worldScene.getMeshes())
-            let mesh = objects[0] ? objects[0].object : null
-            if (mesh && this.selectedObject !== mesh) {
-                if (this.selectedObject) {
+            let ray = new THREE.Raycaster()
+            let mouse = new THREE.Vector2()
+
+            let rect = this.renderer.domElement.getBoundingClientRect()
+            if (e.clientX >= rect.left && e.clientX <= rect.right
+                && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1
+                mouse.y = - ((e.clientY - rect.top) / rect.height) * 2 + 1
+                
+                ray.setFromCamera(mouse, this.camera)
+                let objects = ray.intersectObjects(this.worldScene.getMeshes())
+                let mesh = objects[0] ? objects[0].object : null
+                if (mesh && this.selectedObject !== mesh) {
+                    if (this.selectedObject) {
+                        deselectObject(this.selectedObject)
+                    }
+                    selectObject(mesh)
+                } else if (this.selectedObject) {
                     deselectObject(this.selectedObject)
                 }
-                selectObject(mesh)
-            } else if (this.selectedObject) {
-                deselectObject(this.selectedObject)
             }
         }
     }

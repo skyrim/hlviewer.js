@@ -20,30 +20,6 @@ const LUMP_SURFEDGES    = 13
 const LUMP_MODELS       = 14
 const HEADER_LUMPS      = 15
 
-const INVISIBLE_ENTITIES = [
-    'target_cdaudio',
-    'trigger_auto',
-    'trigger_autosave',
-    'trigger_camera',
-    'trigger_cdaudio',
-    'trigger_changelevel',
-    'trigger_changetarget',
-    'trigger_counter',
-    'trigger_endsection',
-    'trigger_gravity',
-    'trigger_hurt',
-    'trigger_monsterjump',
-    'trigger_multiple',
-    'trigger_once',
-    'trigger_push',
-    'trigger_relay',
-    'trigger_teleport',
-    'trigger_transition',
-    'func_bomb_target',
-    'func_buyzone',
-    'func_ladder"'
-]
-
 function parseEntities(r, lumps) {
     r.seek(lumps[LUMP_ENTITIES].offset)
     let entities = new vdf(r.nstr(lumps[LUMP_ENTITIES].length))
@@ -66,6 +42,22 @@ function parseEntities(r, lumps) {
     entities.forEach(e => {
         if (e.model) {
             e.model = Number.parseInt(e.model.substr(1))
+
+            if (typeof e.renderamt === 'undefined') {
+                e.renderamt = 0
+            }
+
+            if (typeof e.rendermode === 'undefined') {
+                e.rendermode = 0
+            }
+
+            if (typeof e.renderfx === 'undefined') {
+                e.renderfx = 0
+            }
+
+            if (typeof e.rendercolor === 'undefined') {
+                e.rendercolor = '0, 0, 0'
+            }
         }
 
         VECTOR_ATTRS.forEach(attr => {
@@ -294,16 +286,6 @@ export default class Map {
         let texinfo = loadTexInfo(r, lumps[LUMP_TEXINFO].offset, lumps[LUMP_TEXINFO].length)
 
         let parsedModels = ((models, faces, edges, surfEdges, vertices, texinfo, textures, entities) => models
-            .filter((model, modelIndex) => {
-                let entity
-                for (let i = 0; i < entities.length; ++i) {
-                    if (entities[i].model === `*${modelIndex}`) {
-                        entity = entities[i]
-                    }
-                }
-
-                return !(entity && !(INVISIBLE_ENTITIES.indexOf(entity.classname) > -1) && !(entity.renderamt))
-            })
             .map(model => {
                 let modelVertices = []
                 let modelUVs = []

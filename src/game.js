@@ -42,7 +42,45 @@ export default class Game {
         this.worldScene = new WorldScene(this.renderer)
         this.skyScene = new SkyScene(this.renderer)
 
+        this.entities = []
+
+        this.selectedObject = null
+        this.selectedObjectBox = null
+
         this.draw.bind(this)()
+    }
+
+    getCanvas() {
+        return this.renderer.domElement
+    }
+
+    changeMap(map) {
+        this.worldScene.change(map)
+        this.skyScene.change()
+
+        this.entities.length = 0
+        map.entities.forEach(e => this.entities.push(e))
+        this.worldScene
+            .getMeshes()
+            .forEach((mesh, i) => {
+                if (i === 0) {
+                    this.entities[0].mesh = mesh
+                }
+                else {
+                    let entity = this.entities.find(e => e.model === i)
+                    if (entity) {
+                        entity.mesh = mesh
+                    }
+                }
+            })
+
+        let startEntity = map.entities
+            .find(e => e.classname === 'info_player_start')
+        if (startEntity) {
+            this.camera.position.x = startEntity.origin[0]
+            this.camera.position.y = startEntity.origin[1]
+            this.camera.position.z = startEntity.origin[2]
+        }
     }
 
     draw() {
@@ -114,8 +152,45 @@ export default class Game {
         mouse.delta[1] = 0
     }
 
-    mousedown() {
+    mousedown(e) {
         this.mouse.click = true
+
+        let selectObject = (mesh) => {
+            mesh.material.materials.forEach(m => m.color.set(0xff0000))
+            this.selectedObject = mesh
+
+            this.selectedObjectBox = new THREE.BoxHelper(mesh, 0x00ff00)
+            this.worldScene.scene.add(this.selectedObjectBox)
+
+            let entity = this.entities.find(e => e.mesh === mesh)
+            console.log(entity)
+        }
+
+        let deselectObject = (mesh) => {
+            mesh.material.materials.forEach(m => m.color.set(0xffffff))
+            this.selectedObject = null
+
+            this.worldScene.scene.remove(this.selectedObjectBox)
+            this.selectedObjectBox = null
+        }
+
+        if (this.keyboard.key[17]) {
+            let r = new THREE.Raycaster()
+            let m = new THREE.Vector2()
+            m.x = (e.clientX / window.innerWidth) * 2 - 1
+            m.y = - (e.clientY / window.innerHeight) * 2 + 1
+            r.setFromCamera(m, this.camera)
+            let objects = r.intersectObjects(this.worldScene.getMeshes())
+            let mesh = objects[0] ? objects[0].object : null
+            if (mesh && this.selectedObject !== mesh) {
+                if (this.selectedObject) {
+                    deselectObject(this.selectedObject)
+                }
+                selectObject(mesh)
+            } else if (this.selectedObject) {
+                deselectObject(this.selectedObject)
+            }
+        }
     }
 
     mouseup() {

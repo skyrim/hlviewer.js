@@ -69,7 +69,7 @@ export default class UI {
             replaysList: document.getElementById('hlv-replays'),
             screen: document.getElementById('hlv-screen')
         }
-        this.dom.screen.appendChild(game.renderer.domElement)
+        this.dom.screen.appendChild(game.getCanvas())
         addStyleToDom(ui_style)
         this.game = game
         this.replays = []
@@ -79,8 +79,7 @@ export default class UI {
     addReplaysToList(replays) {
         // TODO: check replay array object structure?
 
-        for (let i = 0; i < replays.length; ++i) {
-            let replay = replays[i]
+        replays.forEach(replay => {
             let html = `<li><a href="#" style="display:block">${replay.name}</a></li>`
             let element = createDomFromHtml(html)
             element.addEventListener('click', (event) => {
@@ -88,7 +87,7 @@ export default class UI {
                 event.preventDefault()
             })
             this.dom.replaysList.appendChild(element)
-        }
+        })
 
         this.replays = this.replays.concat(replays)
     }
@@ -110,37 +109,29 @@ export default class UI {
         let promise = Promise.resolve()
         if (replay.replayUrl) {
             promise.then(() => Replay.loadFromUrl(replay.replayUrl))
-            .then((replay) => replayObject = replay)
+                .then((replay) => replayObject = replay)
         }
 
         promise.then(() => Map.loadFromUrl(replay.mapUrl))
         .then((map) => {
             mapObject = map
             if (map.hasMissingTextures()) {
-                let promises = map.entities[0].wad.map(w => Wad.loadFromUrl(`res/wads/${w}`, {isBinary: true})
+                let promises = map.entities[0].wad
+                    .map(w => Wad.loadFromUrl(`res/wads/${w}`, {isBinary: true})
                     .then(w => {
-                        for (let i = 0; i < w.entries.length; ++i) {
-                            for (let j = 0; j < map.textures.length; ++j) {
-                                if (w.entries[i].name.toLowerCase() === map.textures[j].name.toLowerCase()) {
-                                    map.textures[j].mipmaps = w.entries[i].data.texture.mipmaps
+                        let cmp = (a, b) => a.toLowerCase() === b.toLowerCase()
+                        w.entries.forEach(entry => {
+                            map.textures.forEach(texture => {
+                                if (cmp(entry.name, texture.name)) {
+                                    texture.mipmaps = entry.data.texture.mipmaps
                                 }
-                            }
-                        }
+                            })
+                        })
                     }))
                 return Promise.all(promises)
             }
             return Promise.resolve()
         })
-        .then(() => {
-            let startEntity = mapObject.entities.find(e => e.classname === 'info_player_start')
-            if (startEntity) {
-                this.game.camera.position.x = startEntity.origin[0]
-                this.game.camera.position.y = startEntity.origin[1]
-                this.game.camera.position.z = startEntity.origin[2]
-            }
-            
-            this.game.worldScene.changeMap(mapObject)
-            this.game.skyScene.change()
-        })
+        .then(() => this.game.changeMap(mapObject))
     }
 }

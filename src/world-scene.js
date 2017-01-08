@@ -53,6 +53,7 @@ function createTexture(data, renderer) {
     }
     
     let texture = new THREE.DataTexture(pixels, w, h, THREE.RGBAFormat)
+    texture.premultiplyAlpha = true
     texture.magFilter = THREE.LinearFilter
     texture.minFilter = THREE.LinearMipMapLinearFilter
     texture.anisotropy = renderer.getMaxAnisotropy()
@@ -76,8 +77,7 @@ function createMissingTexture() {
 function createMaterials(map, renderer) {
     const INVISIBLE_TEXTURES = [
         'aaatrigger', 'clip', 'null', 'hint', 'nodraw',
-        'invisible', 'skip', 'trigger', 'sky', 'fog'
-    ]
+        'invisible', 'skip', 'trigger', 'sky', 'fog']
 
     return map.textures.map(data => {
         let texture
@@ -96,13 +96,22 @@ function createMaterials(map, renderer) {
         return new THREE.MeshLambertMaterial({
             map: texture,
             transparent: true,
-            alphaTest: 0.95,
+            alphaTest: 0.5,
             visible: !INVISIBLE_TEXTURES.includes(data.name.toLowerCase())
         })
     })
 }
 
 function createMeshes(map, materials) {
+    const INVISIBLE_ENTITIES = [
+        'target_cdaudio', 'trigger_auto', 'trigger_autosave',
+        'trigger_camera', 'trigger_cdaudio', 'trigger_changelevel',
+        'trigger_changetarget', 'trigger_counter', 'trigger_endsection',
+        'trigger_gravity', 'trigger_hurt', 'trigger_monsterjump',
+        'trigger_multiple', 'trigger_once', 'trigger_push',
+        'trigger_relay', 'trigger_teleport', 'trigger_transition',
+        'func_bomb_target', 'func_buyzone', 'func_ladder']
+
     let material = new THREE.MultiMaterial(materials)
 
     return map.models
@@ -129,9 +138,12 @@ function createMeshes(map, materials) {
         })
         .map((mesh, i) => {
             let entity = map.entities.find(e => e.model === i)
-            if (entity && entity.rendermode) {
-                if (typeof entity.renderamt === 'number'
-                    && entity.renderamt < 255) {
+            if (entity) {
+                if (entity.rendermode === 0) {
+                    entity.renderamt = 255
+                }
+
+                if (entity.rendermode !== 4 && entity.renderamt < 255) {
                     mesh.material.materials.forEach(m => {
                         mesh.renderOrder = 1
                         m.depthWrite = false
@@ -147,6 +159,8 @@ function createMeshes(map, materials) {
                         m.opacity = 0.9
                     })
                 }
+
+                mesh.visible = !INVISIBLE_ENTITIES.includes(entity.classname)
             }
 
             return mesh
@@ -156,27 +170,34 @@ function createMeshes(map, materials) {
 export default class WorldScene {
     constructor(renderer) {
         this.renderer = renderer
-        let basicLight = new THREE.AmbientLight(0xdddddd)
+
         this.scene = new THREE.Scene()
-        this.scene.add(basicLight)
+        this.light = new THREE.AmbientLight(0xdddddd)
+        this.models = new THREE.Scene()
+
+        this.scene.add(this.light)
+        this.scene.add(this.models)
     }
 
-    changeMap(map) {
-        this.scene.children
-            .filter(child => child instanceof THREE.Mesh)
-            .forEach(mesh => {
-                mesh.geometry.dispose()
-                mesh.material.materials.forEach(material => {
-                    material.map.dispose()
-                    material.dispose()
-                })
-
-                this.scene.remove(mesh)
+    change(map) {
+        let models = this.models.children
+        models.forEach(model => {
+            model.geometry.dispose()
+            model.material.materials.forEach(material => {
+                material.map.dispose()
+                material.dispose()
             })
+        })
+        
+        this.models.children.length = 0
 
         let materials = createMaterials(map, this.renderer)
         let meshes = createMeshes(map, materials)
-        meshes.forEach(m => this.scene.add(m))
+        meshes.forEach(mesh => this.models.add(mesh))
+    }
+
+    getMeshes() {
+        return this.models.children
     }
 
     draw(camera) {

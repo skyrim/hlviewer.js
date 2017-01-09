@@ -155,8 +155,8 @@ function createMeshes(map, materials) {
                 if (entity.rendermode === 5) {
                     mesh.material.materials.forEach(m => {
                         m.blending = THREE.AdditiveBlending
+                        mesh.renderOrder = 1
                         m.depthWrite = false
-                        m.opacity = 0.9
                     })
                 }
 
@@ -172,7 +172,7 @@ export default class WorldScene {
         this.renderer = renderer
 
         this.scene = new THREE.Scene()
-        this.light = new THREE.AmbientLight(0xdddddd)
+        this.light = new THREE.AmbientLight(0xffffff)
         this.models = new THREE.Scene()
 
         this.scene.add(this.light)

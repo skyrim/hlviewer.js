@@ -74,12 +74,12 @@ function createMissingTexture() {
     return texture
 }
 
-function createMaterials(map, renderer) {
-    const INVISIBLE_TEXTURES = [
+const INVISIBLE_TEXTURES = [
         'aaatrigger', 'clip', 'null', 'hint', 'nodraw',
         'invisible', 'skip', 'trigger', 'sky', 'fog']
 
-    return map.textures.map(data => {
+const createMaterials = (map, renderer) =>
+    map.textures.map(data => {
         let texture
         if (data.mipmaps.length > 0) {
             texture = createTexture(data, renderer)
@@ -100,7 +100,6 @@ function createMaterials(map, renderer) {
             visible: !INVISIBLE_TEXTURES.includes(data.name.toLowerCase())
         })
     })
-}
 
 function createMeshes(map, materials) {
     const INVISIBLE_ENTITIES = [
@@ -127,12 +126,27 @@ function createMeshes(map, materials) {
                     f.materialIndex = model.textureIndices[i]
                     return f
                 })
+
             geometry.faceVertexUvs[0] = model.uv
                 .map(uv => [
                     new Vec2(uv[0][0], uv[0][1]  * -1),
                     new Vec2(uv[1][0], uv[1][1]  * -1),
                     new Vec2(uv[2][0], uv[2][1]  * -1)
                 ])
+            
+            let nfuv = []
+            let nf = geometry.faces.filter((face, i) => {
+                if (INVISIBLE_TEXTURES.includes(material.materials[face.materialIndex].map.name.toLowerCase())) {
+                    return false
+                } else {
+                    nfuv.push(geometry.faceVertexUvs[0][i])
+                    return true
+                }
+            })
+            geometry.faces = nf
+            geometry.faceVertexUvs[0] = nfuv
+
+            geometry.mergeVertices()
 
             return new Mesh(geometry, material.clone())
         })

@@ -1,6 +1,27 @@
-import Map from './map.js'
-import Wad from './wad.js'
-import Replay from './replay.js'
+import Map from './map'
+import Wad from './wad'
+import Replay from './replay'
+
+let ui_play_btn =
+`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
+    <path d='M0 0 L0 64 L64 32 Z' />
+</svg>`
+
+let ui_pause_btn =
+`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
+    <path d='M0 0 L0 64 L20 64 L20 0 M44 0 L64 0 L64 64 L44 64 Z' />
+</svg>`
+
+let ui_stop_btn =
+`<svg viewBox="0 0 1 1" fill="currentcolor">
+    <rect width="1" height="1" />
+</svg>`
+
+let ui_fullscreen_btn =
+`<!-- Generated with http://jxnblk.com/paths -->
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
+    <path d='M0 22 L8 22 L8 8 L22 8 L22 0 L0 0 M42 0 L42 8 L56 8 L56 22 L64 22 L64 0 M0 64 L0 42 L8 42 L8 56 L22 56 L22 64 M64 64 L42 64 L42 56 L56 56 L56 42 L64 42 Z' />
+</svg> `
 
 let ui_template =
 `<div id="hlv">
@@ -10,12 +31,11 @@ let ui_template =
     <div id="hlv-loading">LOADING BOX</div>
     <div id="hlv-controls">
         <div id="hlv-controls-left">
-            <div id="hlv-controls-play" class="button">&#9654;</div>
-            <div id="hlv-controls-pause" class="button">&#10074;&#10074;</div>
-            <div id="hlv-controls-stop" class="button">&#9632;</div>
+            <div id="hlv-controls-play" class="button">${ui_play_btn}</div>
+            <div id="hlv-controls-stop" class="button">${ui_stop_btn}</div>
         </div>
         <div id="hlv-controls-right">
-            <div id="hlv-controls-fullscreen" class="button">&#x1f865;</div>
+            <div id="hlv-controls-fullscreen" class="button">${ui_fullscreen_btn}</div>
         </div>
     </div>
     <div id="hlv-screen"></div>
@@ -31,14 +51,12 @@ let ui_style =
 #hlv-replays > li > a {color:#fff}
 #hlv-replays > li.active {background:#666}
 
-#hlv-controls {position:absolute; bottom:0; left:0; right:0; height:40px; background:#333; user-select:none}
+#hlv-controls {position:absolute; bottom:0; left:0; right:0; height:40px; background:#333; user-select:none; display:none}
 #hlv-controls > div > div {display:inline-block; line-height:36px; width:40px; text-align:center; font-size:16pt;}
-#hlv-controls > div > div:hover {color:#0f0}
+#hlv-controls > div > div:hover {color:#fc0}
 #hlv-controls > #hlv-controls-left {float:left}
-#hlv-controls > #hlv-controls-right {float:right}
-#hlv-controls .button {cursor:pointer}
-#hlv-controls #hlv-controls-stop {font-size:24pt;}
-#hlv-controls #hlv-controls-fullscreen {font-size:20pt; line-height:42px}
+#hlv-controls > #hlv-controls-right {float:right; display:none}
+#hlv-controls .button {cursor:pointer; width:22px; margin:6px 8px 0}
 
 #hlv-loading {position:absolute; top:20px; left:50%; margin-left:-120px; height:60px; width:240px; background:#333; text-align:center}
 
@@ -64,10 +82,21 @@ let addStyleToDom = (style) => {
 export default class UI {
     constructor(root, game) {
         root.appendChild(createDomFromHtml(ui_template))
+
+        this.buttons = {
+            play: createDomFromHtml(ui_play_btn),
+            pause: createDomFromHtml(ui_pause_btn),
+            stop: createDomFromHtml(ui_stop_btn),
+            fullscreen: createDomFromHtml(ui_fullscreen_btn)
+        }
+
         this.dom = {
             root: document.getElementById('hlv-ui'),
             replaysList: document.getElementById('hlv-replays'),
-            screen: document.getElementById('hlv-screen')
+            screen: document.getElementById('hlv-screen'),
+            controls: document.getElementById('hlv-controls'),
+            play: document.getElementById('hlv-controls-play'),
+            stop: document.getElementById('hlv-controls-stop')
         }
         this.dom.screen.appendChild(game.getCanvas())
         addStyleToDom(ui_style)
@@ -108,30 +137,62 @@ export default class UI {
 
         let promise = Promise.resolve()
         if (replay.replayUrl) {
-            promise.then(() => Replay.loadFromUrl(replay.replayUrl))
-                .then((replay) => replayObject = replay)
+            promise = promise
+                .then(() => Replay.loadFromUrl(replay.replayUrl))
+                .then(replay => {
+                    replayObject = replay
+                    this.dom.play.addEventListener('click', () => {
+                        if (!this.game.player) {
+                            return
+                        }
+
+                        this.game.player.play()
+                        this.dom.play.removeChild(this.dom.play.children[0])
+                        if (this.game.player.isPlaying) {
+                            if (this.game.player.isPaused) {
+                                this.dom.play.appendChild(this.buttons.play)
+                            } else {
+                                this.dom.play.appendChild(this.buttons.pause)
+                            }
+                        }
+                    })
+                    this.dom.stop.addEventListener('click', () => {
+                        if (!this.game.player) {
+                            return
+                        }
+
+                        this.game.player.stop()
+                        this.dom.play.removeChild(this.dom.play.children[0])
+                        this.dom.play.appendChild(this.buttons.play)
+                    })
+                })
+            this.dom.controls.style.display = 'initial'
+        } else {
+            this.dom.controls.style.display = 'none'
         }
 
-        promise.then(() => Map.loadFromUrl(replay.mapUrl))
-        .then((map) => {
-            mapObject = map
-            if (map.hasMissingTextures()) {
-                let promises = map.entities[0].wad
-                    .map(w => Wad.loadFromUrl(`res/wads/${w}`, {isBinary: true})
-                    .then(w => {
-                        let cmp = (a, b) => a.toLowerCase() === b.toLowerCase()
-                        w.entries.forEach(entry => {
-                            map.textures.forEach(texture => {
-                                if (cmp(entry.name, texture.name)) {
-                                    texture.mipmaps = entry.data.texture.mipmaps
-                                }
-                            })
-                        })
-                    }))
-                return Promise.all(promises)
-            }
-            return Promise.resolve()
-        })
-        .then(() => this.game.changeMap(mapObject))
+        promise
+            .then(() => Map.loadFromUrl(replay.mapUrl))
+            .then(map => {
+                mapObject = map
+                if (map.hasMissingTextures()) {
+                    let promises = map.entities[0].wad
+                        .map(w => 
+                            Wad.loadFromUrl(`res/wads/${w}`, {isBinary: true})
+                            .then(w => {
+                                let cmp = (a, b) => a.toLowerCase() === b.toLowerCase()
+                                w.entries.forEach(entry => {
+                                    map.textures.forEach(texture => {
+                                        if (cmp(entry.name, texture.name)) {
+                                            texture.mipmaps = entry.data.texture.mipmaps
+                                        }
+                                    })
+                                })
+                            }))
+                    return Promise.all(promises)
+                }
+                return Promise.resolve()
+            })
+            .then(() => this.game.changeMap(mapObject, replayObject))
     }
 }

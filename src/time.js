@@ -1,13 +1,20 @@
-export default function Time() {}
+let now
+if (performance) {
+	if (performance.now) {
+		now = () => performance.now()
+	} else if (performance.mozNow) {
+		now = () => performance.mozNow()
+	} else if (performance.msNow) {
+		now = () => performance.msNow()
+	} else if (performance.oNow) {
+		now = () => performance.oNow()
+	} else if (performance.webkitNow) {
+		now = () => performance.webkitNow()
+	} else if (Date.now) {
+		now = () => Date.now()
+	}
+} else {
+	now = () => new Date().getTime()
+}
 
-if (typeof window === 'undefined') {global['window'] = {}}
-window.performance = window.performance || {}
-Time.now = window.performance.now
-	|| window.performance.mozNow
-	|| window.performance.msNow
-	|| window.performance.oNow
-	|| window.performance.webkitNow
-	|| Date.now
-	|| function() {return new Date().getTime() }
-
-module.exports = Time
+export { now }

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import WorldScene from './world-scene'
 import SkyScene from './sky-scene'
+import ReplayPlayer from './replay-player'
 
 export default class Game {
     constructor() {
@@ -54,7 +55,7 @@ export default class Game {
         return this.renderer.domElement
     }
 
-    changeMap(map) {
+    changeMap(map, replay = null) {
         this.worldScene.change(map)
         this.skyScene.change()
 
@@ -81,6 +82,8 @@ export default class Game {
             this.camera.position.y = startEntity.origin[1]
             this.camera.position.z = startEntity.origin[2]
         }
+
+        this.player = replay ? ReplayPlayer.createFromReplay(replay) : null
     }
 
     draw() {
@@ -109,42 +112,53 @@ export default class Game {
         let keyboard = this.keyboard
         let mouse = this.mouse
 
-        if (mouse.click) {
-            let mX = mouse.delta[1] / 100
-            let mY = mouse.delta[0] / 100
-
-            let x = Math.max(0.05, Math.min(3.09, camera.rotation.x - mX))
-            let y = camera.rotation.z - mY
-
-            camera.rotation.x = x
-            camera.rotation.z = y
-        }
-
-        if (keyboard.key['W'.charCodeAt(0)] !== keyboard.key['S'.charCodeAt(0)]) {
-            if (keyboard.key['W'.charCodeAt(0)]) {
-                camera.position.y += Math.cos(camera.rotation.z) * 10
-                camera.position.x -= Math.sin(camera.rotation.z) * 10
-            } else if (keyboard.key['S'.charCodeAt(0)]) {
-                camera.position.y += Math.cos(camera.rotation.z - 3.14) * 10
-                camera.position.x -= Math.sin(camera.rotation.z - 3.14) * 10
+        if (this.player && this.player.isPlaying) {
+            let frame = this.player.getFrame()
+            if (frame) {
+                this.camera.position.x = frame.position[0]
+                this.camera.position.y = frame.position[1]
+                this.camera.position.z = frame.position[2]
+                this.camera.rotation.x = (90 - frame.rotation[0]) * 0.0174;
+                this.camera.rotation.z = (0.0174 * frame.rotation[1]) - 1.57;
             }
-        }
+        } else {
+            if (mouse.click) {
+                let mX = mouse.delta[1] / 100
+                let mY = mouse.delta[0] / 100
 
-        if (keyboard.key['A'.charCodeAt(0)] !== keyboard.key['D'.charCodeAt(0)]) {
-            if (keyboard.key['A'.charCodeAt(0)]) {
-                camera.position.y += Math.cos(camera.rotation.z + 1.57) * 10
-                camera.position.x -= Math.sin(camera.rotation.z + 1.57) * 10
-            } else if (keyboard.key['D'.charCodeAt(0)]) {
-                camera.position.y += Math.cos(camera.rotation.z - 1.57) * 10
-                camera.position.x -= Math.sin(camera.rotation.z - 1.57) * 10
+                let x = Math.max(0.05, Math.min(3.09, camera.rotation.x - mX))
+                let y = camera.rotation.z - mY
+
+                camera.rotation.x = x
+                camera.rotation.z = y
             }
-        }
 
-        if (keyboard.key['R'.charCodeAt(0)] !== keyboard.key['F'.charCodeAt(0)]) {
-            if (keyboard.key['R'.charCodeAt(0)]) {
-                camera.position.z += 10
-            } else if (keyboard.key['F'.charCodeAt(0)]) {
-                camera.position.z -= 10
+            if (keyboard.key['W'.charCodeAt(0)] !== keyboard.key['S'.charCodeAt(0)]) {
+                if (keyboard.key['W'.charCodeAt(0)]) {
+                    camera.position.y += Math.cos(camera.rotation.z) * 10
+                    camera.position.x -= Math.sin(camera.rotation.z) * 10
+                } else if (keyboard.key['S'.charCodeAt(0)]) {
+                    camera.position.y += Math.cos(camera.rotation.z - 3.14) * 10
+                    camera.position.x -= Math.sin(camera.rotation.z - 3.14) * 10
+                }
+            }
+
+            if (keyboard.key['A'.charCodeAt(0)] !== keyboard.key['D'.charCodeAt(0)]) {
+                if (keyboard.key['A'.charCodeAt(0)]) {
+                    camera.position.y += Math.cos(camera.rotation.z + 1.57) * 10
+                    camera.position.x -= Math.sin(camera.rotation.z + 1.57) * 10
+                } else if (keyboard.key['D'.charCodeAt(0)]) {
+                    camera.position.y += Math.cos(camera.rotation.z - 1.57) * 10
+                    camera.position.x -= Math.sin(camera.rotation.z - 1.57) * 10
+                }
+            }
+
+            if (keyboard.key['R'.charCodeAt(0)] !== keyboard.key['F'.charCodeAt(0)]) {
+                if (keyboard.key['R'.charCodeAt(0)]) {
+                    camera.position.z += 10
+                } else if (keyboard.key['F'.charCodeAt(0)]) {
+                    camera.position.z -= 10
+                }
             }
         }
 
@@ -174,7 +188,7 @@ export default class Game {
             this.selectedObjectBox = null
         }
 
-        if (this.keyboard.key[17]) {
+        if (!(this.player && this.player.isPlaying) && this.keyboard.key[17]) {
             let ray = new THREE.Raycaster()
             let mouse = new THREE.Vector2()
 

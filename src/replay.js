@@ -106,8 +106,11 @@ export default class Replay {
         return new Replay(header, directories)
     }
 
-    static loadFromUrl(url) {
-        return xhr(url, {isBinary: true})
+    static loadFromUrl(url, progressCallback = null) {
+        return xhr(url, {
+                isBinary: true,
+                progressCallback
+            })
             .then(response => Replay.parseFromArrayBuffer(response))
     }
 }

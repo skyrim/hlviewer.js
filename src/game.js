@@ -82,6 +82,8 @@ export default class Game {
             this.camera.position.y = startEntity.origin[1]
             this.camera.position.z = startEntity.origin[2]
         }
+        this.camera.rotation.x = Math.PI / 2
+        this.camera.rotation.z = 0
 
         this.player = replay ? ReplayPlayer.createFromReplay(replay) : null
     }

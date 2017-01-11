@@ -359,8 +359,11 @@ export default class Map {
         return new Map(entities, textures, parsedModels)
     }
 
-    static loadFromUrl(url) {
-        return xhr(url, {isBinary: true})
+    static loadFromUrl(url, progressCallback) {
+        return xhr(url, {
+                isBinary: true,
+                progressCallback
+            })
             .then(response => Map.parseFromArrayBuffer(response))
     }
 }

@@ -105,8 +105,11 @@ export default class Wad {
         })))
     }
 
-    static loadFromUrl(url) {
-        return xhr(url, {isBinary: true})
+    static loadFromUrl(url, progressCallback) {
+        return xhr(url, {
+                isBinary: true,
+                progressCallback
+            })
             .then(response => Wad.parseFromArrayBuffer(response))
     }
 }

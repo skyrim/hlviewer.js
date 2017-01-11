@@ -1,8 +1,9 @@
 import Promise from 'bluebird'
 
-export default function xhr(url, {method, isBinary} = {}) {
+export default function xhr(url, {method, isBinary, progressCallback} = {}) {
     method = method || 'GET'
     isBinary = isBinary || false
+    progressCallback = progressCallback || null
 
     if (!url) {
         throw new Error('Url parameter missing')
@@ -13,7 +14,15 @@ export default function xhr(url, {method, isBinary} = {}) {
         if (isBinary) {
             request.responseType = 'arraybuffer'
         }
-        request.open(method, url, true)
+        if (isBinary && progressCallback) {
+            request.addEventListener('progress', (event) => {
+                if (event.lengthComputable) {
+                    progressCallback(request, event.loaded / event.total)
+                } else {
+                    progressCallback(request, 0)
+                }
+            })
+        }
         request.addEventListener('readystatechange', (event) => {
             if (event.target.readyState !== 4) {
                 return
@@ -28,6 +37,7 @@ export default function xhr(url, {method, isBinary} = {}) {
                 })
             }
         })
+        request.open(method, url, true)
         request.send()
     })
 }

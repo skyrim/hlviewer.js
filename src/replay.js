@@ -4,6 +4,7 @@ import xhr from './xhr.js'
 export default class Replay {
     constructor(header, directories) {
         this.header = header
+        this.mapName = this.header.mapName
         this.directories = directories
     }
 

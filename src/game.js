@@ -48,6 +48,8 @@ export default class Game {
         this.selectedObject = null
         this.selectedObjectBox = null
 
+        this.mapName = ''
+
         this.draw.bind(this)()
     }
 
@@ -55,7 +57,8 @@ export default class Game {
         return this.renderer.domElement
     }
 
-    changeMap(map, replay = null) {
+    changeMap(map, mapName) {
+        this.mapName = mapName
         this.worldScene.change(map)
         this.skyScene.change()
 
@@ -84,8 +87,11 @@ export default class Game {
         }
         this.camera.rotation.x = Math.PI / 2
         this.camera.rotation.z = 0
+    }
 
-        this.player = replay ? ReplayPlayer.createFromReplay(replay) : null
+    changeReplay(replay) {
+        this.replay = replay
+        this.player = ReplayPlayer.createFromReplay(replay)
     }
 
     draw() {

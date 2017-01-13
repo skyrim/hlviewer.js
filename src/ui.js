@@ -18,70 +18,36 @@ let ui_stop_btn =
 </svg>`
 
 let ui_fullscreen_btn =
-`<!-- Generated with http://jxnblk.com/paths -->
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
+`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
     <path d='M0 22 L8 22 L8 8 L22 8 L22 0 L0 0 M42 0 L42 8 L56 8 L56 22 L64 22 L64 0 M0 64 L0 42 L8 42 L8 56 L22 56 L22 64 M64 64 L42 64 L42 56 L56 56 L56 42 L64 42 Z' />
 </svg> `
 
 let ui_template =
-`<div id="hlv">
-    <ul id="hlv-replays">
-        <li id="hlv-replays-title">Replays:</li>
-    </ul>
-    <ul id="hlv-loading"></ul>
-    <div id="hlv-controls">
-        <div id="hlv-controls-left">
-            <div id="hlv-controls-play" class="button">${ui_play_btn}</div>
-            <div id="hlv-controls-stop" class="button">${ui_stop_btn}</div>
+`<div class="hlv">
+    <ul class="hlv-loading"></ul>
+    <div class="hlv-controls">
+        <div class="hlv-controls-left">
+            <div class="hlv-controls-play button">${ui_play_btn}</div>
+            <div class="hlv-controls-stop button">${ui_stop_btn}</div>
         </div>
-        <div id="hlv-controls-right">
-            <div id="hlv-controls-fullscreen" class="button">
+        <div class="hlv-controls-right">
+            <div class="hlv-controls-fullscreen button">
                 ${ui_fullscreen_btn}
             </div>
         </div>
     </div>
-    <div id="hlv-screen"></div>
+    <div class="hlv-screen"></div>
 </div>`
 
 let ui_style =
-`#hlv {
+`.hlv {
     position:relative;
     width:100%;
     height:100%;
     font-family:"Calibri",sans-serif,arial;
     color:#fff
 }
-#hlv-replays {
-    position:absolute;
-    list-style:none;
-    margin:0;
-    padding:0;
-    top:20px;
-    left:20px;
-    background:#333
-}
-#hlv-replays > #hlv-replays-title {
-    font-weight:bold
-}
-#hlv-replays > #hlv-replays-title:hover {
-    background:#999
-}
-#hlv-replays > li {
-    padding:4px;
-    margin:4px;
-    background:#999
-}
-#hlv-replays > li:hover {
-    background:#666
-}
-#hlv-replays > li > a {
-    color:#fff
-}
-#hlv-replays > li.active {
-    background:#666
-}
-
-#hlv-controls {
+.hlv-controls {
     position:absolute;
     bottom:0;
     left:0;
@@ -89,32 +55,36 @@ let ui_style =
     height:40px;
     background:#333;
     user-select:none;
-    display:none
 }
-#hlv-controls > div > div {
+.hlv-controls > div > div {
     display:inline-block;
     line-height:36px;
     width:40px;
     text-align:center;
     font-size:16pt;
 }
-#hlv-controls > div > div:hover {
+.hlv-controls > div > div:hover {
     color:#fc0
 }
-#hlv-controls > #hlv-controls-left {
+.hlv-controls > .hlv-controls-left {
     float:left
 }
-#hlv-controls > #hlv-controls-right {
-    float:right;
-    display:none
+.hlv-controls-play {
+    visibility:hidden
 }
-#hlv-controls .button {
+.hlv-controls-stop {
+    visibility:hidden
+}
+.hlv-controls > .hlv-controls-right {
+    float:right;
+}
+.hlv-controls .button {
     cursor:pointer;
-    width:22px;
-    margin:6px 8px 0
+    width:20px;
+    margin:5px 8px 0
 }
 
-#hlv-loading {
+.hlv > .hlv-loading {
     position:absolute;
     top:16px;
     right:16px;
@@ -125,7 +95,7 @@ let ui_style =
     font-family:monospace;
 }
 
-#hlv-screen {
+.hlv-screen {
     position:absolute;
     top:0;
     left:0;
@@ -151,81 +121,32 @@ let addStyleToDom = (style) => {
     document.head.appendChild(element)
 }
 
-let formatLoadingItem = (url, progress) => {
-    progress = Math.round(progress * 100).toString()
-    let length = 59 - url.length - progress.length
-    if (length < 2) {
-        url = url.substr(0, 50)
-        length = 9 - progress.length
-    }
-    let dots = Array(length).join('.')
-    return `${url}${dots}${progress}%`
-}
-
-let loadReplay = (url, loadingBox) => {
-    let text = `<li>${formatLoadingItem(url, 0)}</li>`
-    let loadText = createDomFromHtml(text)
-    loadingBox.appendChild(loadText)
-    return Replay.loadFromUrl(url, (r, progress) => {
-        loadText.innerHTML = formatLoadingItem(url, progress)
-    })
-}
-
-let loadMap = (url, loadingBox) => {
-    let text = `<li>${formatLoadingItem(url, 0)}</li>`
-    let loadText = createDomFromHtml(text)
-    loadingBox.appendChild(loadText)
-    return Map.loadFromUrl(url, (r, progress) => {
-        loadText.innerHTML = formatLoadingItem(url, progress)
-    })
-}
-
-let mergeWadAndMapTextures = (wad, map) => {
-    let cmp = (a, b) => a.toLowerCase() === b.toLowerCase()
-    wad.entries.forEach(entry => {
-        map.textures.forEach(texture => {
-            if (cmp(entry.name, texture.name)) {
-                texture.mipmaps = entry.data.texture.mipmaps
-            }
-        })
-    })
-}
-
-let loadWad = (url, map, loadingBox) => {
-    let text = `<li>${formatLoadingItem(url, 0)}</li>`
-    let loadText = createDomFromHtml(text)
-    loadingBox.appendChild(loadText)
-    return Wad.loadFromUrl(url, (r, progress) => {
-            loadText.innerHTML = formatLoadingItem(url, progress)
-        })
-        .then(wad => mergeWadAndMapTextures(wad, map))
-}
-
 export default class UI {
-    constructor(root, game) {
-        root.appendChild(createDomFromHtml(ui_template))
+    constructor(target, game) {
+        target.appendChild(createDomFromHtml(ui_template))
 
         this.buttons = {
-            play: createDomFromHtml(ui_play_btn),
-            pause: createDomFromHtml(ui_pause_btn),
-            stop: createDomFromHtml(ui_stop_btn),
+            play:       createDomFromHtml(ui_play_btn),
+            pause:      createDomFromHtml(ui_pause_btn),
+            stop:       createDomFromHtml(ui_stop_btn),
             fullscreen: createDomFromHtml(ui_fullscreen_btn)
         }
 
-        this.dom = {
-            root: document.getElementById('hlv-ui'),
-            replaysList: document.getElementById('hlv-replays'),
-            screen: document.getElementById('hlv-screen'),
-            loading: document.getElementById('hlv-loading'),
-            controls: document.getElementById('hlv-controls'),
-            play: document.getElementById('hlv-controls-play'),
-            stop: document.getElementById('hlv-controls-stop')
-        }
+        this.dom = {}
+        this.dom.root       = target.querySelector('.hlv'),
+        this.dom.screen     = this.dom.root.querySelector('.hlv-screen'),
+        this.dom.loading    = this.dom.root.querySelector('.hlv-loading'),
+        this.dom.controls   = this.dom.root.querySelector('hlv-controls'),
+        this.dom.play       = this.dom.root.querySelector('.hlv-controls-play'),
+        this.dom.stop       = this.dom.root.querySelector('.hlv-controls-stop'),
+        this.dom.fullscreen = this.dom.root.querySelector('.hlv-controls-fullscreen')
         this.dom.screen.appendChild(game.getCanvas())
+
         addStyleToDom(ui_style)
+
         this.game = game
-        this.replays = []
         this.currentReplay = null
+        this.isFullscreen = false
 
         this.dom.play.addEventListener('click', () => {
             if (!this.game.player) {
@@ -251,66 +172,63 @@ export default class UI {
             this.dom.play.removeChild(this.dom.play.children[0])
             this.dom.play.appendChild(this.buttons.play)
         })
-    }
-
-    addReplaysToList(replays) {
-        // TODO: check replay array object structure?
-
-        replays.forEach(replay => {
-            let html = `<li><a href="#" style="display:block">${replay.name}</a></li>`
-            let element = createDomFromHtml(html)
-            element.addEventListener('click', (event) => {
-                this.onClickReplay(replay, element)
-                event.preventDefault()
-            })
-            this.dom.replaysList.appendChild(element)
-        })
-
-        this.replays = this.replays.concat(replays)
-    }
-
-    onClickReplay(replay, element) {
-        if (this.currentReplay === replay) {
-            return
-        }
-        this.currentReplay = replay
-
-        for (let i = 0; i < this.dom.replaysList.children.length; ++i) {
-            this.dom.replaysList.children[i].removeAttribute('class')
-        }
-        element.setAttribute('class', 'active')
-        this.dom.loading.innerHTML = ''
-        this.dom.loading.style.display = 'initial'
-
-        let replayObject
-        let mapObject
-
-        let promise = Promise.resolve()
-        if (replay.replayUrl) {
-            this.dom.controls.style.display = 'initial'
-            promise = promise
-                .then(() => loadReplay(replay.replayUrl, this.dom.loading))
-                .then(replay => replayObject = replay)
-        } else {
-            this.dom.controls.style.display = 'none'
-        }
-
-        promise
-            .then(() => loadMap(replay.mapUrl, this.dom.loading))
-            .then(map => {
-                mapObject = map
-                if (map.hasMissingTextures()) {
-                    let wads = map.entities[0].wad
-                    let promises = wads.map(w => loadWad(`res/wads/${w}`, map, this.dom.loading))
-                    return Promise.all(promises)
+        document.addEventListener('fullscreenchange', () => {
+            this.isFullscreen = document.fullscreen
+        }, false)
+        document.addEventListener('mozfullscreenchange', () => {
+            this.isFullscreen = document.mozFullScreen
+        }, false)
+        document.addEventListener('webkitfullscreenchange', () => {
+            this.isFullscreen = document.webkitIsFullScreen
+        }, false)
+        document.addEventListener('msfullscreenchange', () => {
+            this.isFullscreen = document.msFullscreenElement
+        }, false)
+        this.dom.fullscreen.addEventListener('click', () => {
+            let r = this.dom.root
+            if (this.isFullscreen) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen()
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen()
+                } else if (document.webkitCancelFullScreen) {
+                    document.webkitCancelFullScreen()
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen()
                 }
-                return Promise.resolve()
-            })
-            .then(() => this.game.changeMap(mapObject, replayObject))
-            .then(() => {
-                setTimeout(() => {
-                    this.dom.loading.style.display = 'none'
-                }, 3000)
-            })
+            } else {
+                if (r.requestFullscreen) {
+                    r.requestFullscreen()
+                } else if (r.mozRequestFullScreen) {
+                    r.mozRequestFullScreen()
+                } else if (r.webkitRequestFullScreen) {
+                    r.webkitRequestFullScreen()
+                } else if (r.msRequestFullscreen) {
+                    r.msRequestFullscreen()
+                }
+            }
+        })
+    }
+
+    showReplayControls() {
+        this.dom.play.style.visibility = 'visible'
+        this.dom.stop.style.visibility = 'visible'
+    }
+
+    hideReplayControls() {
+        this.dom.play.style.visibility = 'hidden'
+        this.dom.stop.style.visibility = 'hidden'
+    }
+
+    showLoadingBox() {
+        this.dom.loading.style.display = 'initial'
+    }
+
+    hideLoadingBox() {
+        this.dom.loading.style.display = 'none'
+    }
+
+    clearLoadingBox() {
+        this.dom.loading.innerHTML = ''
     }
 }

@@ -1,8 +1,16 @@
+var webpack = require('webpack')
+
 module.exports = {
-    entry: './src/index.js',
+    entry: {
+        'hlviewer':     './src/index.js',
+        'hlviewer.min': './src/index.js'
+    },
+    devtool: 'source-map',
     output: {
-        path: './public',
-        filename: 'app.js'
+        path: './dist',
+        filename: '[name].js',
+        library: 'HLViewer',
+        libraryTarget: 'umd'
     },
     module: {
         loaders: [{
@@ -14,6 +22,12 @@ module.exports = {
             }
         }]
     },
+    plugins: [
+        new webpack.optimize.UglifyJsPlugin({
+            include: /\.min\.js$/,
+            minimize: true
+        })
+    ],
     node: {
         fs: "empty"
     }

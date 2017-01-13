@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>hlviewer.js</title>
+
+        <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/yeti/bootstrap.min.css" rel="stylesheet" />
+        <style>
+            * {
+                margin:0;
+                padding:0;
+            }
+            html, body {
+                margin:0;
+                padding:0;
+                width:100%;
+                height:100%;
+            }
+            #logo-parent {
+                text-align:right;
+            }
+            #logo {
+                width:80%;
+                margin-top:5%;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="jumbotron">
+            <div class="container">
+                <div class="col-sm-3" id="logo-parent">
+                    <img src="./res/logo.svg" id="logo">
+                </div>
+                <div class="col-sm-9">
+                    <h1>HLViewer</h1>
+                    <p>HLViewer is a simple to use javascript library for viewing maps and playing replays of GoldSrc engine based games entirely in browser</p>
+                    <a href="http://github.com/skyrim/hlviewer.js">View project on GitHub</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div id="hlv-target" style="width:100%; height:600px"></div>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.slim.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+        <script src="./dist/hlviewer.min.js"></script>
+        <script>
+            var app = new HLViewer('#hlv-target', {
+                paths: {
+                    replays: 'res/replays',
+                    maps:    'res/maps',
+                    wads:    'res/wads'
+                }
+            })
+            app.load('kz_ea_highblock.dem')
+        </script>
+    </body>
+</html>

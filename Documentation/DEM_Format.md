@@ -135,7 +135,8 @@ struct SoundFrame : DemoFrame {
 ```cpp
 struct DemoBufferFrame : DemoFrame {
 	std::vector<unsigned char> buffer;
-};```
+};
+```
 
 ### NetMessage Frame
 

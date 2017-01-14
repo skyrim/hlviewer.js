@@ -2,7 +2,7 @@
   "name": "hlviewer.js",
   "version": "0.1.0",
   "description": "hlviewer.js\r -----------",
-  "main": "src/game.js",
+  "main": "dist/hlviewer.js",
   "scripts": {
     "build": "./node_modules/.bin/webpack -c webpack.config.js",
     "build-min": "./node_modules/.bin/webpack -c webpack.config.js -p",
@@ -17,7 +17,7 @@
   "bugs": {
     "url": "https://github.com/skyrim/hlviewer.js/issues"
   },
-  "homepage": "https://github.com/skyrim/hlviewer.js#readme",
+  "homepage": "https://skyrim.github.io/hlviewer.js",
   "devDependencies": {
     "babel-core": "6.18.2",
     "babel-loader": "6.2.8",

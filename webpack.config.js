@@ -5,7 +5,6 @@ module.exports = {
         'hlviewer':     './src/index.js',
         'hlviewer.min': './src/index.js'
     },
-    devtool: 'source-map',
     output: {
         path: './dist',
         filename: '[name].js',

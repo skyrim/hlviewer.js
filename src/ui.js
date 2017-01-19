@@ -55,6 +55,7 @@ let ui_style =
     height:40px;
     background:#333;
     user-select:none;
+    z-index:20;
 }
 .hlv-controls > div > div {
     display:inline-block;
@@ -93,6 +94,7 @@ let ui_style =
     list-style:none;
     padding:5px;
     font-family:monospace;
+    z-index:20;
 }
 
 .hlv-screen {
@@ -101,7 +103,7 @@ let ui_style =
     left:0;
     width:100%;
     height:100%;
-    z-index:-1
+    z-index:10;
 }`
 
 let createDomFromHtml = (html) => {

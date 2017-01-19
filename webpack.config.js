@@ -19,6 +19,10 @@ module.exports = {
             query: {
                 presets: ['es2015']
             }
+        }, {
+            test: /\.json$/,
+            exclude: /node_modules/,
+            loader: 'json-loader'
         }]
     },
     plugins: [

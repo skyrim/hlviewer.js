@@ -3,6 +3,7 @@ import UI from './ui'
 import Game from './game'
 import Map from './map'
 import Replay from './replay'
+import Wad from './wad'
 import xhr from './xhr'
 
 let createDomFromHtml = (html) => {
@@ -133,7 +134,7 @@ class HLViewer {
     }
 }
 
-HLViewer.VERSION = '0.1.0'
+HLViewer.VERSION = require('../package.json').version
 
 // had to do this instead of "export default class"
 module.exports = HLViewer

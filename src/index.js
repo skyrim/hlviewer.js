@@ -108,7 +108,7 @@ class HLViewer {
         if (extension === '.bsp') {
             let mapName = Path.basename(url, '.bsp')
             url = `./${this.paths.maps}/${url}`
-            loadMap(url, this.ui)
+            return loadMap(url, this.ui)
                 .then(map => checkMissingTextures(map, this.paths, this.ui))
                 .then(map => this.game.changeMap(map, mapName))
                 .then(() => {
@@ -123,10 +123,10 @@ class HLViewer {
                 })
         } else if (extension === '.dem') {
             url = `./${this.paths.replays}/${url}`
-            loadReplay(url, this.ui)
+            return loadReplay(url, this.ui)
                 .then(replay => {
                     this.game.changeReplay(replay)
-                    this.load(`${replay.mapName}.bsp`)
+                    return this.load(`${replay.mapName}.bsp`)
                 })
         } else {
             throw new Error('Invalid file extension')

@@ -1,6 +1,7 @@
 import Map from './map'
 import Wad from './wad'
 import Replay from './replay'
+import Fullscreen from './fullscreen'
 
 let ui_play_btn =
 `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
@@ -170,7 +171,6 @@ export default class UI {
 
         this.game = game
         this.currentReplay = null
-        this.isFullscreen = false
 
         this.dom.play.addEventListener('click', () => {
             if (!this.game.player) {
@@ -209,27 +209,10 @@ export default class UI {
             this.isFullscreen = document.msFullscreenElement
         }, false)
         this.dom.fullscreen.addEventListener('click', () => {
-            let r = this.dom.root
-            if (this.isFullscreen) {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen()
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen()
-                } else if (document.webkitCancelFullScreen) {
-                    document.webkitCancelFullScreen()
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen()
-                }
+            if (Fullscreen.element() === this.dom.root) {
+                Fullscreen.exit()
             } else {
-                if (r.requestFullscreen) {
-                    r.requestFullscreen()
-                } else if (r.mozRequestFullScreen) {
-                    r.mozRequestFullScreen()
-                } else if (r.webkitRequestFullScreen) {
-                    r.webkitRequestFullScreen()
-                } else if (r.msRequestFullscreen) {
-                    r.msRequestFullscreen()
-                }
+                Fullscreen.enter(this.dom.root)
             }
         })
     }

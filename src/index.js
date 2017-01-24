@@ -90,9 +90,19 @@ class HLViewer {
             maps: '',
             wads: ''
         }
-        if (!paths.replays) paths.replays = ''
-        if (!paths.maps) paths.maps = ''
-        if (!paths.wads) paths.wads = ''
+        if (typeof paths === 'string') {
+            paths = {
+                replays: `${paths}/replays`,
+                maps: `${paths}/maps`,
+                wads: `${paths}/wads`
+            }
+        } else if (typeof paths === 'object') {
+            if (!paths.replays) paths.replays = ''
+            if (!paths.maps) paths.maps = ''
+            if (!paths.wads) paths.wads = ''
+        } else {
+            throw new Error('Invalid paths option')
+        }
 
         this.paths = paths
         this.game = new Game(this.root)

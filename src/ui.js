@@ -22,9 +22,13 @@ let ui_fullscreen_btn =
     <path d='M0 22 L8 22 L8 8 L22 8 L22 0 L0 0 M42 0 L42 8 L56 8 L56 22 L64 22 L64 0 M0 64 L0 42 L8 42 L8 56 L22 56 L22 64 M64 64 L42 64 L42 56 L56 56 L56 42 L64 42 Z' />
 </svg> `
 
+let ui_loading_anim =
+`<svg width='72px' height='72px' xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" class="uil-squares"><rect x="0" y="0" width="100" height="100" fill="none" class="bk"></rect><rect x="15" y="15" width="20" height="20" fill="#f5f5f5" class="sq"><animate attributeName="fill" from="#f5f5f5" to="#303030" repeatCount="indefinite" dur="1s" begin="0.0s" values="#303030;#303030;#f5f5f5;#f5f5f5" keyTimes="0;0.1;0.2;1"></animate></rect><rect x="40" y="15" width="20" height="20" fill="#f5f5f5" class="sq"><animate attributeName="fill" from="#f5f5f5" to="#303030" repeatCount="indefinite" dur="1s" begin="0.125s" values="#303030;#303030;#f5f5f5;#f5f5f5" keyTimes="0;0.1;0.2;1"></animate></rect><rect x="65" y="15" width="20" height="20" fill="#f5f5f5" class="sq"><animate attributeName="fill" from="#f5f5f5" to="#303030" repeatCount="indefinite" dur="1s" begin="0.25s" values="#303030;#303030;#f5f5f5;#f5f5f5" keyTimes="0;0.1;0.2;1"></animate></rect><rect x="15" y="40" width="20" height="20" fill="#f5f5f5" class="sq"><animate attributeName="fill" from="#f5f5f5" to="#303030" repeatCount="indefinite" dur="1s" begin="0.875s" values="#303030;#303030;#f5f5f5;#f5f5f5" keyTimes="0;0.1;0.2;1"></animate></rect><rect x="65" y="40" width="20" height="20" fill="#f5f5f5" class="sq"><animate attributeName="fill" from="#f5f5f5" to="#303030" repeatCount="indefinite" dur="1s" begin="0.375" values="#303030;#303030;#f5f5f5;#f5f5f5" keyTimes="0;0.1;0.2;1"></animate></rect><rect x="15" y="65" width="20" height="20" fill="#f5f5f5" class="sq"><animate attributeName="fill" from="#f5f5f5" to="#303030" repeatCount="indefinite" dur="1s" begin="0.75s" values="#303030;#303030;#f5f5f5;#f5f5f5" keyTimes="0;0.1;0.2;1"></animate></rect><rect x="40" y="65" width="20" height="20" fill="#f5f5f5" class="sq"><animate attributeName="fill" from="#f5f5f5" to="#303030" repeatCount="indefinite" dur="1s" begin="0.625s" values="#303030;#303030;#f5f5f5;#f5f5f5" keyTimes="0;0.1;0.2;1"></animate></rect><rect x="65" y="65" width="20" height="20" fill="#f5f5f5" class="sq"><animate attributeName="fill" from="#f5f5f5" to="#303030" repeatCount="indefinite" dur="1s" begin="0.5s" values="#303030;#303030;#f5f5f5;#f5f5f5" keyTimes="0;0.1;0.2;1"></animate></rect></svg>`
+
 let ui_template =
 `<div class="hlv">
     <ul class="hlv-loading"></ul>
+    <div class="hlv-loading-animation">${ui_loading_anim}</div>
     <div class="hlv-controls">
         <div class="hlv-controls-left">
             <div class="hlv-controls-play button">${ui_play_btn}</div>
@@ -46,6 +50,20 @@ let ui_style =
     height:100%;
     font-family:"Calibri",sans-serif,arial;
     color:#fff
+}
+.hlv-loading-animation {
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index:30;
+}
+.hlv-loading-animation > svg {
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%, -50%);
 }
 .hlv-controls {
     position:absolute;
@@ -135,12 +153,13 @@ export default class UI {
         }
 
         this.dom = {}
-        this.dom.root       = target.querySelector('.hlv'),
-        this.dom.screen     = this.dom.root.querySelector('.hlv-screen'),
-        this.dom.loading    = this.dom.root.querySelector('.hlv-loading'),
-        this.dom.controls   = this.dom.root.querySelector('hlv-controls'),
-        this.dom.play       = this.dom.root.querySelector('.hlv-controls-play'),
-        this.dom.stop       = this.dom.root.querySelector('.hlv-controls-stop'),
+        this.dom.root       = target.querySelector('.hlv')
+        this.dom.screen     = this.dom.root.querySelector('.hlv-screen')
+        this.dom.loading    = this.dom.root.querySelector('.hlv-loading')
+        this.dom.loadAnim   = this.dom.root.querySelector('.hlv-loading-animation')
+        this.dom.controls   = this.dom.root.querySelector('.hlv-controls')
+        this.dom.play       = this.dom.root.querySelector('.hlv-controls-play')
+        this.dom.stop       = this.dom.root.querySelector('.hlv-controls-stop')
         this.dom.fullscreen = this.dom.root.querySelector('.hlv-controls-fullscreen')
         this.dom.screen.appendChild(game.getCanvas())
 
@@ -232,5 +251,13 @@ export default class UI {
 
     clearLoadingBox() {
         this.dom.loading.innerHTML = ''
+    }
+
+    showLoadingAnimation() {
+        this.dom.loadAnim.style.display = 'initial'
+    }
+
+    hideLoadingAnimation() {
+        this.dom.loadAnim.style.display = 'none'
     }
 }

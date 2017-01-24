@@ -103,6 +103,7 @@ class HLViewer {
 
     load(url) {
         this.ui.showLoadingBox()
+        this.ui.showLoadingAnimation()
 
         let extension = Path.extname(url)
         if (extension === '.bsp') {
@@ -115,6 +116,8 @@ class HLViewer {
                     (this.game.replay.mapName === this.game.mapName)
                         ? this.ui.showReplayControls()
                         : this.ui.hideReplayControls()
+                    
+                    this.ui.hideLoadingAnimation()
 
                     setTimeout(() => {
                         this.ui.clearLoadingBox()

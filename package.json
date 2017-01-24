@@ -1,7 +1,10 @@
 {
   "name": "hlviewer.js",
   "version": "0.1.2",
-  "description": "hlviewer.js\r -----------",
+  "description": "View GoldSrc maps and replays in browser",
+  "keywords": [
+    "hlviewer", "half-life", "halflife", "goldsrc", "kreedz"
+  ],
   "main": "dist/hlviewer.js",
   "scripts": {
     "build": "./node_modules/.bin/webpack -c webpack.config.js",

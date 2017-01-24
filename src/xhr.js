@@ -1,5 +1,3 @@
-import Promise from 'bluebird'
-
 export default function xhr(url, {method, isBinary, progressCallback} = {}) {
     method = method || 'GET'
     isBinary = isBinary || false

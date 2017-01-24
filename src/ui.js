@@ -196,18 +196,6 @@ export default class UI {
             this.dom.play.removeChild(this.dom.play.children[0])
             this.dom.play.appendChild(this.buttons.play)
         })
-        document.addEventListener('fullscreenchange', () => {
-            this.isFullscreen = document.fullscreen
-        }, false)
-        document.addEventListener('mozfullscreenchange', () => {
-            this.isFullscreen = document.mozFullScreen
-        }, false)
-        document.addEventListener('webkitfullscreenchange', () => {
-            this.isFullscreen = document.webkitIsFullScreen
-        }, false)
-        document.addEventListener('msfullscreenchange', () => {
-            this.isFullscreen = document.msFullscreenElement
-        }, false)
         this.dom.fullscreen.addEventListener('click', () => {
             if (Fullscreen.element() === this.dom.root) {
                 Fullscreen.exit()

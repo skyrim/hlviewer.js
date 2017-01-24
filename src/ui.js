@@ -27,16 +27,18 @@ let ui_loading_anim =
 
 let ui_template =
 `<div class="hlv">
-    <ul class="hlv-loading"></ul>
-    <div class="hlv-loading-animation">${ui_loading_anim}</div>
-    <div class="hlv-controls">
-        <div class="hlv-controls-left">
-            <div class="hlv-controls-play button">${ui_play_btn}</div>
-            <div class="hlv-controls-stop button">${ui_stop_btn}</div>
-        </div>
-        <div class="hlv-controls-right">
-            <div class="hlv-controls-fullscreen button">
-                ${ui_fullscreen_btn}
+    <div class="hlv-ui">
+        <ul class="hlv-loading"></ul>
+        <div class="hlv-loading-animation">${ui_loading_anim}</div>
+        <div class="hlv-controls">
+            <div class="hlv-controls-left">
+                <div class="hlv-controls-play button">${ui_play_btn}</div>
+                <div class="hlv-controls-stop button">${ui_stop_btn}</div>
+            </div>
+            <div class="hlv-controls-right">
+                <div class="hlv-controls-fullscreen button">
+                    ${ui_fullscreen_btn}
+                </div>
             </div>
         </div>
     </div>
@@ -103,7 +105,7 @@ let ui_style =
     margin:5px 8px 0
 }
 
-.hlv > .hlv-loading {
+.hlv-ui > .hlv-loading {
     position:absolute;
     top:16px;
     right:16px;
@@ -154,6 +156,7 @@ export default class UI {
 
         this.dom = {}
         this.dom.root       = target.querySelector('.hlv')
+        this.dom.ui         = this.dom.root.querySelector('.hlv-ui')
         this.dom.screen     = this.dom.root.querySelector('.hlv-screen')
         this.dom.loading    = this.dom.root.querySelector('.hlv-loading')
         this.dom.loadAnim   = this.dom.root.querySelector('.hlv-loading-animation')
@@ -259,5 +262,13 @@ export default class UI {
 
     hideLoadingAnimation() {
         this.dom.loadAnim.style.display = 'none'
+    }
+
+    show() {
+        this.dom.ui.style.display = 'initial'
+    }
+
+    hide() {
+        this.dom.ui.style.display = 'none'
     }
 }

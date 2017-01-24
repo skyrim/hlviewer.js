@@ -51,15 +51,10 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.slim.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
-        <script async defer src="https://buttons.github.io/buttons.js"></script>
-        <script src="./dist/hlviewer.min.js"></script>
+        <script src="./dist/hlviewer.js"></script>
         <script>
             var app = new HLViewer('#hlv-target', {
-                paths: {
-                    replays: 'res/replays',
-                    maps:    'res/maps',
-                    wads:    'res/wads'
-                }
+                paths: 'res'
             })
             app.load('kz_ea_highblock.dem')
         </script>

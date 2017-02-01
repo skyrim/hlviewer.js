@@ -1,5 +1,5 @@
 let now
-if (performance) {
+if (typeof performance !== 'undefined') {
 	if (performance.now) {
 		now = () => performance.now()
 	} else if (performance.mozNow) {

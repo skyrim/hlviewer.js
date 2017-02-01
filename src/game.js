@@ -1,10 +1,45 @@
+import EventEmitter from 'events'
 import * as THREE from 'three'
 import WorldScene from './world-scene'
 import SkyScene from './sky-scene'
 import ReplayPlayer from './replay-player'
+import * as Time from './time'
+
+const KEYS = {
+    A: 'A'.charCodeAt(0),
+    B: 'B'.charCodeAt(0),
+    C: 'C'.charCodeAt(0),
+    D: 'D'.charCodeAt(0),
+    E: 'E'.charCodeAt(0),
+    F: 'F'.charCodeAt(0),
+    G: 'G'.charCodeAt(0),
+    H: 'H'.charCodeAt(0),
+    I: 'I'.charCodeAt(0),
+    J: 'J'.charCodeAt(0),
+    K: 'K'.charCodeAt(0),
+    L: 'L'.charCodeAt(0),
+    M: 'M'.charCodeAt(0),
+    N: 'N'.charCodeAt(0),
+    O: 'O'.charCodeAt(0),
+    P: 'P'.charCodeAt(0),
+    Q: 'Q'.charCodeAt(0),
+    R: 'R'.charCodeAt(0),
+    S: 'S'.charCodeAt(0),
+    T: 'T'.charCodeAt(0),
+    U: 'U'.charCodeAt(0),
+    V: 'V'.charCodeAt(0),
+    W: 'W'.charCodeAt(0),
+    X: 'X'.charCodeAt(0),
+    Y: 'Y'.charCodeAt(0),
+    Z: 'Z'.charCodeAt(0)
+}
 
 export default class Game {
     constructor() {
+        this.lastTime = 0
+        this.accumTime = 0
+        this.timeStep = 1 / 60
+
         this.mouse = {
             click: false,
             leftClick: false,
@@ -14,10 +49,10 @@ export default class Game {
         }
 
         this.keyboard = {
-            key: []
+            key: new Uint8Array(256)
         }
-        for (let i = 0; i < 256; ++i) {
-            this.keyboard.key.push(false)
+        for (let i = 0; i < this.keyboard.key.length; ++i) {
+            this.keyboard.key[i] = false
         }
 
         window.addEventListener('mousedown', this.mousedown.bind(this))
@@ -33,7 +68,7 @@ export default class Game {
 
         this.renderer = new THREE.WebGLRenderer({
             antialias: true,
-            alpha: true,
+            alpha: false,
             stencil: false
         })
         this.renderer.autoClear = false
@@ -48,6 +83,11 @@ export default class Game {
         this.selectedObject = null
         this.selectedObjectBox = null
 
+        this.mode = Game.MODE_FREE
+
+        this.player = new ReplayPlayer({frames:[{}], meta:{}})
+        this.events = new EventEmitter()
+
         this.mapName = ''
 
         this.draw.bind(this)()
@@ -58,40 +98,59 @@ export default class Game {
     }
 
     changeMap(map, mapName) {
-        this.mapName = mapName
-        this.worldScene.change(map)
-        this.skyScene.change()
+        this.events.emit('premapchange', this, map, mapName)
 
-        this.entities.length = 0
-        map.entities.forEach(e => this.entities.push(e))
-        this.worldScene
-            .getMeshes()
-            .forEach((mesh, i) => {
-                if (i === 0) {
-                    this.entities[0].mesh = mesh
-                }
-                else {
-                    let entity = this.entities.find(e => e.model === i)
-                    if (entity) {
-                        entity.mesh = mesh
+        if (this.mapName.toLowerCase() !== mapName.toLowerCase()) {
+            this.mapName = mapName
+            this.worldScene.change(map)
+            this.skyScene.change()
+
+            this.entities.length = 0
+            map.entities.forEach(e => this.entities.push(e))
+            this.worldScene
+                .getMeshes()
+                .forEach((mesh, i) => {
+                    if (i === 0) {
+                        this.entities[0].mesh = mesh
                     }
-                }
-            })
+                    else {
+                        let entity = this.entities.find(e => e.model === i)
+                        if (entity) {
+                            entity.mesh = mesh
+                        }
+                    }
+                })
 
-        let startEntity = map.entities
-            .find(e => e.classname === 'info_player_start')
-        if (startEntity) {
-            this.camera.position.x = startEntity.origin[0]
-            this.camera.position.y = startEntity.origin[1]
-            this.camera.position.z = startEntity.origin[2]
+            let startEntity = map.entities
+                .find(e => e.classname === 'info_player_start')
+            if (startEntity) {
+                this.camera.position.x = startEntity.origin[0]
+                this.camera.position.y = startEntity.origin[1]
+                this.camera.position.z = startEntity.origin[2]
+            }
+            this.camera.rotation.x = Math.PI / 2
+            this.camera.rotation.z = 0
+
+            if (!this.replay
+                || (this.replay.mapName.toLowerCase() !== mapName.toLowerCase())) {
+                this.replay = null
+                this.player = new ReplayPlayer({frames:[{}], meta:{}})
+            }
         }
-        this.camera.rotation.x = Math.PI / 2
-        this.camera.rotation.z = 0
+
+        this.events.emit('postmapchange', this, map, mapName)
     }
 
     changeReplay(replay) {
+        this.events.emit('prereplaychange', this, replay)
+
         this.replay = replay
+        
+        let events = this.player.events
         this.player = ReplayPlayer.createFromReplay(replay)
+        this.player.events = events
+
+        this.events.emit('postreplaychange', this, replay)
     }
 
     draw() {
@@ -109,18 +168,33 @@ export default class Game {
             }
         }
 
-        this.update()
+        let currTime = Time.now() / 1000
+        let dt = currTime - this.lastTime
+        this.accumTime += dt
+
+        while (this.accumTime > this.timeStep) {
+            this.update(this.timeStep)
+            this.accumTime -= this.timeStep
+        }
         
-        this.skyScene.draw(this.camera)
-        this.worldScene.draw(this.camera)
+        this.skyScene.draw(this.camera, dt)
+        this.worldScene.draw(this.camera, dt)
+
+        this.lastTime = currTime
     }
 
-    update() {
+    update(dt) {
+        this.events.emit('preupdate', this)
+
         let camera = this.camera
         let keyboard = this.keyboard
         let mouse = this.mouse
 
-        if (this.player && this.player.isPlaying) {
+        if (this.mode === Game.MODE_REPLAY) {
+            if (this.player.isPlaying) {
+                this.player.update(dt)
+            }
+
             let frame = this.player.getFrame()
             if (frame) {
                 this.camera.position.x = frame.position[0]
@@ -128,8 +202,10 @@ export default class Game {
                 this.camera.position.z = frame.position[2]
                 this.camera.rotation.x = (90 - frame.rotation[0]) * 0.0174;
                 this.camera.rotation.z = (0.0174 * frame.rotation[1]) - 1.57;
+            } else {
+                this.player.stop()
             }
-        } else {
+        } else if (this.mode === Game.MODE_FREE) {
             if (mouse.click) {
                 let mX = mouse.delta[1] / 100
                 let mY = mouse.delta[0] / 100
@@ -141,37 +217,40 @@ export default class Game {
                 camera.rotation.z = y
             }
 
-            if (keyboard.key['W'.charCodeAt(0)] !== keyboard.key['S'.charCodeAt(0)]) {
-                if (keyboard.key['W'.charCodeAt(0)]) {
-                    camera.position.y += Math.cos(camera.rotation.z) * 10
-                    camera.position.x -= Math.sin(camera.rotation.z) * 10
-                } else if (keyboard.key['S'.charCodeAt(0)]) {
-                    camera.position.y += Math.cos(camera.rotation.z - 3.14) * 10
-                    camera.position.x -= Math.sin(camera.rotation.z - 3.14) * 10
+            const speed = 500
+            if (keyboard.key[KEYS.W] !== keyboard.key[KEYS.S]) {
+                if (keyboard.key[KEYS.W]) {
+                    camera.position.y += Math.cos(camera.rotation.z) * speed * dt
+                    camera.position.x -= Math.sin(camera.rotation.z) * speed * dt
+                } else if (keyboard.key[KEYS.S]) {
+                    camera.position.y += Math.cos(camera.rotation.z - 3.14) * speed * dt
+                    camera.position.x -= Math.sin(camera.rotation.z - 3.14) * speed * dt
                 }
             }
 
-            if (keyboard.key['A'.charCodeAt(0)] !== keyboard.key['D'.charCodeAt(0)]) {
-                if (keyboard.key['A'.charCodeAt(0)]) {
-                    camera.position.y += Math.cos(camera.rotation.z + 1.57) * 10
-                    camera.position.x -= Math.sin(camera.rotation.z + 1.57) * 10
-                } else if (keyboard.key['D'.charCodeAt(0)]) {
-                    camera.position.y += Math.cos(camera.rotation.z - 1.57) * 10
-                    camera.position.x -= Math.sin(camera.rotation.z - 1.57) * 10
+            if (keyboard.key[KEYS.A] !== keyboard.key[KEYS.D]) {
+                if (keyboard.key[KEYS.A]) {
+                    camera.position.y += Math.cos(camera.rotation.z + 1.57) * speed * dt
+                    camera.position.x -= Math.sin(camera.rotation.z + 1.57) * speed * dt
+                } else if (keyboard.key[KEYS.D]) {
+                    camera.position.y += Math.cos(camera.rotation.z - 1.57) * speed * dt
+                    camera.position.x -= Math.sin(camera.rotation.z - 1.57) * speed * dt
                 }
             }
 
-            if (keyboard.key['R'.charCodeAt(0)] !== keyboard.key['F'.charCodeAt(0)]) {
-                if (keyboard.key['R'.charCodeAt(0)]) {
-                    camera.position.z += 10
-                } else if (keyboard.key['F'.charCodeAt(0)]) {
-                    camera.position.z -= 10
+            if (keyboard.key[KEYS.R] !== keyboard.key[KEYS.F]) {
+                if (keyboard.key[KEYS.R]) {
+                    camera.position.z += speed * dt
+                } else if (keyboard.key[KEYS.F]) {
+                    camera.position.z -= speed * dt
                 }
             }
         }
 
         mouse.delta[0] = 0
         mouse.delta[1] = 0
+
+        this.events.emit('postupdate', this)
     }
 
     mousedown(e) {
@@ -242,3 +321,6 @@ export default class Game {
         this.keyboard.key[e.which] = false
     }
 }
+
+Game.MODE_FREE = 0
+Game.MODE_REPLAY = 1

@@ -30,7 +30,7 @@ let formatLoadingItem = (url, progress) => {
 let loadReplay = (url, ui) => {
     let text = `<li>${formatLoadingItem(url, 0)}</li>`
     let loadText = createDomFromHtml(text)
-    ui.dom.loading.appendChild(loadText)
+    ui.dom.loadingLog.appendChild(loadText)
     return Replay.loadFromUrl(url, (r, progress) => {
         loadText.innerHTML = formatLoadingItem(url, progress)
     })
@@ -39,7 +39,7 @@ let loadReplay = (url, ui) => {
 let loadMap = (url, ui) => {
     let text = `<li>${formatLoadingItem(url, 0)}</li>`
     let loadText = createDomFromHtml(text)
-    ui.dom.loading.appendChild(loadText)
+    ui.dom.loadingLog.appendChild(loadText)
     return Map.loadFromUrl(url, (r, progress) => {
         loadText.innerHTML = formatLoadingItem(url, progress)
     })
@@ -59,7 +59,9 @@ let mergeWadAndMapTextures = (wad, map) => {
 let checkMissingTextures = (map, paths, ui) => {
     if (map.hasMissingTextures()) {
         let wads = map.entities[0].wad
-        let promises = wads.map(wad => loadWad(`./${paths.wads}/${wad}`, map, ui))
+        let promises = wads.map(
+            wad => loadWad(`./${paths.wads}/${wad}`, map, ui)
+        )
         return Promise.all(promises).then(() => map)
     }
 
@@ -69,7 +71,7 @@ let checkMissingTextures = (map, paths, ui) => {
 let loadWad = (url, map, ui) => {
     let text = `<li>${formatLoadingItem(url, 0)}</li>`
     let loadText = createDomFromHtml(text)
-    ui.dom.loading.appendChild(loadText)
+    ui.dom.loadingLog.appendChild(loadText)
     return Wad.loadFromUrl(url, (r, progress) => {
             loadText.innerHTML = formatLoadingItem(url, progress)
         })
@@ -112,8 +114,7 @@ class HLViewer {
     }
 
     load(url) {
-        this.ui.showLoadingBox()
-        this.ui.showLoadingAnimation()
+        this.ui.showLoading()
 
         let extension = Path.extname(url)
         if (extension === '.bsp') {
@@ -121,18 +122,12 @@ class HLViewer {
             url = `./${this.paths.maps}/${url}`
             return loadMap(url, this.ui)
                 .then(map => checkMissingTextures(map, this.paths, this.ui))
-                .then(map => this.game.changeMap(map, mapName))
-                .then(() => {
-                    (this.game.replay.mapName === this.game.mapName)
-                        ? this.ui.showReplayControls()
-                        : this.ui.hideReplayControls()
-                    
-                    this.ui.hideLoadingAnimation()
-
-                    setTimeout(() => {
-                        this.ui.clearLoadingBox()
-                        this.ui.hideLoadingBox()
-                    }, 3000)
+                .then(map => {
+                    this.game.changeMap(map, mapName)
+                    this.ui.showTitle()
+                    this.ui.showReplayControls()
+                    this.ui.clearLoadingLog()
+                    this.ui.hideLoading()
                 })
         } else if (extension === '.dem') {
             url = `./${this.paths.replays}/${url}`
@@ -142,7 +137,7 @@ class HLViewer {
                     return this.load(`${replay.mapName}.bsp`)
                 })
         } else {
-            throw new Error('Invalid file extension')
+            throw new Error('Invalid file extension (must be .dem or .bsp)')
         }
     }
 }

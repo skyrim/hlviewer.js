@@ -4,59 +4,110 @@
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-
         <title>hlviewer.js</title>
-
         <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?">
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
-        <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/yeti/bootstrap.min.css" rel="stylesheet" />
         <style>
-            * {
-                margin:0;
-                padding:0;
-            }
             html, body {
                 margin:0;
                 padding:0;
                 width:100%;
                 height:100%;
             }
-            #logo-parent {
-                text-align:right;
+            body {
+                display:flex;
+                flex-flow:column;
+                font-family:'Tahoma',sans-serif;
+                color:#333;
             }
-            #logo {
-                width:80%;
-                margin-top:5%;
+            a {
+                color:#333;
+            }
+            header {
+                background:#fff;
+                border-bottom:1px solid #ddd;
+                padding-bottom:10px;
+                margin-bottom:20px;
+            }
+            header .wrapper {
+                display:flex;
+                flex-flow:column;
+                width:1000px;
+                margin:0 auto;
+            }
+            header .wrapper .line1 {
+                display:flex;
+                justify-content:space-between;
+                line-height:80px;
+                vertical-align:middle;
+            }
+            header .wrapper .line2 {
+                text-align:center;
+            }
+            header .wrapper .line1 .left {
+                display:flex;
+            }
+            header .title {
+                margin:0;
+                font-weight:normal;
+                letter-spacing:4px;
+                margin-left:10px;
+                font-size:30pt;
+            }
+            .nav-link {
+                text-decoration:none;
+                padding:10px;
+                background:#fff;
+                border:1px solid #ddd;
+            }
+            .nav-link:hover {
+                background:#f0f0f0;
+            }
+            .content {
+                width:960px;
+                margin:0 auto;
             }
         </style>
+        <script src="./dist/hlviewer.js"></script>
+        <script>
+            window.addEventListener('load', () => {
+                var app = new HLViewer('#hlv-target', {
+                    paths: 'res'
+                })
+                app.load('kz_ea_highblock.dem')
+                app.ui.setTitle('kz_ea_highblock done in 02:32.95 by Cupe')
+            })
+        </script>
     </head>
 
     <body>
-        <div class="jumbotron">
-            <div class="container">
-                <div class="col-sm-3" id="logo-parent">
-                    <img src="./res/logo.svg" id="logo">
+        <header>
+            <div class="wrapper">
+                <div class="line1">
+                    <div class="left">
+                        <img src="./res/logo.svg" class="logo">
+                        <h1 class="title">HLViewer</h1>
+                    </div>
+                    <div class="right">
+                        <a
+                            href="http://github.com/skyrim/hlviewer.js"
+                            class="nav-link"
+                            target="_blank">
+                            View project on GitHub
+                        </a>
+                    </div>
                 </div>
-                <div class="col-sm-9">
-                    <h1>HLViewer</h1>
-                    <p>HLViewer is a simple to use javascript library for viewing maps and playing replays of GoldSrc engine based games entirely in browser</p>
-                    <a href="http://github.com/skyrim/hlviewer.js">View project on GitHub</a>
+                <div class="line2">
+                    <span>
+                        HLViewer is a simple to use javascript library
+                        for viewing maps and playing replays of GoldSrc
+                        engine based games entirely in browser
+                    </span>
                 </div>
             </div>
-        </div>
+        </header>
 
-        <div class="container">
+        <div class="content">
             <div id="hlv-target" style="width:100%; height:600px"></div>
         </div>
-
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.slim.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
-        <script src="./dist/hlviewer.js"></script>
-        <script>
-            var app = new HLViewer('#hlv-target', {
-                paths: 'res'
-            })
-            app.load('kz_ea_highblock.dem')
-        </script>
     </body>
 </html>

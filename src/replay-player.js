@@ -1,3 +1,4 @@
+import EventEmitter from 'events'
 import * as Time from './time'
 
 export default class ReplayPlayer {
@@ -10,15 +11,14 @@ export default class ReplayPlayer {
 
         this.isPlaying = false
         this.isPaused = false
-        this.startTime = 0
-        this.pauseTime = 0
+
+        this.events = new EventEmitter()
     }
 
     getFrameByTime(time) {
-        if (time > this.currentTime) {
+        if (time >= this.frames[this.currentFrame].time) {
             for (let i = this.currentFrame; i < this.frames.length; ++i) {
                 if (this.frames[i].time > time) {
-                    this.currentTime = time
                     this.currentFrame = i
                     let left = Math.max(0, i - 1)
                     let right = i
@@ -32,10 +32,9 @@ export default class ReplayPlayer {
             }
         } else {
             for (let i = this.currentFrame; i >= 0; --i) {
-                if (this.frames[i].time < time) {
-                    this.currentTime = time
+                if (this.frames[i].time <= time) {
                     this.currentFrame = i
-                    let left = Math.max(0, i - 1)
+                    let left = Math.max(0, i)
                     let right = i
 
                     return {
@@ -51,35 +50,44 @@ export default class ReplayPlayer {
     }
 
     play() {
-        let currentTime = Time.now() / 1000
         if (this.isPlaying) {
-            if (this.isPaused) {
-                this.isPaused = false
-                this.startTime += currentTime - this.pauseTime
-            } else {
-                this.isPaused = true
-                this.pauseTime = currentTime
-            }
+            this.isPaused = !this.isPaused
         } else {
             this.isPlaying = true
             this.isPaused = false
-            this.startTime = currentTime
+            this.currentTime = this.beginningTime
+        }
+
+        this.events.emit('play')
+    }
+
+    update(time) {
+        if (!this.isPaused) {
+            this.currentTime += time
         }
     }
 
     stop() {
         this.isPlaying = false
         this.isPaused = false
-        this.startTime = 0
-        this.pauseTime = 0
+        this.currentTime = 0
+
+        this.events.emit('stop')
+    }
+
+    seekByTime(value) {
+        this.currentTime = Math.min(this.timeLength, value)
+        this.currentTime = Math.max(this.beginningTime, this.currentTime)
+    }
+
+    seekByPercent(value) {
+        value = Math.max(0, Math.min(value, 100)) / 100
+        value *= this.timeLength - this.beginningTime
+        this.seekByTime(value)
     }
 
     getFrame() {
-        let currentTime = this.isPaused
-            ? this.pauseTime
-            : Time.now() / 1000
-        let dt = currentTime - this.startTime
-        let frame = this.getFrameByTime(this.beginningTime + dt)
+        let frame = this.getFrameByTime(this.currentTime)
         if (!frame) {
             this.stop()
         }

@@ -1,6 +1,6 @@
 {
   "name": "hlviewer.js",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "View GoldSrc maps and replays in browser",
   "keywords": [
     "hlviewer", "half-life", "halflife", "goldsrc", "kreedz"

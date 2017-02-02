@@ -103,7 +103,9 @@ export default class Game {
         if (this.mapName.toLowerCase() !== mapName.toLowerCase()) {
             this.mapName = mapName
             this.worldScene.change(map)
-            this.skyScene.change()
+            if (map.skies.length === 6) {
+                this.skyScene.change(map.skies)
+            }
 
             this.entities.length = 0
             map.entities.forEach(e => this.entities.push(e))

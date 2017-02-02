@@ -4,6 +4,7 @@ import Game from './game'
 import Map from './map'
 import Replay from './replay'
 import Wad from './wad'
+import Tga from './tga'
 import xhr from './xhr'
 
 let createDomFromHtml = (html) => {
@@ -16,7 +17,7 @@ let createDomFromHtml = (html) => {
     }
 }
 
-let formatLoadingItem = (url, progress) => {
+let formatLoadingItem = (url, progress = 0) => {
     progress = Math.round(progress * 100).toString()
     let length = 59 - url.length - progress.length
     if (length < 2) {
@@ -28,7 +29,7 @@ let formatLoadingItem = (url, progress) => {
 }
 
 let loadReplay = (url, ui) => {
-    let text = `<li>${formatLoadingItem(url, 0)}</li>`
+    let text = `<li>${formatLoadingItem(url)}</li>`
     let loadText = createDomFromHtml(text)
     ui.dom.loadingLog.appendChild(loadText)
     return Replay.loadFromUrl(url, (r, progress) => {
@@ -37,11 +38,46 @@ let loadReplay = (url, ui) => {
 }
 
 let loadMap = (url, ui) => {
-    let text = `<li>${formatLoadingItem(url, 0)}</li>`
+    let text = `<li>${formatLoadingItem(url)}</li>`
     let loadText = createDomFromHtml(text)
     ui.dom.loadingLog.appendChild(loadText)
     return Map.loadFromUrl(url, (r, progress) => {
         loadText.innerHTML = formatLoadingItem(url, progress)
+    })
+}
+
+let loadSky = (url, ui, map) => {
+    let skyname = map.entities[0].skyname
+    if (!skyname) {
+        return map
+    }
+
+    let skyUrls = [
+        `${url}/${skyname}bk.tga`,
+        `${url}/${skyname}dn.tga`,
+        `${url}/${skyname}ft.tga`,
+        `${url}/${skyname}lf.tga`,
+        `${url}/${skyname}rt.tga`,
+        `${url}/${skyname}up.tga`
+    ]
+
+    let promises = []
+    for (let i = 0; i < skyUrls.length; ++i) {
+        let text = `<li>${formatLoadingItem(skyUrls[i])}</li>`
+        let loadText = createDomFromHtml(text)
+        ui.dom.loadingLog.appendChild(loadText)
+        promises.push(Tga.loadFromUrl(skyUrls[i], (r, progress) => {
+            loadText.innerHTML = formatLoadingItem(skyUrls[i], progress)
+        }))
+    }
+
+    return Promise.all(promises)
+    .then((skies) => {
+        map.skies = skies
+        return map
+    })
+    .catch(() => {
+        return map
     })
 }
 
@@ -96,12 +132,14 @@ class HLViewer {
             paths = {
                 replays: `${paths}/replays`,
                 maps: `${paths}/maps`,
-                wads: `${paths}/wads`
+                wads: `${paths}/wads`,
+                skies: `${paths}/skies`
             }
         } else if (typeof paths === 'object') {
             if (!paths.replays) paths.replays = ''
             if (!paths.maps) paths.maps = ''
             if (!paths.wads) paths.wads = ''
+            if (!paths.skies) paths.skies = ''
         } else {
             throw new Error('Invalid paths option')
         }
@@ -121,6 +159,7 @@ class HLViewer {
             let mapName = Path.basename(url, '.bsp')
             url = `./${this.paths.maps}/${url}`
             return loadMap(url, this.ui)
+                .then(map => loadSky(this.paths.skies, this.ui, map))
                 .then(map => checkMissingTextures(map, this.paths, this.ui))
                 .then(map => {
                     this.game.changeMap(map, mapName)

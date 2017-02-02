@@ -77,10 +77,11 @@ function parseEntities(r, lumps) {
 }
 
 export default class Map {
-    constructor(entities, textures, models) {
+    constructor(entities, textures, models, skies = []) {
         this.entities = entities
         this.textures = textures
         this.models = models
+        this.skies = skies
     }
 
     hasMissingTextures() {

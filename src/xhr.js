@@ -30,8 +30,7 @@ export default function xhr(url, {method, isBinary, progressCallback} = {}) {
                 resolve(event.target.response)
             } else {
                 reject({
-                    status: event.target.status,
-                    message: event.target.responseText
+                    status: event.target.status
                 })
             }
         })

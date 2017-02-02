@@ -405,25 +405,27 @@ export default class UI {
                 return
             }
 
-            if (e.which === 70) {
-                // 70 === 'F'
-                toggleFullscreen()
-            } else if (e.which === 74 || e.which === 37) {
-                // 74 === 'J' || 'left arrow'
-                let currentTime = game.player.currentTime
-                game.player.seekByTime(currentTime - 5)
-            } else if (e.which === 75 || e.which === 32) {
-                // 74 === 'K' || 'space'
-                game.player.play()
-            } else if (e.which === 76 || e.which === 39) {
-                // 74 === 'L' || 'right arrow'
-                let currentTime = game.player.currentTime
-                game.player.seekByTime(currentTime + 5)
-            }
+            if (game.mode === Game.MODE_REPLAY) {
+                if (e.which === 70) {
+                    // 70 === 'F'
+                    toggleFullscreen()
+                } else if (e.which === 74 || e.which === 37) {
+                    // 74 === 'J' || 'left arrow'
+                    let currentTime = game.player.currentTime
+                    game.player.seekByTime(currentTime - 5)
+                } else if (e.which === 75 || e.which === 32) {
+                    // 74 === 'K' || 'space'
+                    game.player.play()
+                } else if (e.which === 76 || e.which === 39) {
+                    // 74 === 'L' || 'right arrow'
+                    let currentTime = game.player.currentTime
+                    game.player.seekByTime(currentTime + 5)
+                }
 
-            // TODO:
-            // volume up 38
-            // volume down 40
+                // TODO:
+                // volume up 38
+                // volume down 40
+            }
         })
 
         // This may seem silly, but...

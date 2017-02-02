@@ -44,26 +44,60 @@ export default class Tga {
         }
 
         let pixelCount = header.image.width * header.image.height
-        let imageData = r.arrx(pixelCount *  header.image.depth / 8, TYPE_UB)
+        let imageData
 
-        if (header.image.depth === 24) {
-            let temp = new Uint8Array(pixelCount * 4)
-            for (let i = 0; i < imageData.length; ++i) {
-                temp[i * 4    ] = imageData[i * 3 + 2]
-                temp[i * 4 + 1] = imageData[i * 3 + 1]
-                temp[i * 4 + 2] = imageData[i * 3]
-                temp[i * 4 + 3] = 255
+        if (header.imageType === 0x02) {
+            imageData = r.arrx(pixelCount *  header.image.depth / 8, TYPE_UB)
+            if (header.image.depth === 24) {
+                let temp = new Uint8Array(pixelCount * 4)
+                for (let i = 0; i < imageData.length; ++i) {
+                    temp[i * 4    ] = imageData[i * 3 + 2]
+                    temp[i * 4 + 1] = imageData[i * 3 + 1]
+                    temp[i * 4 + 2] = imageData[i * 3]
+                    temp[i * 4 + 3] = 255
+                }
+                imageData = temp
+            } else if (header.image.depth === 32) {
+                let temp = new Uint8Array(pixelCount * 4)
+                for (let i = 0; i < imageData.length; ++i) {
+                    temp[i * 4    ] = imageData[i * 4 + 2]
+                    temp[i * 4 + 1] = imageData[i * 4 + 1]
+                    temp[i * 4 + 2] = imageData[i * 4]
+                    temp[i * 4 + 3] = 255
+                }
+                imageData = temp
             }
-            imageData = temp
-        } else if (header.image.depth === 32) {
-            let temp = new Uint8Array(pixelCount * 4)
-            for (let i = 0; i < imageData.length; ++i) {
-                temp[i * 4    ] = imageData[i * 4 + 2]
-                temp[i * 4 + 1] = imageData[i * 4 + 1]
-                temp[i * 4 + 2] = imageData[i * 4]
-                temp[i * 4 + 3] = 255
+        } else if (header.imageType === 0x0A) {
+            imageData = new Uint8Array(pixelCount * 4)
+            if (header.image.depth === 24) {
+                for (let i = 0; i < imageData.length; /* no ++i */) {
+                    let repCount = r.ub()
+                    if (repCount & 0x80) {
+                        repCount = (repCount & 0x7f) + 1
+                        let bl = r.ub()
+                        let gr = r.ub()
+                        let rd = r.ub()
+                        while (i < imageData.length && repCount) {
+                            imageData[i    ] = rd
+                            imageData[i + 1] = gr
+                            imageData[i + 2] = bl
+                            imageData[i + 3] = 255
+                            i += 4
+                            --repCount
+                        }
+                    } else {
+                        repCount = (repCount & 0x7f) + 1
+                        while (i < imageData.length && repCount) {
+                            imageData[i + 2] = r.ub()
+                            imageData[i + 1] = r.ub()
+                            imageData[i    ] = r.ub()
+                            imageData[i + 3] = 255
+                            i += 4
+                            --repCount
+                        }
+                    }
+                }
             }
-            imageData = temp
         }
 
         let name = Path.basename(url, '.tga')

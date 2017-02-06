@@ -126,7 +126,8 @@ class HLViewer {
         paths = paths || {
             replays: '',
             maps: '',
-            wads: ''
+            wads: '',
+            skies: ''
         }
         if (typeof paths === 'string') {
             paths = {

@@ -199,11 +199,13 @@ export default class Game {
 
             let frame = this.player.getFrame()
             if (frame) {
-                this.camera.position.x = frame.position[0]
-                this.camera.position.y = frame.position[1]
-                this.camera.position.z = frame.position[2]
-                this.camera.rotation.x = (90 - frame.rotation[0]) * 0.0174;
-                this.camera.rotation.z = (0.0174 * frame.rotation[1]) - 1.57;
+                if (frame.position && frame.rotation) {
+                    this.camera.position.x = frame.position[0]
+                    this.camera.position.y = frame.position[1]
+                    this.camera.position.z = frame.position[2]
+                    this.camera.rotation.x = (90 - frame.rotation[0]) * 0.0174;
+                    this.camera.rotation.z = (0.0174 * frame.rotation[1]) - 1.57;
+                }
             } else {
                 this.player.stop()
             }

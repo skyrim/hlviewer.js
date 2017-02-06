@@ -111,7 +111,10 @@ export default class Map {
 
         let parseTextures = (r) => {
             let parseTexture = (r) => {
-                let parseMipMaps = (r, w, h) => {
+                let parseMipMaps = (r, texture) => {
+                    let isTransparent = texture.name.charAt(0) === '{'
+                    let w = texture.width
+                    let h = texture.height
                     let mipmaps = [0, 0, 0, 0].map(
                         (m, i) => r.arrx((w * h) / Math.pow(1 << i, 2), TYPE_UB)
                     )
@@ -120,31 +123,22 @@ export default class Map {
 
                     let palette = r.arrx(256 * 3, TYPE_UB)
 
-                    let data = mipmaps.map(m => {
+                    return mipmaps.map(m => {
                         let t = new Uint8Array(m.length * 4)
 
                         for (let i = 0; i < m.length; ++i) {
-                            let r = palette[m[i] * 3]
-                            let g = palette[m[i] * 3 + 1]
-                            let b = palette[m[i] * 3 + 2]
-
-                            if (r === 0 && g === 0 && b === 255) {
-                                t[4 * i]     = 0
-                                t[4 * i + 1] = 0
-                                t[4 * i + 2] = 0
+                            if (isTransparent && (m[i] === 255)) {
                                 t[4 * i + 3] = 0
                             } else {
-                                t[4 * i]     = r
-                                t[4 * i + 1] = g
-                                t[4 * i + 2] = b
+                                t[4 * i]     = palette[m[i] * 3]
+                                t[4 * i + 1] = palette[m[i] * 3 + 1]
+                                t[4 * i + 2] = palette[m[i] * 3 + 2]
                                 t[4 * i + 3] = 255
                             }
                         }
 
                         return t
                     })
-
-                    return data
                 }
 
                 let baseOffset = r.tell()
@@ -160,7 +154,7 @@ export default class Map {
 
                 if (mipmapOffset !== 0) {
                     r.seek(baseOffset + mipmapOffset)
-                    texture.mipmaps = parseMipMaps(r, texture.width, texture.height)
+                    texture.mipmaps = parseMipMaps(r, texture)
                 }
 
                 return texture

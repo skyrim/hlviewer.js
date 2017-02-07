@@ -152,18 +152,43 @@ function createMeshes(map, materials) {
         })
         .map((mesh, i) => {
             if (i === 0) {
-                mesh.material.materials.forEach(m => {
+                mesh.material.materials.forEach((m, idx) => {
                     if (m.map.name.charAt(0) === '{') {
-                        let data = m.map.image.data
+                        let data = Uint8Array.from(m.map.image.data)
                         for (let i = 3; i < data.length; i += 4) {
                             data[i] = 255
                         }
-                        m.needsUpdate = true
+                        
+                        let newTexture = new THREE.DataTexture(data, m.map.image.width, m.map.image.height)
+                        newTexture.name = m.map.name
+                        newTexture.premultiplyAlpha = true
+                        newTexture.magFilter = THREE.LinearFilter
+                        newTexture.minFilter = THREE.LinearMipMapLinearFilter
+                        newTexture.anisotropy = m.map.anisotropy
+                        newTexture.generateMipmaps = true
+                        newTexture.wrapS = THREE.RepeatWrapping;
+                        newTexture.wrapT = THREE.RepeatWrapping;
+                        newTexture.repeat.y = -1;
+                        newTexture.needsUpdate = true;
+
+                        let newMaterial = new THREE.MeshLambertMaterial({
+                            map: newTexture,
+                            transparent: false,
+                            visible: !INVISIBLE_TEXTURES.includes(m.map.name.toLowerCase())
+                        })
+
+                        mesh.material.materials[idx] = newMaterial
                     }
                 })
             } else {
                 let entity = map.entities.find(e => e.model === i)
                 if (entity) {
+                    if (entity.origin) {
+                        mesh.position.x = entity.origin[0]
+                        mesh.position.y = entity.origin[1]
+                        mesh.position.z = entity.origin[2]
+                    }
+
                     if (entity.rendermode === 0) {
                         entity.renderamt = 255
                     }

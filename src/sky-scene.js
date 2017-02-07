@@ -44,17 +44,10 @@ export default class SkyScene {
             ctx.drawImage(smc, c[0], c[1])
         })
 
-        let texture = new THREE.CanvasTexture(
-            canvas,
-            THREE.UVMapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.LinearFilter,
-            THREE.LinearFilter,
-            THREE.RGBAFormat,
-            THREE.UnsignedByteType,
-            this.renderer.getMaxAnisotropy()
-        )
+        let texture = new THREE.Texture(canvas)
+        texture.wrapS = THREE.ClampToEdgeWrapping
+        texture.wrapT = THREE.ClampToEdgeWrapping
+        texture.anisotropy = this.renderer.getMaxAnisotropy()
         texture.generateMipmaps = true
         texture.needsUpdate = true
         let material = new THREE.MeshBasicMaterial({

@@ -43,7 +43,9 @@ export default class Tga {
             colorMapData = r.arrx(header.colorMap.length, TYPE_UB)
         }
 
-        let pixelCount = header.image.width * header.image.height
+        let w = header.image.width
+        let h = header.image.height
+        let pixelCount = w * h
         let imageData
 
         if (header.imageType === 0x02) {
@@ -51,19 +53,21 @@ export default class Tga {
             if (header.image.depth === 24) {
                 let temp = new Uint8Array(pixelCount * 4)
                 for (let i = 0; i < imageData.length; ++i) {
-                    temp[i * 4    ] = imageData[i * 3 + 2]
-                    temp[i * 4 + 1] = imageData[i * 3 + 1]
-                    temp[i * 4 + 2] = imageData[i * 3]
-                    temp[i * 4 + 3] = 255
+                    let dst = (h - 1 - Math.floor(i / w)) * w + (i % w)
+                    temp[dst * 4    ] = imageData[i * 3 + 2]
+                    temp[dst * 4 + 1] = imageData[i * 3 + 1]
+                    temp[dst * 4 + 2] = imageData[i * 3]
+                    temp[dst * 4 + 3] = 255
                 }
                 imageData = temp
             } else if (header.image.depth === 32) {
                 let temp = new Uint8Array(pixelCount * 4)
                 for (let i = 0; i < imageData.length; ++i) {
-                    temp[i * 4    ] = imageData[i * 4 + 2]
-                    temp[i * 4 + 1] = imageData[i * 4 + 1]
-                    temp[i * 4 + 2] = imageData[i * 4]
-                    temp[i * 4 + 3] = 255
+                    let dst = (h - 1 - Math.floor(i / w)) * w + (i % w)
+                    temp[dst * 4    ] = imageData[i * 4 + 2]
+                    temp[dst * 4 + 1] = imageData[i * 4 + 1]
+                    temp[dst * 4 + 2] = imageData[i * 4]
+                    temp[dst * 4 + 3] = 255
                 }
                 imageData = temp
             }
@@ -78,20 +82,22 @@ export default class Tga {
                         let gr = r.ub()
                         let rd = r.ub()
                         while (i < imageData.length && repCount) {
-                            imageData[i    ] = rd
-                            imageData[i + 1] = gr
-                            imageData[i + 2] = bl
-                            imageData[i + 3] = 255
+                            let dst = (h - 1 - Math.floor(i / w)) * w + (i % w)
+                            imageData[dst    ] = rd
+                            imageData[dst + 1] = gr
+                            imageData[dst + 2] = bl
+                            imageData[dst + 3] = 255
                             i += 4
                             --repCount
                         }
                     } else {
                         repCount = (repCount & 0x7f) + 1
                         while (i < imageData.length && repCount) {
-                            imageData[i + 2] = r.ub()
-                            imageData[i + 1] = r.ub()
-                            imageData[i    ] = r.ub()
-                            imageData[i + 3] = 255
+                            let dst = (h - 1 - Math.floor(i / w)) * w + (i % w)
+                            imageData[dst + 2] = r.ub()
+                            imageData[dst + 1] = r.ub()
+                            imageData[dst    ] = r.ub()
+                            imageData[dst + 3] = 255
                             i += 4
                             --repCount
                         }

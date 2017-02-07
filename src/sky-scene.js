@@ -48,7 +48,6 @@ export default class SkyScene {
         texture.wrapS = THREE.ClampToEdgeWrapping
         texture.wrapT = THREE.ClampToEdgeWrapping
         texture.anisotropy = this.renderer.getMaxAnisotropy()
-        texture.generateMipmaps = true
         texture.needsUpdate = true
         let material = new THREE.MeshBasicMaterial({
             map: texture,

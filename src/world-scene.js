@@ -151,30 +151,42 @@ function createMeshes(map, materials) {
             return new Mesh(geometry, material.clone())
         })
         .map((mesh, i) => {
-            let entity = map.entities.find(e => e.model === i)
-            if (entity) {
-                if (entity.rendermode === 0) {
-                    entity.renderamt = 255
-                }
+            if (i === 0) {
+                mesh.material.materials.forEach(m => {
+                    if (m.map.name.charAt(0) === '{') {
+                        let data = m.map.image.data
+                        for (let i = 3; i < data.length; i += 4) {
+                            data[i] = 255
+                        }
+                        m.needsUpdate = true
+                    }
+                })
+            } else {
+                let entity = map.entities.find(e => e.model === i)
+                if (entity) {
+                    if (entity.rendermode === 0) {
+                        entity.renderamt = 255
+                    }
 
-                if (entity.rendermode !== 4 && entity.renderamt < 255) {
-                    mesh.material.materials.forEach(m => {
-                        mesh.renderOrder = 1
-                        m.depthWrite = false
-                        m.alphaTest = 0.05
-                        m.opacity = entity.renderamt / 255
-                    })
-                }
+                    if (entity.rendermode !== 4 && entity.renderamt < 255) {
+                        mesh.material.materials.forEach(m => {
+                            mesh.renderOrder = 1
+                            m.depthWrite = false
+                            m.alphaTest = 0.05
+                            m.opacity = entity.renderamt / 255
+                        })
+                    }
 
-                if (entity.rendermode === 5) {
-                    mesh.material.materials.forEach(m => {
-                        m.blending = THREE.AdditiveBlending
-                        mesh.renderOrder = 1
-                        m.depthWrite = false
-                    })
-                }
+                    if (entity.rendermode === 5) {
+                        mesh.material.materials.forEach(m => {
+                            m.blending = THREE.AdditiveBlending
+                            mesh.renderOrder = 1
+                            m.depthWrite = false
+                        })
+                    }
 
-                mesh.visible = !INVISIBLE_ENTITIES.includes(entity.classname)
+                    mesh.visible = !INVISIBLE_ENTITIES.includes(entity.classname)
+                }
             }
 
             return mesh

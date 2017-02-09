@@ -4,6 +4,8 @@ import WorldScene from './world-scene'
 import SkyScene from './sky-scene'
 import ReplayPlayer from './replay-player'
 import * as Time from './time'
+import Resources from './resources'
+import Entities from './entities'
 
 const KEYS = {
     A: 'A'.charCodeAt(0),
@@ -34,8 +36,50 @@ const KEYS = {
     Z: 'Z'.charCodeAt(0)
 }
 
+let checkWebGLSupport = () => {
+    const MESSAGES = {
+        BAD_BROWSER: 'Your browser does not seem to support WebGL',
+        BAD_GPU: 'Your graphics card does not seem to support WebGL'
+    }
+
+    if (!window.WebGLRenderingContext) {
+        return {
+            hasSupport: false,
+            message: MESSAGES.BAD_BROWSER
+        }
+    }
+
+    let c = document.createElement('canvas')
+    try {
+        let ctx = (c.getContext('webgl') || c.getContext('experimental-webgl'))
+        if (ctx) {
+            return {
+                hasSupport: true,
+                message: ''
+            }
+        } else {
+            return {
+                hasSupport: false,
+                message: MESSAGES.BAD_GPU
+            }
+        }
+    } catch (e) {
+        return {
+            hasSupport: false,
+            message: MESSAGES.BAD_GPU
+        }
+    }
+}
+
 export default class Game {
     constructor() {
+        let status = checkWebGLSupport()
+        if (!status.hasSupport) {
+            alert(status.message)
+
+            return
+        }
+
         this.lastTime = 0
         this.accumTime = 0
         this.timeStep = 1 / 60
@@ -54,6 +98,9 @@ export default class Game {
         for (let i = 0; i < this.keyboard.key.length; ++i) {
             this.keyboard.key[i] = false
         }
+
+        this.resources = new Resources(this)
+        this.entities = new Entities()
 
         window.addEventListener('mousedown', this.mousedown.bind(this))
         window.addEventListener('mouseup',   this.mouseup.bind(this))
@@ -77,8 +124,7 @@ export default class Game {
 
         this.worldScene = new WorldScene(this.renderer)
         this.skyScene = new SkyScene(this.renderer)
-
-        this.entities = []
+        this.skyScene.initialize(this.resources.sky)
 
         this.selectedObject = null
         this.selectedObjectBox = null
@@ -98,49 +144,34 @@ export default class Game {
     }
 
     changeMap(map, mapName) {
-        this.events.emit('premapchange', this, map, mapName)
-
-        if (this.mapName.toLowerCase() !== mapName.toLowerCase()) {
-            this.mapName = mapName
-            this.worldScene.change(map)
-            if (map.skies.length === 6) {
-                this.skyScene.change(map.skies)
-            }
-
-            this.entities.length = 0
-            map.entities.forEach(e => this.entities.push(e))
-            this.worldScene
-                .getMeshes()
-                .forEach((mesh, i) => {
-                    if (i === 0) {
-                        this.entities[0].mesh = mesh
-                    }
-                    else {
-                        let entity = this.entities.find(e => e.model === i)
-                        if (entity) {
-                            entity.mesh = mesh
-                        }
-                    }
-                })
-
-            let startEntity = map.entities
-                .find(e => e.classname === 'info_player_start')
-            if (startEntity) {
-                this.camera.position.x = startEntity.origin[0]
-                this.camera.position.y = startEntity.origin[1]
-                this.camera.position.z = startEntity.origin[2]
-            }
-            this.camera.rotation.x = Math.PI / 2
-            this.camera.rotation.z = 0
-
-            if (!this.replay
-                || (this.replay.mapName.toLowerCase() !== mapName.toLowerCase())) {
-                this.replay = null
-                this.player = new ReplayPlayer({frames:[{}], meta:{}})
-            }
+        if (this.mapName.toLowerCase() === mapName.toLowerCase()) {
+            return
         }
 
-        this.events.emit('postmapchange', this, map, mapName)
+        this.mapName = mapName
+
+        this.resources.initialize(map)
+        this.entities.initialize(map.entities, this.resources)
+        this.worldScene.initialize(this.entities)
+        this.skyScene.initialize(this.resources.sky)
+
+        let startEntity = this.entities.list.find(e => e.meta.classname === 'info_player_start')
+        if (startEntity) {
+            this.camera.position.x = startEntity.meta.origin[0]
+            this.camera.position.y = startEntity.meta.origin[1]
+            this.camera.position.z = startEntity.meta.origin[2]
+        }
+
+        this.camera.rotation.x = Math.PI / 2
+        this.camera.rotation.z = 0
+
+        if (!this.replay
+            || (this.replay.mapName.toLowerCase() !== mapName.toLowerCase())) {
+            this.replay = null
+            this.player = new ReplayPlayer({frames:[{}], meta:{}})
+        }
+
+        this.events.emit('mapchange', this, map, mapName)
     }
 
     changeReplay(replay) {
@@ -260,19 +291,19 @@ export default class Game {
     mousedown(e) {
         this.mouse.click = true
 
-        let selectObject = (mesh) => {
-            mesh.material.materials.forEach(m => m.color.set(0xff0000))
-            this.selectedObject = mesh
+        let selectObject = (model) => {
+            model.material.materials.forEach(m => m.color.set(0xff0000))
+            this.selectedObject = model
 
-            this.selectedObjectBox = new THREE.BoxHelper(mesh, 0x00ff00)
+            this.selectedObjectBox = new THREE.BoxHelper(model, 0x00ff00)
             this.worldScene.scene.add(this.selectedObjectBox)
 
-            let entity = this.entities.find(e => e.mesh === mesh)
+            let entity = this.entities.list.find(e => e.model === model)
             console.log(entity)
         }
 
-        let deselectObject = (mesh) => {
-            mesh.material.materials.forEach(m => m.color.set(0xffffff))
+        let deselectObject = (model) => {
+            model.material.materials.forEach(m => m.color.set(0xffffff))
             this.selectedObject = null
 
             this.worldScene.scene.remove(this.selectedObjectBox)

@@ -56,215 +56,244 @@ let ui_loading_anim =
     </path>
 </svg>`
 
+let ui_style =
+`
+<style>
+.hlv {
+    position:relative;
+    width:100%;
+    height:100%;
+    font-family:Roboto,Arial,Helvetica,sans-serif;
+    color:#fff;
+}
+.hlv::before,
+.hlv::after,
+.hlv *::before,
+.hlv *::after {
+    all: unset;
+}
+.hlv div {
+    box-sizing:content-box;
+    background:none;
+    line-height:initial;
+}
+.hlv .screen {
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    z-index:10;
+}
+.hlv .title {
+    display:none;
+    z-index:20;
+    position:absolute;
+    top:16px;
+    left:0;
+    padding:10px;
+    padding-left:20px;
+    color:#fff;
+    background:rgba(0,0,0,0.4);
+    font-size:14pt;
+    opacity:0;
+    transition:opacity 0.2s;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+}
+.hlv .controls {
+    display:none;
+    z-index:30;
+    position:absolute;
+    width:100%;
+    bottom:0;
+    padding:0 16px;
+    box-sizing:border-box;
+    background:rgba(0,0,0,0.4);
+    opacity:0;
+    transition:opacity 0.2s;
+}
+.hlv .progress {
+    position:relative;
+    height:14px;
+    cursor:pointer;
+    margin:0;
+    border-radius:0;
+    overflow:initial;
+    background:none;
+    -webkit-box-shadow:none;
+    box-shadow:none;
+}
+.hlv .ghost-line {
+    height:4px;
+    background:rgba(255,255,255,0.5);
+    top:8px;
+    position:absolute;
+    left:0;
+    right:0;
+    border-radius:2px;
+}
+.hlv .line {
+    height:4px;
+    background:#fff;
+    top:8px;
+    position:absolute;
+    left:0;
+    right:0;
+    border-radius:2px;
+}
+.hlv .knob {
+    position:absolute;
+    width:12px;
+    height:12px;
+    background:#fff;
+    border-radius:6px;
+    left:0;
+    top:4px;
+    margin-left:-6px;
+}
+.hlv .ghost-knob {
+    position:absolute;
+    width:8px;
+    height:8px;
+    background:#fff;
+    box-sizing:border-box;
+    border-radius:7px;
+    left:0;
+    top:6px;
+    margin-left:-7px;
+    display:none;
+}
+.hlv .settings-menu {
+    position:absolute;
+    right:14px;
+    bottom:68px;
+    display:none;
+    list-style:none;
+    margin:0;
+    padding:2px 6px;
+    background:rgba(0,0,0,0.4);
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+    min-width:100px;
+}
+.hlv .settings-menu > .mode {
+    padding:6px 4px;
+    margin-bottom:6px;
+    border-bottom:1px solid #ddd;
+    font-size:10pt;
+    font-weight:bold;
+}
+.hlv .settings-item.replay-mode {
+    margin-top:4px;
+    padding:4px;
+    font-size:10pt;
+    cursor:pointer;
+}
+.hlv .settings-item.free-mode {
+    margin:4px 0;
+    padding:4px;
+    font-size:10pt;
+    cursor:pointer;
+    background:rgba(255,255,255,0.2)
+}
+.hlv .buttons {
+    display:flex;
+    justify-content:space-between;
+    padding:0 4px;
+}
+.hlv .left-buttons {
+    height:40px;
+    padding:4px 0;
+    box-sizing:border-box;
+}
+.hlv .play.button {
+    width:20px;
+    height:20px;
+    padding:6px;
+    cursor:pointer;
+}
+.hlv .right-buttons {
+    height:40px;
+    padding:4px 0;
+    box-sizing:border-box;
+    display:flex;
+}
+.hlv .settings.button {
+    width:20px;
+    height:20px;
+    padding:6px;
+    cursor:pointer;
+    margin-right:8px;
+}
+.hlv .fullscreen.button {
+    width:20px;
+    height:20px;
+    padding:6px;
+    cursor:pointer;
+}
+.hlv .loading {
+    position:relative;
+    width:100%;
+    height:100%;
+    z-index:20;
+    display:none;
+}
+.hlv .spinner {
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+}
+.hlv .log {
+    position:absolute;
+    background: rgba(0,0,0,0.4);
+    padding:10px;
+    font-family:monospace;
+    margin:0;
+    top:16px;
+    right:0;
+    padding-left:16px;
+    list-style:none;
+}
+.log > li {
+    display:block;
+}
+</style>
+`
+
 let ui_template =
-`<div
-    class="hlv"
-    style="
-        position:relative;
-        width:100%;
-        height:100%;
-        font-family:Roboto,Arial,Helvetica,sans-serif;
-        color:#fff;">
-    <div
-        class="screen"
-        style="
-            position:absolute;
-            top:0;
-            left:0;
-            width:100%;
-            height:100%;
-            z-index:10;"></div>
-    <div
-        class="title"
-        style="
-            display:none;
-            z-index:20;
-            position:absolute;
-            top:16px;
-            left:0;
-            padding:10px;
-            padding-left:20px;
-            color:#fff;
-            background:rgba(0,0,0,0.4);
-            font-size:14pt;
-            opacity:0;
-            transition:opacity 0.2s;
-            -moz-user-select:none;
-            -ms-user-select:none;
-            user-select:none;"></div>
-    <div
-        class="controls"
-        style="
-            display:none;
-            z-index:30;
-            position:absolute;
-            width:100%;
-            bottom:0;
-            padding:0 16px;
-            box-sizing:border-box;
-            background:rgba(0,0,0,0.4);
-            opacity:0;
-            transition:opacity 0.2s;">
-        <div
-            class="progress"
-            style="
-                position:relative;
-                height:14px;
-                cursor:pointer;">
-            <div
-                class="ghost-line"
-                style="
-                    height:4px;
-                    background:rgba(255,255,255,0.5);
-                    top:8px;
-                    position:absolute;
-                    left:0;
-                    right:0;
-                    border-radius:2px;"></div>
-            <div
-                class="line"
-                style="
-                    height:4px;
-                    background:#fff;
-                    top:8px;
-                    position:absolute;
-                    left:0;
-                    right:0;
-                    border-radius:2px;"></div>
-            <div
-                class="knob"
-                style="
-                    position:absolute;
-                    width:12px;
-                    height:12px;
-                    background:#fff;
-                    border-radius:6px;
-                    left:0;
-                    top:4px;
-                    margin-left:-6px;"></div>
-            <div
-                class="ghost-knob"
-                style="
-                    position:absolute;
-                    width:8px;
-                    height:8px;
-                    background:#fff;
-                    box-sizing:border-box;
-                    border-radius:7px;
-                    left:0;
-                    top:6px;
-                    margin-left:-7px;
-                    display:none;"></div>
+`<div class="hlv">
+    <div class="screen"></div>
+    <div class="title"></div>
+    <div class="controls">
+        <div class="progress">
+            <div class="ghost-line"></div>
+            <div class="line"></div>
+            <div class="knob"></div>
+            <div class="ghost-knob"></div>
         </div>
-        <ul
-            class="settings-menu"
-            style="
-                position:absolute;
-                right:14px;
-                bottom:68px;
-                display:none;
-                list-style:none;
-                margin:0;
-                padding:2px 6px;
-                background:rgba(0,0,0,0.4);
-                -moz-user-select:none;
-                -ms-user-select:none;
-                user-select:none;
-                min-width:100px;">
-                <li
-                    style="
-                        padding:6px 4px;
-                        margin-bottom:6px;
-                        border-bottom:1px solid #ddd;
-                        font-size:10pt;
-                        font-weight:bold;">Mode</li>
-                <li
-                    class="settings-item replay-mode"
-                    style="
-                        margin-top:4px;
-                        padding:4px;
-                        font-size:10pt;
-                        cursor:pointer;">Replay</li>
-                <li
-                    class="settings-item free-mode"
-                    style="
-                        margin:4px 0;
-                        padding:4px;
-                        font-size:10pt;
-                        cursor:pointer;
-                        background:rgba(255,255,255,0.2)">Free</li>
+        <ul class="settings-menu">
+                <li class="mode">Mode</li>
+                <li class="settings-item replay-mode">Replay</li>
+                <li class="settings-item free-mode">Free</li>
             </ul>
-        <div
-            class="buttons"
-            style="
-                display:flex;
-                justify-content:space-between;
-                padding:0 4px;">
-            <div
-                style="
-                    height:40px;
-                    padding:4px 0;
-                    box-sizing:border-box;">
-                <div
-                    class="play button"
-                    style="
-                        width:20px;
-                        height:20px;
-                        padding:6px;
-                        cursor:pointer;">${ui_play_btn}</div>
+        <div class="buttons">
+            <div class="left-buttons">
+                <div class="play button">${ui_play_btn}</div>
             </div>
-            <div
-                style="
-                    height:40px;
-                    padding:4px 0;
-                    box-sizing:border-box;
-                    display:flex;">
-                <div
-                    class="settings button"
-                    style="
-                        width:20px;
-                        height:20px;
-                        padding:6px;
-                        cursor:pointer;
-                        margin-right:8px;">${ui_settings_btn}</div>    
-                <div
-                    class="fullscreen button"
-                    style="
-                        width:20px;
-                        height:20px;
-                        padding:6px;
-                        cursor:pointer;">${ui_fullscreen_btn}</div>
+            <div class="right-buttons">
+                <div class="settings button">${ui_settings_btn}</div>    
+                <div class="fullscreen button">${ui_fullscreen_btn}</div>
             </div>
         </div>
     </div>
 
-    <div
-        class="loading"
-        style="
-            position:relative;
-            width:100%;
-            height:100%;
-            z-index:20;
-            display:none;">
-        <div
-            class="spinner"
-            style="
-                position:absolute;
-                left:50%;
-                top:50%;
-                transform:translate(-50%,-50%);">${ui_loading_anim}</div>
-        <div
-            class="log"
-            style="
-                position:absolute;
-                background: rgba(0,0,0,0.4);
-                padding:10px;
-                font-family:monospace;
-                margin:0;
-                top:16px;
-                right:0;
-                padding-left:16px;
-                list-style:none;"></div>
+    <div class="loading">
+        <div class="spinner">${ui_loading_anim}</div>
+        <ul class="log"></ul>
     </div>
 </div>`
 
@@ -280,6 +309,11 @@ let createDomFromHtml = (html) => {
 
 export default class UI {
     constructor(target, game) {
+        if (!UI.style) {
+            UI.style = createDomFromHtml(ui_style)
+            document.head.appendChild(UI.style)
+        }
+
         target.appendChild(createDomFromHtml(ui_template))
 
         this.game = game
@@ -511,7 +545,7 @@ export default class UI {
             this.selectMode(Game.MODE_FREE)
         })
 
-        game.events.addListener('postmapchange', () => {
+        game.events.addListener('mapchange', () => {
             if (game.replay) {
                 this.dom.modeReplay.style.cursor = 'pointer'
                 this.dom.modeReplay.style.color = '#fff'

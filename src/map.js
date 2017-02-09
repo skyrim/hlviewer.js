@@ -41,7 +41,10 @@ function parseEntities(r, lumps) {
 
     entities.forEach(e => {
         if (e.model) {
-            e.model = Number.parseInt(e.model.substr(1))
+            let modelNum = Number.parseInt(e.model.substr(1))
+            if (!isNaN(modelNum)) {
+                e.model = modelNum
+            }
 
             if (typeof e.renderamt === 'undefined') {
                 e.renderamt = 0
@@ -115,11 +118,18 @@ export default class Map {
                     let isTransparent = texture.name.charAt(0) === '{'
                     let w = texture.width
                     let h = texture.height
-                    let mipmaps = [0, 0, 0, 0].map(
-                        (m, i) => r.arrx((w * h) / Math.pow(1 << i, 2), TYPE_UB)
-                    )
+
+                    // skipping loading unused data for us
+                    // load only the first and bigest mipmap
+                    // let mipmaps = [0, 0, 0, 0].map(
+                    //     (m, i) => r.arrx((w * h) / Math.pow(1 << i, 2), TYPE_UB)
+                    // )
+                    let mipmaps = [r.arrx(w * h, TYPE_UB)]
+                    r.skip(21 * w * h / 64 + 2)
+                    /*r.skip(w * h / 16)
+                    r.skip(w * h / 64)
                     
-                    r.skip(2)
+                    r.skip(2)*/
 
                     let palette = r.arrx(256 * 3, TYPE_UB)
 

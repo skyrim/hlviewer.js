@@ -1,8 +1,4 @@
 import * as THREE from 'three'
-import { Vector2 as Vec2 } from 'three'
-import { Vector3 as Vec3 } from 'three'
-import { Face3 as Face3 } from 'three'
-import { Mesh } from 'three'
 
 export default class WorldScene {
     constructor(renderer) {

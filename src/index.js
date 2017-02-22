@@ -174,7 +174,7 @@ class HLViewer {
             return loadReplay(url, this.ui)
                 .then(replay => {
                     this.game.changeReplay(replay)
-                    return this.load(`${replay.mapName}.bsp`)
+                    return this.load(`${replay.maps[0].name}.bsp`)
                 })
         } else {
             throw new Error('Invalid file extension (must be .dem or .bsp)')

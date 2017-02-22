@@ -1,139 +1,178 @@
 import EventEmitter from 'events'
-import * as Time from './time'
+import Replay, {ReplayState} from './replay'
+
+const updateGame = (game, state) => {
+    game.camera.position.x = state.cameraPos[0]
+    game.camera.position.y = state.cameraPos[1]
+    game.camera.position.z = state.cameraPos[2]
+    game.camera.rotation.x = (90 - state.cameraRot[0]) * 0.0174
+    game.camera.rotation.z = (0.0174 * state.cameraRot[1]) - 1.57
+}
 
 export default class ReplayPlayer {
-    constructor(data) {
-        this.frames = data.frames
-        this.beginningTime = data.meta.beginningTime
-        this.timeLength = data.meta.timeLength
-        this.currentTime = data.frames[0].time
-        this.currentFrame = 0
-
-        this.isPlaying = false
-        this.isPaused = false
-
+    constructor(game) {
+        this.reset()
+        this.game = game
+        this.state = new ReplayState()
+        this.replay = null
         this.events = new EventEmitter()
     }
 
-    getFrameByTime(time) {
-        if (time >= this.frames[this.currentFrame].time) {
-            for (let i = this.currentFrame; i < this.frames.length; ++i) {
-                if (this.frames[i].time > time) {
-                    this.currentFrame = i
-                    let left = Math.max(0, i - 1)
-                    let right = i
+    reset() {
+        this.currentMap = 0
+        this.currentChunk = 0
+        this.currentTime = 0
+        this.currentTick = 0
 
-                    return {
-                        position: this.frames[left].position, // TODO: interp
-                        rotation: this.frames[left].rotation, // TODO: interp
-                        command: this.frames[left].commands
-                    }
-                }
-            }
-        } else {
-            for (let i = this.currentFrame; i >= 0; --i) {
-                if (this.frames[i].time <= time) {
-                    this.currentFrame = i
-                    let left = Math.max(0, i)
-                    let right = i
+        this.isPlaying = false
+        this.isPaused = false
+        this.speed = 1
 
-                    return {
-                        position: this.frames[left].position, // TODO: interp
-                        rotation: this.frames[left].rotation, // TODO: interp
-                        command: this.frames[left].commands
-                    }
-                }
-            }
+        if (this.replay) {
+            let firstChunk = this.replay.maps[0].chunks[0]
+            firstChunk.reader.seek(0)
+            this.state = firstChunk.state.clone()
         }
+    }
 
-        return null
+    changeReplay(replay) {
+        this.replay = replay
+        this.reset()
     }
 
     play() {
-        if (this.isPlaying) {
-            this.isPaused = !this.isPaused
-        } else {
+        if (!this.isPlaying) {
+            this.reset()
             this.isPlaying = true
+        } else if (this.isPaused) {
             this.isPaused = false
-            this.currentTime = this.beginningTime
         }
 
         this.events.emit('play')
     }
 
-    update(time) {
-        if (!this.isPaused) {
-            this.currentTime += time
+    pause() {
+        if (this.isPlaying) {
+            this.isPaused = true
         }
+        
+        this.events.emit('pause')
     }
 
     stop() {
-        this.isPlaying = false
-        this.isPaused = false
-        this.currentTime = 0
-
+        this.reset()
         this.events.emit('stop')
     }
 
-    seekByTime(value) {
-        this.currentTime = Math.min(this.timeLength, value)
-        this.currentTime = Math.max(this.beginningTime, this.currentTime)
+    speedUp() {
+        this.speed = Math.min(this.speed * 2, 4)
+    }
+
+    speedDown() {
+        this.speed = Math.max(this.speed / 2, 0.25)
+    }
+
+    seek(value) {
+        let t = Math.max(0, Math.min(this.replay.length, value))
+
+        let maps = this.replay.maps
+        for (let i = 0; i < maps.length; ++i) {
+            let chunks = maps[i].chunks
+            for (let j = 0; j < chunks.length; ++j) {
+                let chunk = chunks[j]
+                if ((t >= chunk.startTime) && (t < (chunk.startTime + chunk.timeLength))) {
+                    this.currentMap = i
+                    this.currentChunk = j
+                    this.currentTime = t
+
+                    this.state = chunk.state.clone()
+                    let deltaDecoders = this.replay.deltaDecoders
+                    let customMessages = this.replay.customMessages
+                    let r = chunk.reader
+                    r.seek(0)
+                    while (true) {
+                        let offset = r.tell()
+                        let frame = Replay.readFrame(r, deltaDecoders, customMessages)
+                        if (frame.time <= t) {
+                            this.state.feedFrame(frame)
+                            this.currentTick = frame.tick
+                        } else {
+                            r.seek(offset)
+                            break
+                        }
+                    }
+
+                    updateGame(this.game, this.state)
+
+                    return
+                }
+            }
+        }
     }
 
     seekByPercent(value) {
         value = Math.max(0, Math.min(value, 100)) / 100
-        value *= this.timeLength - this.beginningTime
-        this.seekByTime(value)
+        value *= this.replay.length
+        this.seek(value)
     }
 
-    getFrame() {
-        let frame = this.getFrameByTime(this.currentTime)
-        if (!frame) {
-            this.stop()
+    update(dt) {
+        if (!this.isPlaying || this.isPaused) {
+            return
         }
 
-        return frame
-    }
+        let deltaDecoders = this.replay.deltaDecoders
+        let customMessages = this.replay.customMessages
 
-    static createFromReplay(replay) {
-        let frames = []
+        let map = this.replay.maps[this.currentMap]
+        let chunk = map.chunks[this.currentChunk]
+        let r = chunk.reader
+        
+        let endTime = this.currentTime + (dt * this.speed)
 
-        for (let i = 0; i < replay.directories.length; ++i) {
-            if (replay.directories[i].name !== 'Playback') {
+        let hitStop = false
+
+        while (true) {
+            let offset = r.tell()
+            if (offset >= chunk.data.length) {
+                if (this.currentChunk === (map.chunks.length - 1)) {
+                    if (this.currentMap === (this.replay.maps.length - 1)) {
+                        hitStop = true
+                        break
+                    } else {
+                        this.currentChunk = 0
+                        this.currentMap++
+                        map = this.replay.maps[this.currentMap]
+                        chunk = map.chunks[this.currentChunk]
+                    }
+                } else {
+                    this.currentChunk++
+                    chunk = map.chunks[this.currentChunk]
+                }
+
+                r = chunk.reader
+                r.seek(0)
+                offset = 0
+
                 continue
             }
 
-            let macros = replay.directories[i].macros
-            macros.forEach(macro => {
-                let frame
-                if (frames.length && frames[frames.length - 1].id === macro.frame) {
-                    frame = frames[frames.length - 1]
-                } else {
-                    frame = {
-                        id: macro.frame,
-                        time: macro.time,
-                        position: null,
-                        rotation: null,
-                        commands: []
-                    }
-                    frames.push(frame)
-                }
-
-                if (macro.type === 0 || macro.type === 1) {
-                    frame.position = macro.camera.position
-                    frame.rotation = macro.camera.orientation
-                } else if (macro.type === 3) {
-                    frame.commands.push(macro.command)
-                }
-            })
+            let frame = Replay.readFrame(r, deltaDecoders, customMessages)
+            if (frame.time <= endTime) {
+                this.state.feedFrame(frame)
+                this.currentTick = frame.tick
+            } else {
+                r.seek(offset)
+                break
+            }
         }
 
-        return new ReplayPlayer({
-            meta: {
-                beginningTime: frames[0].time,
-                timeLength: frames[frames.length - 1].time
-            },
-            frames
-        })
+        updateGame(this.game, this.state)
+
+        this.currentTime = endTime
+
+        if (hitStop) {
+            this.stop()
+        }
     }
 }

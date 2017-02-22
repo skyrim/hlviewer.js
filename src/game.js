@@ -113,11 +113,15 @@ export default class Game {
         this.camera.rotation.x = 1.57;
         this.camera.position.y = 0
 
+        let log = console.log
+        console.log = () => {}
         this.renderer = new THREE.WebGLRenderer({
             antialias: true,
             alpha: false,
             stencil: false
         })
+        console.log = log
+
         this.renderer.autoClear = false
         this.renderer.setPixelRatio(window.devicePixelRatio)
         this.renderer.setSize(this.width, this.height)
@@ -131,7 +135,7 @@ export default class Game {
 
         this.mode = Game.MODE_FREE
 
-        this.player = new ReplayPlayer({frames:[{}], meta:{}})
+        this.player = new ReplayPlayer(this)
         this.events = new EventEmitter()
 
         this.mapName = ''
@@ -155,7 +159,8 @@ export default class Game {
         this.worldScene.initialize(this.entities)
         this.skyScene.initialize(this.resources.sky)
 
-        let startEntity = this.entities.list.find(e => e.meta.classname === 'info_player_start')
+        let startEntity = this.entities.list
+            .find(e => e.meta.classname === 'info_player_start')
         if (startEntity) {
             this.camera.position.x = startEntity.meta.origin[0]
             this.camera.position.y = startEntity.meta.origin[1]
@@ -165,23 +170,13 @@ export default class Game {
         this.camera.rotation.x = Math.PI / 2
         this.camera.rotation.z = 0
 
-        if (!this.replay
-            || (this.replay.mapName.toLowerCase() !== mapName.toLowerCase())) {
-            this.replay = null
-            this.player = new ReplayPlayer({frames:[{}], meta:{}})
-        }
-
         this.events.emit('mapchange', this, map, mapName)
     }
 
     changeReplay(replay) {
         this.events.emit('prereplaychange', this, replay)
 
-        this.replay = replay
-        
-        let events = this.player.events
-        this.player = ReplayPlayer.createFromReplay(replay)
-        this.player.events = events
+        this.player.changeReplay(replay)
 
         this.events.emit('postreplaychange', this, replay)
     }
@@ -224,22 +219,7 @@ export default class Game {
         let mouse = this.mouse
 
         if (this.mode === Game.MODE_REPLAY) {
-            if (this.player.isPlaying) {
-                this.player.update(dt)
-            }
-
-            let frame = this.player.getFrame()
-            if (frame) {
-                if (frame.position && frame.rotation) {
-                    this.camera.position.x = frame.position[0]
-                    this.camera.position.y = frame.position[1]
-                    this.camera.position.z = frame.position[2]
-                    this.camera.rotation.x = (90 - frame.rotation[0]) * 0.0174;
-                    this.camera.rotation.z = (0.0174 * frame.rotation[1]) - 1.57;
-                }
-            } else {
-                this.player.stop()
-            }
+            this.player.update(dt)
         } else if (this.mode === Game.MODE_FREE) {
             if (mouse.click) {
                 let mX = mouse.delta[1] / 100
@@ -290,7 +270,9 @@ export default class Game {
 
     mousedown(e) {
         this.mouse.click = true
+        return
 
+        // TODO: enable only in DEVELOPER_MODE
         let selectObject = (model) => {
             model.material.materials.forEach(m => m.color.set(0xff0000))
             this.selectedObject = model

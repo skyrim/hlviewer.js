@@ -17,4 +17,18 @@ if (typeof performance !== 'undefined') {
 	now = () => new Date().getTime()
 }
 
-export { now }
+const formatTime = (seconds) => {
+	let m = Math.floor(seconds / 60)
+	if (m < 10) {
+		m = '0' + m
+	}
+
+	let s = Math.floor(seconds - m * 60)
+	if (s < 10) {
+		s = '0' + s
+	}
+
+	return m + ':' + s
+}
+
+export { now, formatTime }

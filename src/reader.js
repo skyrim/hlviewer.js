@@ -28,13 +28,7 @@ export default class Reader {
     }
 
     seek(offset) {
-        if (offset < 0) {
-            offset = 0
-        } else if (offset >= this.length()) {
-            offset = this.length() - 1
-        }
-
-        this.offset = offset
+        this.offset = Math.max(0, offset)
     }
 
     skip(offset) {

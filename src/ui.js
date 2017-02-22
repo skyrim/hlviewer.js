@@ -15,6 +15,16 @@ let ui_pause_btn =
     <path d='M0 0 L0 64 L20 64 L20 0 M44 0 L64 0 L64 64 L44 64 Z' />
 </svg>`
 
+let ui_step_btn =
+`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
+    <path d='M0 0 L0 64 L8 64 L8 0 M16 0 L16 64 L64 32 Z' />
+</svg>`
+
+let ui_speed_btn =
+`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
+    <path d='M0 0 L0 64 L32 32 L32 64 L64 32 L32 0 L32 32 Z' />
+</svg>`
+
 let ui_fullscreen_btn =
 `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
     <path d='M0 22 L8 22 L8 8 L22 8 L22 0 L0 0 M42 0 L42 8 L56 8 L56 22 L64 22 L64 0 M0 64 L0 42 L8 42 L8 56 L22 56 L22 64 M64 64 L42 64 L42 56 L56 56 L56 42 L64 42 Z' />
@@ -57,8 +67,7 @@ let ui_loading_anim =
 </svg>`
 
 let ui_style =
-`
-<style>
+`<style>
 .hlv {
     position:relative;
     width:100%;
@@ -125,6 +134,16 @@ let ui_style =
     -webkit-box-shadow:none;
     box-shadow:none;
 }
+.hlv .progress .time {
+    display:none;
+    position:absolute;
+    bottom:20px;
+    padding:5px;
+    margin-left:-2px;
+    transform:translate(-50%, 0);
+    font-size:10pt;
+    background:rgba(0,0,0,0.4);
+}
 .hlv .ghost-line {
     height:4px;
     background:rgba(255,255,255,0.5);
@@ -159,10 +178,10 @@ let ui_style =
     height:8px;
     background:#fff;
     box-sizing:border-box;
-    border-radius:7px;
+    border-radius:8px;
     left:0;
     top:6px;
-    margin-left:-7px;
+    margin-left:-4px;
     display:none;
 }
 .hlv .settings-menu {
@@ -207,13 +226,27 @@ let ui_style =
 .hlv .left-buttons {
     height:40px;
     padding:4px 0;
+    display:flex;
     box-sizing:border-box;
 }
-.hlv .play.button {
-    width:20px;
-    height:20px;
-    padding:6px;
+.hlv .left-buttons .time {
+    font-size:10pt;
+    display:flex;
+    align-items:center;
+    user-select:none;
+    -ms-user-select:none;
+    -moz-user-select:none;
+}
+.hlv .left-buttons .button {
+    box-sizing:border-box;
+    width:32px;
+    height:32px;
+    padding:7px;
+    margin-right:8px;
     cursor:pointer;
+}
+.hlv .speeddown.button svg {
+    transform:rotate(180deg);
 }
 .hlv .right-buttons {
     height:40px;
@@ -270,6 +303,7 @@ let ui_template =
     <div class="title"></div>
     <div class="controls">
         <div class="progress">
+            <div class="time">12:34</div>
             <div class="ghost-line"></div>
             <div class="line"></div>
             <div class="knob"></div>
@@ -280,9 +314,12 @@ let ui_template =
                 <li class="settings-item replay-mode">Replay</li>
                 <li class="settings-item free-mode">Free</li>
             </ul>
-        <div class="buttons">
+        <div class="buttons" draggable="false">
             <div class="left-buttons">
+                <div class="speeddown button">${ui_speed_btn}</div>
                 <div class="play button">${ui_play_btn}</div>
+                <div class="speedup button">${ui_speed_btn}</div>
+                <div class="time">01:23 / 01:55</div>
             </div>
             <div class="right-buttons">
                 <div class="settings button">${ui_settings_btn}</div>    
@@ -336,11 +373,16 @@ export default class UI {
             loadingLog: root.querySelector('.loading .log'),
             loadAnim: root.querySelector('.loading .spinner'),
             controls: root.querySelector('.controls'),
+            progressTime: root.querySelector('.progress .time'),
             progressBar: root.querySelector('.progress'),
             progressLine: root.querySelector('.progress .line'),
             progressBarKnob: root.querySelector('.progress .knob'),
             progressGhostKnob: root.querySelector('.progress .ghost-knob'),
+            leftButtons: root.querySelector('.controls .left-buttons'),
+            time: root.querySelector('.controls .left-buttons .time'),
             play: root.querySelector('.play.button'),
+            speedDown: root.querySelector('.speeddown.button'),
+            speedUp: root.querySelector('.speedup.button'),
             fullscreen: root.querySelector('.fullscreen.button'),
             settings: root.querySelector('.settings.button'),
             settingsMenu: root.querySelector('.settings-menu'),
@@ -349,7 +391,13 @@ export default class UI {
         }
         this.dom.screen.appendChild(game.getCanvas())
 
-        this.dom.play.addEventListener('click', () => game.player.play())
+        this.dom.play.addEventListener('click', () => {
+            if (!game.player.isPlaying || game.player.isPaused) {
+                game.player.play()
+            } else {
+                game.player.pause()
+            }
+        })
         let onPlayerChange = () => {
             this.dom.play.removeChild(this.dom.play.children[0])
             if (!game.player.isPlaying || game.player.isPaused) {
@@ -359,7 +407,16 @@ export default class UI {
             }
         }
         game.player.events.addListener('play', onPlayerChange)
+        game.player.events.addListener('pause', onPlayerChange)
         game.player.events.addListener('stop', onPlayerChange)
+        this.dom.speedDown.addEventListener('click', () => {
+            if (!game.player) return
+            game.player.speedDown()
+        })
+        this.dom.speedUp.addEventListener('click', () => {
+            if (!game.player) return
+            game.player.speedUp()
+        })
 
         let toggleFullscreen = () => {
             this.dom.fullscreen.removeChild(this.dom.fullscreen.children[0])
@@ -383,23 +440,33 @@ export default class UI {
         this.dom.fullscreen.addEventListener('click', toggleFullscreen)
 
         let progressBarLastUpdate = 0
+        let timeUpdate = 0
         game.events.addListener('postupdate', () => {
             let time = Time.now()
-            if (time - progressBarLastUpdate < 100) {
-                return
-            }
-            progressBarLastUpdate = time
+            if (time - progressBarLastUpdate >= 100) {
+                let p = game.player
+                if (p.replay) {
+                    let pnt = p.currentTime / p.replay.length * 100
+                    this.dom.progressBarKnob.style.left = `${pnt}%`
+                    this.dom.progressLine.style.right = `${100 - pnt}%`
+                }
 
-            let p = game.player
-            let pnt = p.currentTime / (p.timeLength - p.beginningTime) * 100
-            this.dom.progressBarKnob.style.left = `${pnt}%`
-            this.dom.progressLine.style.right = `${100 - pnt}%`
+                progressBarLastUpdate = time
+            }
+            
+            if (time - timeUpdate >= 1000) {
+                let p = game.player
+                if (p.replay) {
+                    let currentTime = Time.formatTime(p.currentTime)
+                    let totalTime = Time.formatTime(p.replay.length)
+                    this.dom.time.innerText = `${currentTime} / ${totalTime}`
+                }
+            }
         })
         this.dom.progressBar.addEventListener('click', (e) => {
             if (!this.game.player.isPlaying) {
                 // call play twice to play and then to pause
-                this.game.player.play()
-                this.game.player.play()
+                this.game.player.pause()
             }
             let bb = e.currentTarget.getBoundingClientRect()
             let percent = ((e.pageX - bb.left) / e.currentTarget.offsetWidth) * 100
@@ -407,15 +474,32 @@ export default class UI {
         })
         this.dom.progressBar.addEventListener('mouseover', () => {
             this.dom.progressGhostKnob.style.display = 'block'
+            this.dom.progressTime.style.display = 'block'
         })
         this.dom.progressBar.addEventListener('mouseout', () => {
             this.dom.progressGhostKnob.style.display = 'none'
+            this.dom.progressTime.style.display = 'none'
         })
         this.dom.progressBar.addEventListener('mousemove', (e) => {
             let bb = e.currentTarget.getBoundingClientRect()
-            let percent = ((e.pageX - bb.left) / e.currentTarget.offsetWidth) * 100
+            let parentWidth = e.currentTarget.offsetWidth
+            let percent = ((e.pageX - bb.left) / parentWidth) * 100
             percent = Math.max(0, Math.min(100, percent))
             this.dom.progressGhostKnob.style.left = `${percent}%`
+
+            let time = percent * this.game.player.replay.length / 100
+            let minutes = Math.floor(time / 60)
+            if (minutes < 10) {
+                minutes = `0${minutes}`
+            }
+            let seconds = Math.floor(time - minutes * 60)
+            if (seconds < 10) {
+                seconds = `0${seconds}`
+            }
+            
+            let timePos = Math.max(14, Math.min(parentWidth - 10, percent * parentWidth / 100))
+            this.dom.progressTime.style.left = `${timePos}px`
+            this.dom.progressTime.innerText = `${minutes}:${seconds}`
         })
 
         window.addEventListener('mousedown', (e) => {
@@ -446,14 +530,18 @@ export default class UI {
                 } else if (e.which === 74 || e.which === 37) {
                     // 74 === 'J' || 'left arrow'
                     let currentTime = game.player.currentTime
-                    game.player.seekByTime(currentTime - 5)
+                    game.player.seek(currentTime - 5)
                 } else if (e.which === 75 || e.which === 32) {
                     // 74 === 'K' || 'space'
-                    game.player.play()
+                    if (!game.player.isPlaying || game.player.isPaused) {
+                        game.player.play()
+                    } else {
+                        game.player.pause()
+                    }
                 } else if (e.which === 76 || e.which === 39) {
                     // 74 === 'L' || 'right arrow'
                     let currentTime = game.player.currentTime
-                    game.player.seekByTime(currentTime + 5)
+                    game.player.seek(currentTime + 5)
                 }
 
                 // TODO:
@@ -506,7 +594,12 @@ export default class UI {
                     screenPauseTimer = 1
                     screenPauseTimer = setTimeout(() => {
                         screenPauseTimer = 0
-                        this.game.player.play()
+                        let p = this.game.player
+                        if (!p.isPlaying || p.isPaused) {
+                            p.play()
+                        } else {
+                            p.pause()
+                        }
                     }, 200)
                 }
             }
@@ -546,7 +639,7 @@ export default class UI {
         })
 
         game.events.addListener('mapchange', () => {
-            if (game.replay) {
+            if (game.player.replay) {
                 this.dom.modeReplay.style.cursor = 'pointer'
                 this.dom.modeReplay.style.color = '#fff'
                 this.dom.modeReplay.style.textDecoration = 'none'
@@ -564,14 +657,14 @@ export default class UI {
     selectMode(mode) {
         switch (mode) {
             case Game.MODE_REPLAY: {
-                if (!this.game.replay) {
+                if (!this.game.player.replay) {
                     break
                 }
 
                 this.dom.modeFree.style.background = 'transparent'
                 this.dom.modeReplay.style.background = 'rgba(255,255,255,0.2)'
                 this.dom.progressBar.style.display = 'block'
-                this.dom.play.style.visibility = 'visible'
+                this.dom.leftButtons.style.visibility = 'visible'
                 this.dom.settingsMenu.style.bottom = '68px'
                 this.showTitle()
                 this.game.mode = Game.MODE_REPLAY
@@ -582,7 +675,8 @@ export default class UI {
                 this.dom.modeReplay.style.background = 'transparent'
                 this.dom.modeFree.style.background = 'rgba(255,255,255,0.2)'
                 this.dom.progressBar.style.display = 'none'
-                this.dom.play.style.visibility = 'hidden'
+                
+                this.dom.leftButtons.style.visibility = 'hidden'
                 this.dom.settingsMenu.style.bottom = '54px'
                 this.hideTitle()
                 if (this.game.player.isPlaying && !this.game.player.isPaused) {

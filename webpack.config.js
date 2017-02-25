@@ -15,17 +15,15 @@ module.exports = {
         libraryTarget: 'umd'
     },
     module: {
-        loaders: [{
+        rules: [{
             test: /\.js$/,
-            exclude: /node_modules/,
-            loader: 'babel-loader',
-            query: {
-                presets: ['es2015']
-            }
-        }, {
-            test: /\.json$/,
-            exclude: /node_modules/,
-            loader: 'json-loader'
+            exclude: [/node_modules/],
+            use: [{
+                loader: 'babel-loader',
+                options: {
+                    presets: ['es2015']
+                }
+            }]
         }]
     },
     plugins: [
@@ -33,7 +31,9 @@ module.exports = {
             include: /\.min\.js$/,
             minimize: true
         }),
-        new webpack.BannerPlugin(license)
+        new webpack.BannerPlugin({
+            banner: license
+        })
     ],
     node: {
         fs: 'empty'

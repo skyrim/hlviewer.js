@@ -7,9 +7,9 @@
   ],
   "main": "dist/hlviewer.js",
   "scripts": {
-    "build": "./node_modules/.bin/webpack -c webpack.config.js",
-    "build-min": "./node_modules/.bin/webpack -c webpack.config.js -p",
-    "test": "./node_modules/.bin/_mocha ./tests/ --compilers js:babel-register -r babel-polyfill -r jsdom-global/register"
+    "build": "./node_modules/.bin/webpack --config webpack.config.js",
+    "build-min": "./node_modules/.bin/webpack --config webpack.config.js",
+    "test": "./node_modules/.bin/_mocha ./tests/ --compilers js:babel-register -r babel-polyfill"
   },
   "repository": {
     "type": "git",
@@ -31,8 +31,7 @@
     "json-loader": "^0.5.4",
     "mocha": "3.2.0",
     "raw-loader": "0.5.1",
-    "webpack": "1.13.1",
-    "webpack-dev-server": "1.14.1",
+    "webpack": "2.2.1",
     "three": "0.82.1"
   },
   "dependencies": {

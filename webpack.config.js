@@ -1,4 +1,7 @@
+var fs = require('fs')
 var webpack = require('webpack')
+
+var license = fs.readFileSync('LICENSE', 'utf8')
 
 module.exports = {
     entry: {
@@ -29,9 +32,10 @@ module.exports = {
         new webpack.optimize.UglifyJsPlugin({
             include: /\.min\.js$/,
             minimize: true
-        })
+        }),
+        new webpack.BannerPlugin(license)
     ],
     node: {
-        fs: "empty"
+        fs: 'empty'
     }
 };

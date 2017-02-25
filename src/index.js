@@ -7,117 +7,8 @@ import Wad from './wad'
 import Tga from './tga'
 import xhr from './xhr'
 
-let createDomFromHtml = (html) => {
-    let tempNode = document.createElement('div')
-    tempNode.innerHTML = html.trim()
-    if (tempNode.children.length === 1) {
-        return tempNode.firstChild
-    } else {
-        return tempNode.children
-    }
-}
-
-let formatLoadingItem = (url, progress = 0) => {
-    progress = Math.round(progress * 100).toString()
-    let length = 59 - url.length - progress.length
-    if (length < 2) {
-        url = url.substr(0, 50)
-        length = 9 - progress.length
-    }
-    let dots = Array(length).join('.')
-    return `${url}${dots}${progress}%`
-}
-
-let loadReplay = (url, ui) => {
-    let text = `<li>${formatLoadingItem(url)}</li>`
-    let loadText = createDomFromHtml(text)
-    ui.dom.loadingLog.appendChild(loadText)
-    return Replay.loadFromUrl(url, (r, progress) => {
-        loadText.innerHTML = formatLoadingItem(url, progress)
-    })
-}
-
-let loadMap = (url, ui) => {
-    let text = `<li>${formatLoadingItem(url)}</li>`
-    let loadText = createDomFromHtml(text)
-    ui.dom.loadingLog.appendChild(loadText)
-    return Map.loadFromUrl(url, (r, progress) => {
-        loadText.innerHTML = formatLoadingItem(url, progress)
-    })
-}
-
-let loadSky = (url, ui, map) => {
-    let skyname = map.entities[0].skyname
-    if (!skyname) {
-        return map
-    }
-
-    let skyUrls = [
-        `${url}/${skyname}bk.tga`,
-        `${url}/${skyname}dn.tga`,
-        `${url}/${skyname}ft.tga`,
-        `${url}/${skyname}lf.tga`,
-        `${url}/${skyname}rt.tga`,
-        `${url}/${skyname}up.tga`
-    ]
-
-    let promises = []
-    for (let i = 0; i < skyUrls.length; ++i) {
-        let text = `<li>${formatLoadingItem(skyUrls[i])}</li>`
-        let loadText = createDomFromHtml(text)
-        ui.dom.loadingLog.appendChild(loadText)
-        promises.push(Tga.loadFromUrl(skyUrls[i], (r, progress) => {
-            loadText.innerHTML = formatLoadingItem(skyUrls[i], progress)
-        }))
-    }
-
-    return Promise.all(promises)
-    .then((skies) => {
-        map.skies = skies
-        return map
-    })
-    .catch(() => {
-        return map
-    })
-}
-
-let mergeWadAndMapTextures = (wad, map) => {
-    let cmp = (a, b) => a.toLowerCase() === b.toLowerCase()
-    wad.entries.forEach(entry => {
-        map.textures.forEach(texture => {
-            if (cmp(entry.name, texture.name)) {
-                texture.mipmaps = entry.data.texture.mipmaps
-            }
-        })
-    })
-}
-
-let checkMissingTextures = (map, paths, ui) => {
-    if (map.hasMissingTextures()) {
-        let wads = map.entities[0].wad
-        let promises = wads.map(
-            wad => loadWad(`./${paths.wads}/${wad}`, map, ui)
-        )
-        return Promise.all(promises).then(() => map)
-    }
-
-    return map
-}
-
-let loadWad = (url, map, ui) => {
-    let text = `<li>${formatLoadingItem(url, 0)}</li>`
-    let loadText = createDomFromHtml(text)
-    ui.dom.loadingLog.appendChild(loadText)
-    return Wad.loadFromUrl(url, (r, progress) => {
-            loadText.innerHTML = formatLoadingItem(url, progress)
-        })
-        .then(wad => mergeWadAndMapTextures(wad, map))
-}
-
 class HLViewer {
-    constructor(rootSelector, {
-        paths
-    }) {
+    constructor(rootSelector, { paths }) {
         this.root = document.querySelector(rootSelector)
         if (!this.root) {
             throw new Error(`Could not find element with id: ${rootSelector}`)
@@ -146,39 +37,14 @@ class HLViewer {
         }
 
         this.paths = paths
-        this.game = new Game(this.root)
+        this.game = new Game(paths)
         this.ui = new UI(this.root, this.game, {
             paths
         })
     }
 
-    load(url) {
-        this.ui.showLoading()
-
-        let extension = Path.extname(url)
-        if (extension === '.bsp') {
-            let mapName = Path.basename(url, '.bsp')
-            url = `./${this.paths.maps}/${url}`
-            return loadMap(url, this.ui)
-                .then(map => loadSky(this.paths.skies, this.ui, map))
-                .then(map => checkMissingTextures(map, this.paths, this.ui))
-                .then(map => {
-                    this.game.changeMap(map, mapName)
-                    this.ui.showTitle()
-                    this.ui.showReplayControls()
-                    this.ui.clearLoadingLog()
-                    this.ui.hideLoading()
-                })
-        } else if (extension === '.dem') {
-            url = `./${this.paths.replays}/${url}`
-            return loadReplay(url, this.ui)
-                .then(replay => {
-                    this.game.changeReplay(replay)
-                    return this.load(`${replay.maps[0].name}.bsp`)
-                })
-        } else {
-            throw new Error('Invalid file extension (must be .dem or .bsp)')
-        }
+    load(name) {
+        this.game.load(name)
     }
 }
 

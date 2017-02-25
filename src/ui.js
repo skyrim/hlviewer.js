@@ -273,14 +273,15 @@ let ui_style =
     height:100%;
     z-index:20;
     display:none;
+    transition:opacity 2s ease;
 }
-.hlv .spinner {
+.hlv .loading .spinner {
     position:absolute;
     left:50%;
     top:50%;
     transform:translate(-50%,-50%);
 }
-.hlv .log {
+.hlv .loading .log {
     position:absolute;
     background: rgba(0,0,0,0.4);
     padding:10px;
@@ -291,11 +292,10 @@ let ui_style =
     padding-left:16px;
     list-style:none;
 }
-.log > li {
+.hlv .loading .log > li {
     display:block;
 }
-</style>
-`
+</style>`
 
 let ui_template =
 `<div class="hlv">
@@ -334,7 +334,7 @@ let ui_template =
     </div>
 </div>`
 
-let createDomFromHtml = (html) => {
+const createDomFromHtml = (html) => {
     let tempNode = document.createElement('div')
     tempNode.innerHTML = html.trim()
     if (tempNode.children.length === 1) {
@@ -342,6 +342,17 @@ let createDomFromHtml = (html) => {
     } else {
         return tempNode.children
     }
+}
+
+const formatLoadingItem = (name, progress, color = 'white') => {
+    let length = 59 - name.length - progress.length
+    if (length < 2) {
+        name = name.substr(0, 50)
+        length = 9 - progress.length
+    }
+    let dots = Array(length).join('.')
+
+    return `<span style="color:${color}">${name}${dots}${progress}%</span>`
 }
 
 export default class UI {
@@ -390,6 +401,46 @@ export default class UI {
             modeFree: root.querySelector('.settings-item.free-mode')
         }
         this.dom.screen.appendChild(game.getCanvas())
+
+        this.loading = false
+        this.loadingItems = []
+        game.loader.events.addListener('loadstart', item => {
+            if (!this.loading) {
+                this.showLoading()
+                this.hideReplayControls()
+                this.loading = true
+            }
+
+            let loadingItem = this.loadingItems.find(a => a === item)
+            if (!loadingItem) {
+                let node = createDomFromHtml(`<li></li>`)
+                node.innerHTML = formatLoadingItem(item.name, '0')
+                this.dom.loadingLog.appendChild(node)
+                this.loadingItems.push({
+                    item,
+                    node: node
+                })
+            }
+        })
+        game.loader.events.addListener('progress', item => {
+            let entry = this.loadingItems.find(a => a.item === item)
+            if (!entry) return
+
+            let name = entry.item.name  
+            let progress = '' + Math.round(entry.item.progress * 100)
+            entry.node.innerHTML = formatLoadingItem(name, progress)
+        })
+        game.loader.events.addListener('loadall', () => {
+            this.showReplayControls()
+            this.loading = false
+            this.loadingItems.length = 0
+
+            setTimeout(() => {
+                this.hideLoading()
+                this.clearLoadingLog()
+            }, 2000)
+            
+        })
 
         this.dom.play.addEventListener('click', () => {
             if (!game.player.isPlaying || game.player.isPaused) {
@@ -680,7 +731,7 @@ export default class UI {
                 this.dom.settingsMenu.style.bottom = '54px'
                 this.hideTitle()
                 if (this.game.player.isPlaying && !this.game.player.isPaused) {
-                    this.game.player.play()
+                    this.game.player.pause()
                 }
                 this.game.mode = Game.MODE_FREE
                 break

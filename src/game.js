@@ -6,6 +6,7 @@ import ReplayPlayer from './replay-player'
 import * as Time from './time'
 import Resources from './resources'
 import Entities from './entities'
+import Loader from './loader'
 
 const KEYS = {
     A: 'A'.charCodeAt(0),
@@ -72,7 +73,7 @@ let checkWebGLSupport = () => {
 }
 
 export default class Game {
-    constructor() {
+    constructor(paths) {
         let status = checkWebGLSupport()
         if (!status.hasSupport) {
             alert(status.message)
@@ -99,6 +100,24 @@ export default class Game {
             this.keyboard.key[i] = false
         }
 
+        this.paths = paths
+        this.loader = new Loader(this)
+        this.loader.events.addListener('loadall', loader => {
+            if (loader.replay) {
+                this.changeReplay(loader.replay.data)
+            }
+
+            let map = loader.map.data
+            let skies = loader.skies
+            let skiesValid = true
+            skies.forEach(sky => {
+                skiesValid = skiesValid && sky.isDone()
+            })
+            if (skiesValid) {
+                map.skies = skies.map(sky => sky.data)
+            }
+            this.changeMap(map, map.name)
+        })
         this.resources = new Resources(this)
         this.entities = new Entities()
 
@@ -145,6 +164,10 @@ export default class Game {
 
     getCanvas() {
         return this.renderer.domElement
+    }
+
+    load(name) {
+        this.loader.load(name)
     }
 
     changeMap(map, mapName) {

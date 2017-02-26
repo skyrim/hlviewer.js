@@ -16,22 +16,25 @@ class HLViewer {
 
         paths = paths || {
             replays: '',
-            maps: '',
-            wads: '',
-            skies: ''
+            maps:    '',
+            wads:    '',
+            skies:   '',
+            sounds:  ''
         }
         if (typeof paths === 'string') {
             paths = {
                 replays: `${paths}/replays`,
-                maps: `${paths}/maps`,
-                wads: `${paths}/wads`,
-                skies: `${paths}/skies`
+                maps:    `${paths}/maps`,
+                wads:    `${paths}/wads`,
+                skies:   `${paths}/skies`,
+                sounds:  `${paths}/sounds`
             }
         } else if (typeof paths === 'object') {
             if (!paths.replays) paths.replays = ''
-            if (!paths.maps) paths.maps = ''
-            if (!paths.wads) paths.wads = ''
-            if (!paths.skies) paths.skies = ''
+            if (!paths.maps)    paths.maps = ''
+            if (!paths.wads)    paths.wads = ''
+            if (!paths.skies)   paths.skies = ''
+            if (!paths.sounds)  paths.sounds = ''
         } else {
             throw new Error('Invalid paths option')
         }

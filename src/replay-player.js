@@ -158,6 +158,15 @@ export default class ReplayPlayer {
             }
 
             let frame = Replay.readFrame(r, deltaDecoders, customMessages)
+            if (frame.type === 8) {
+                let sample = frame.sound.sample
+                let sound = this.game.sounds.find(s => s.name === sample)
+                if (sound) {
+                    let channel = frame.sound.channel
+                    let volume = frame.sound.volume
+                    this.game.soundSystem.play(sound, channel, volume)
+                }
+            }
             if (frame.time <= endTime) {
                 this.state.feedFrame(frame)
                 this.currentTick = frame.tick

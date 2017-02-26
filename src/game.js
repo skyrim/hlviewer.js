@@ -7,6 +7,7 @@ import * as Time from './time'
 import Resources from './resources'
 import Entities from './entities'
 import Loader from './loader'
+import SoundSystem from './sound-system'
 
 const KEYS = {
     A: 'A'.charCodeAt(0),
@@ -100,6 +101,11 @@ export default class Game {
             this.keyboard.key[i] = false
         }
 
+        this.resources = new Resources(this)
+        this.entities = new Entities()
+        this.soundSystem = new SoundSystem()
+        this.sounds = []
+
         this.paths = paths
         this.loader = new Loader(this)
         this.loader.events.addListener('loadall', loader => {
@@ -116,10 +122,16 @@ export default class Game {
             if (skiesValid) {
                 map.skies = skies.map(sky => sky.data)
             }
+
+            if (loader.sounds.length > 0) {
+                loader.sounds.forEach(sound => {
+                    if (sound.data)
+                        this.sounds.push(sound.data)
+                })
+            }
+
             this.changeMap(map, map.name)
         })
-        this.resources = new Resources(this)
-        this.entities = new Entities()
 
         window.addEventListener('mousedown', this.mousedown.bind(this))
         window.addEventListener('mouseup',   this.mouseup.bind(this))

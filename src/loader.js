@@ -2,6 +2,7 @@ import EventEmitter from 'events'
 import Map from './map'
 import Path from 'path'
 import Replay from './replay'
+import Sound from './sound'
 import Tga from './tga'
 import Wad from './wad'
 import xhr from './xhr'
@@ -81,6 +82,9 @@ export default class Loader {
 
         for (let i = 0; i < this.wads.length; ++i)
             if (this.wads[i].isLoading()) return
+        
+        for (let i = 0; i < this.sounds.length; ++i)
+            if (this.sounds[i].isLoading()) return
 
         this.events.emit('loadall', this)
     }
@@ -93,7 +97,7 @@ export default class Loader {
         else if (extension === '.bsp') {
             this.loadMap(name)
         } else {
-            this.events.emit('error', name, 'Invalid file extension')
+            this.events.emit('error', 'Invalid file extension', name)
         }
     }
 
@@ -111,13 +115,19 @@ export default class Loader {
             this.replay.done(replay)
             
             this.loadMap(replay.maps[0].name + '.bsp')
+
+            replay.maps[0].resources.sounds.forEach(sound => {
+                if(sound.used) {
+                    this.loadSound(sound.name)
+                }
+            })
             
             this.events.emit('load', this.replay)
             this.checkStatus()
         })
         .catch(err => {
             this.replay.error(err)
-            this.events.emit('error', this.replay)
+            this.events.emit('error', err, this.replay)
         })
     }
 
@@ -138,7 +148,9 @@ export default class Loader {
 
             let skyname = map.entities[0].skyname
             if (skyname) {
-                this.loadSky(skyname)
+                 ['bk', 'dn', 'ft', 'lf', 'rt', 'up']
+                    .map(a => `${skyname}${a}.tga`)
+                    .forEach(a => this.loadSky(a))
             }
 
             if (map.hasMissingTextures()) {
@@ -151,42 +163,35 @@ export default class Loader {
         })
         .catch(err => {
             this.map.error(err)
-            this.events.emit('error', this.map)
+            this.events.emit('error', err, this.map)
         })
     }
 
     loadSky(name) {
-        let names = ['bk', 'dn', 'ft', 'lf', 'rt', 'up']
-            .map(a => `${name}${a}.tga`)
+        let sky = new LoadItem(name)
+        this.skies.push(sky)
+        this.events.emit('loadstart', sky)
 
-        let urls = names
-            .map(a => `${this.paths.skies}/${a}`)
-        
-        for (let i = 0; i < urls.length; ++i) {
-            let sky = new LoadItem(names[i])
-            this.skies.push(sky)
-            this.events.emit('loadstart', sky)
-
-            Tga.loadFromUrl(urls[i], (r, progress) => {
-                sky.progress = progress
-                this.events.emit('progress', sky)
-            })
-            .then(image => {
-                sky.done(image)
-                this.events.emit('load', sky)
-                this.checkStatus()
-            })
-            .catch(err => {
-                sky.error(err)
-                this.events.emit('error', sky)
-            })
-        }
+        Tga.loadFromUrl(`${this.paths.skies}/${name}`, (r, progress) => {
+            sky.progress = progress
+            this.events.emit('progress', sky)
+        })
+        .then(image => {
+            sky.done(image)
+            this.events.emit('load', sky)
+            this.checkStatus()
+        })
+        .catch(err => {
+            sky.error(err)
+            this.events.emit('error', err, sky)
+            this.checkStatus()
+        })
     }
 
     loadWad(name) {
         let wad = new LoadItem(name)
-        this.events.emit('loadstart', wad)
         this.wads.push(wad)
+        this.events.emit('loadstart', wad)
 
         const progressCbk = (req, progress) => {
             wad.progress = progress
@@ -212,7 +217,32 @@ export default class Loader {
         })
         .catch(err => {
             wad.error(err)
-            this.events.emit('error', wad)
+            this.events.emit('error', err, wad)
+            this.checkStatus()
+        })
+    }
+
+    loadSound(name) {
+        let sound = new LoadItem(name)
+        this.sounds.push(sound)
+        this.events.emit('loadstart', sound)
+
+        const progressCbk = (req, progress) => {
+            sound.progress = progress
+            this.events.emit('progress', sound)
+        }
+
+        Sound.loadFromUrl(`${this.paths.sounds}/${name}`, progressCbk)
+        .then(data => {
+            data.name = name
+            sound.done(data)
+            this.events.emit('load', sound)
+            this.checkStatus()
+        })
+        .catch(err => {
+            sound.error(err)
+            this.events.emit('error', err, sound)
+            this.checkStatus()
         })
     }
 }

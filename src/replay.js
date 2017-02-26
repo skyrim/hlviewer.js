@@ -1220,7 +1220,11 @@ class FrameDataReader {
 
     static read(r, type, deltaDecoders) {
         if (FrameDataReader.handlers[type]) {
-            return FrameDataReader.handlers[type](r, deltaDecoders)
+            try {
+                return FrameDataReader.handlers[type](r, deltaDecoders)
+            } catch (e) {
+                return null
+            }
         } else {
             return null
         }
@@ -2027,6 +2031,7 @@ export default class Replay {
                 resources.forEach(res => {
                     switch (res.type) {
                         case 0: {
+                            res.used = false
                             this.resources.sounds.push(res)
                             break
                         }
@@ -2091,6 +2096,12 @@ export default class Replay {
                 if (resourceList && currentMap) {
                     currentMap.setResources(resourceList.data)
                 }
+            } else if (frame.type === 8) {
+                let sound = currentMap.resources.sounds
+                    .find(s => s.name === frame.sound.sample)
+                if (sound) {
+                    sound.used = true
+                }
             }
         }
 
@@ -2154,6 +2165,12 @@ export default class Replay {
 
                 if (serverInfo) {
                     continue
+                }
+            } else if (frame.type === 8) {
+                let sound = currentMap.resources.sounds
+                    .find(s => s.name === frame.sound.sample)
+                if (sound) {
+                    sound.used = true
                 }
             }
 

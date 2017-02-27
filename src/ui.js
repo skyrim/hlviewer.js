@@ -69,22 +69,21 @@ let ui_loading_anim =
 let ui_style =
 `<style>
 .hlv {
-    position:relative;
     width:100%;
     height:100%;
+}
+.hlv > .unset-wrapper {
+    all:initial;
+    * {
+        all:unset;
+    }
+}
+.hlv > .unset-wrapper > .style-wrapper {
+    position:relative;
     font-family:Roboto,Arial,Helvetica,sans-serif;
     color:#fff;
-}
-.hlv::before,
-.hlv::after,
-.hlv *::before,
-.hlv *::after {
-    all: unset;
-}
-.hlv div {
-    box-sizing:content-box;
-    background:none;
-    line-height:initial;
+    width:100%;
+    height:100%;
 }
 .hlv .screen {
     position:absolute;
@@ -299,38 +298,42 @@ let ui_style =
 
 let ui_template =
 `<div class="hlv">
-    <div class="screen"></div>
-    <div class="title"></div>
-    <div class="controls">
-        <div class="progress">
-            <div class="time">12:34</div>
-            <div class="ghost-line"></div>
-            <div class="line"></div>
-            <div class="knob"></div>
-            <div class="ghost-knob"></div>
-        </div>
-        <ul class="settings-menu">
-                <li class="mode">Mode</li>
-                <li class="settings-item replay-mode">Replay</li>
-                <li class="settings-item free-mode">Free</li>
-            </ul>
-        <div class="buttons" draggable="false">
-            <div class="left-buttons">
-                <div class="speeddown button">${ui_speed_btn}</div>
-                <div class="play button">${ui_play_btn}</div>
-                <div class="speedup button">${ui_speed_btn}</div>
-                <div class="time">01:23 / 01:55</div>
+    <div class="unset-wrapper">
+        <div class="style-wrapper">
+            <div class="screen"></div>
+            <div class="title"></div>
+            <div class="controls">
+                <div class="progress">
+                    <div class="time">12:34</div>
+                    <div class="ghost-line"></div>
+                    <div class="line"></div>
+                    <div class="knob"></div>
+                    <div class="ghost-knob"></div>
+                </div>
+                <ul class="settings-menu">
+                        <li class="mode">Mode</li>
+                        <li class="settings-item replay-mode">Replay</li>
+                        <li class="settings-item free-mode">Free</li>
+                    </ul>
+                <div class="buttons" draggable="false">
+                    <div class="left-buttons">
+                        <div class="speeddown button">${ui_speed_btn}</div>
+                        <div class="play button">${ui_play_btn}</div>
+                        <div class="speedup button">${ui_speed_btn}</div>
+                        <div class="time">01:23 / 01:55</div>
+                    </div>
+                    <div class="right-buttons">
+                        <div class="settings button">${ui_settings_btn}</div>    
+                        <div class="fullscreen button">${ui_fullscreen_btn}</div>
+                    </div>
+                </div>
             </div>
-            <div class="right-buttons">
-                <div class="settings button">${ui_settings_btn}</div>    
-                <div class="fullscreen button">${ui_fullscreen_btn}</div>
-            </div>
-        </div>
-    </div>
 
-    <div class="loading">
-        <div class="spinner">${ui_loading_anim}</div>
-        <ul class="log"></ul>
+            <div class="loading">
+                <div class="spinner">${ui_loading_anim}</div>
+                <ul class="log"></ul>
+            </div>
+        </div>
     </div>
 </div>`
 

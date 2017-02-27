@@ -171,14 +171,14 @@ class FrameDataReader {
         
         let flags = bs.readBits(9)
 
-        let volume
+        let volume = 1
         if ((flags & 1) !== 0) {
-            volume = bs.readBits(8)
+            volume = bs.readBits(8) / 255
         }
 
-        let attenuation
+        let attenuation = 1
         if ((flags & 2) !== 0) {
-            attenuation = bs.readBits(8)
+            attenuation = bs.readBits(8) / 64
         }
 
         let channel = bs.readBits(3)
@@ -207,7 +207,7 @@ class FrameDataReader {
             zPosition = readCoord(bs)
         }
 
-        let pitch
+        let pitch = 1
         if ((flags & 8) !== 0) {
             pitch = bs.readBits(8)
         }
@@ -245,9 +245,22 @@ class FrameDataReader {
     }
 
     static stuffText(r) {
-        return {
-            command: r.str()
-        }
+        let message = r.str()
+        let commands = message
+            .split(';')
+            .map(command => {
+                let args = command
+                    .split(/\s*("[^"]+"|[^\s"]+)/)
+                    .map(arg => arg.replace(/^"(.*)"$/, '$1').trim())
+                    .filter(arg => arg)
+                
+                let func = args[0]
+                let params = args.slice(1)
+                
+                return { func, params }
+            })
+
+        return { commands }
     }
 
     static setAngle(r) {
@@ -846,8 +859,8 @@ class FrameDataReader {
         return {
             position:    [r.s() / 8, r.s() / 8, r.s() / 8],
             soundIndex:  r.us(),
-            volume:      r.ub(),
-            attenuation: r.ub(),
+            volume:      r.ub() / 255,
+            attenuation: r.ub() / 64,
             entityIndex: r.us(),
             pitch:       r.ub(),
             flags:       r.ub()
@@ -2096,12 +2109,6 @@ export default class Replay {
                 if (resourceList && currentMap) {
                     currentMap.setResources(resourceList.data)
                 }
-            } else if (frame.type === 8) {
-                let sound = currentMap.resources.sounds
-                    .find(s => s.name === frame.sound.sample)
-                if (sound) {
-                    sound.used = true
-                }
             }
         }
 
@@ -2165,6 +2172,31 @@ export default class Replay {
 
                 if (serverInfo) {
                     continue
+                }
+
+                for (let i = 0; i < frame.data.length; ++i) {
+                    let message = frame.data[i]
+                    if (message.type === FrameDataReader.SVC.SOUND
+                     || message.type === FrameDataReader.SVC.SPAWNSTATICSOUND) {
+                        let sound = currentMap.resources.sounds
+                            .find(s => s.index === message.data.soundIndex)
+                        if (sound) {
+                            sound.used = true
+                        }
+                    } else if (message.type === FrameDataReader.SVC.STUFFTEXT) {
+                        message.data.commands.forEach(command => {
+                            let func = command.func
+                            if ((func === 'speak' || func === 'spk')
+                                && command.params.length === 1) {
+                                let soundName = command.params[0] + '.wav'
+                                let sound = currentMap.resources.sounds
+                                    .find(s => s.name === soundName)
+                                if (sound) {
+                                    sound.used = true
+                                }
+                            }
+                        })
+                    }
                 }
             } else if (frame.type === 8) {
                 let sound = currentMap.resources.sounds

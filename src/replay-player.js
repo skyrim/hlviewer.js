@@ -158,10 +158,49 @@ export default class ReplayPlayer {
             }
 
             let frame = Replay.readFrame(r, deltaDecoders, customMessages)
-            if (frame.type === 8) {
+            if (frame.type < 2) {
+                for (let i = 0; i < frame.data.length; ++i) {
+                    let message = frame.data[i]
+                    if (message.type === 6) { // TODO: Magic number SVC_SOUND
+                        let msgSound = message.data
+                        let sound = this.game.sounds
+                            .find(s => s.index === msgSound.soundIndex)
+                        if (sound && sound.name !== 'common/null.wav') {
+                            let channel = msgSound.channel
+                            let volume = msgSound.volume
+                            // TODO: Positional audio
+                            this.game.soundSystem.play(sound, channel, volume)
+                        }
+                    } else if (message.type === 29) { // TODO: Magic number
+                        let msgSound = message.data
+                        let sound = this.game.sounds
+                            .find(s => s.index === msgSound.soundIndex)
+                        if (sound && sound.name !== 'common/null.wav') {
+                            // TODO: Use after implementing positional audio
+                            // let volume = msgSound.volume
+                            // this.game.soundSystem.play(sound, 6, volume)
+                        }
+                    } else if (message.type === 9) {
+                        message.data.commands.forEach(command => {
+                            let func = command.func
+                            if (!(func === 'speak' || func === 'spk')
+                                || command.params.length !== 1) {
+                                return
+                            }
+
+                            let soundName = command.params[0] + '.wav'
+                            let sound = this.game.sounds
+                                .find(s => s.name === soundName)
+                            if (!sound) return
+
+                            this.game.soundSystem.play(sound, 1, 0.7)
+                        })
+                    }
+                }
+            } else if (frame.type === 8) {
                 let sample = frame.sound.sample
                 let sound = this.game.sounds.find(s => s.name === sample)
-                if (sound) {
+                if (sound && sound.name !== 'common/null.wav') {
                     let channel = frame.sound.channel
                     let volume = frame.sound.volume
                     this.game.soundSystem.play(sound, channel, volume)

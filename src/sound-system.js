@@ -24,13 +24,13 @@ export default class SoundSystem {
         return audioContext
     }
 
-    play(sound, channel, volume = 1) {
+    play(sound, channel, volume, attenuation, pitch, position) {
         console.assert(channel > 0 && channel < this.channels.length)
 
         this.stop(channel)
 
         let gain = this.channels[channel].gain
-        gain.gain.value = volume
+        gain.gain.value = Math.max(0, Math.min(1, volume))
 
         let source = this.context.createBufferSource()
         source.buffer = sound.buffer

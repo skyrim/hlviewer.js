@@ -62,7 +62,9 @@ export default class Loader {
         this.sounds = []
 
         this.events = new EventEmitter()
-        this.events.addListener('error', () => {/* stfu */})
+        this.events.addListener('error', err => {
+            console.error(err)
+        })
     }
 
     clear() {
@@ -118,7 +120,7 @@ export default class Loader {
 
             replay.maps[0].resources.sounds.forEach(sound => {
                 if(sound.used) {
-                    this.loadSound(sound.name)
+                    this.loadSound(sound.name, sound.index)
                 }
             })
             
@@ -222,7 +224,7 @@ export default class Loader {
         })
     }
 
-    loadSound(name) {
+    loadSound(name, index) {
         let sound = new LoadItem(name)
         this.sounds.push(sound)
         this.events.emit('loadstart', sound)
@@ -234,6 +236,7 @@ export default class Loader {
 
         Sound.loadFromUrl(`${this.paths.sounds}/${name}`, progressCbk)
         .then(data => {
+            data.index = index
             data.name = name
             sound.done(data)
             this.events.emit('load', sound)

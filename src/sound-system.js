@@ -49,6 +49,10 @@ export default class SoundSystem {
         }
     }
 
+    getVolume() {
+        return this.masterGain.gain.value
+    }
+
     setVolume(value) {
         this.masterGain.gain.value = value
     }

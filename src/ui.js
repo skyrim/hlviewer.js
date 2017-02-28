@@ -35,6 +35,11 @@ let ui_smallscreen_btn =
     <path d='M0 22 L22 22 L22 0 L14 0 L14 14 L0 14 M42 0 L42 22 L64 22 L64 14 L50 14 L50 0 M14 50 L0 50 L0 42 L22 42 L22 64 L14 64 M42 64 L42 42 L64 42 L64 50 L50 50 L50 64 Z' />
 </svg>`
 
+let ui_speaker =
+`<svg xmlns='http://www.w3.org/2000/svg' viewBox="0 0 48 48" fill='currentcolor'>
+    <path d='M6 18v12h8l10 10V8L14 18H6zm27 6c0-3.53-2.04-6.58-5-8.05v16.11c2.96-1.48 5-4.53 5-8.06zM28 6.46v4.13c5.78 1.72 10 7.07 10 13.41s-4.22 11.69-10 13.41v4.13c8.01-1.82 14-8.97 14-17.54S36.01 8.28 28 6.46z' />
+</svg>`
+
 let ui_settings_btn =
 `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
     <path fill-rule="evenodd" clip-rule="evenodd" fill="currentcolor" d="M23.9 10.7c0-0.3-0.4-0.6-0.8-0.6 -1.1 0-2.1-0.6-2.5-1.6 -0.4-1-0.1-2.2 0.7-3 0.3-0.2 0.3-0.6 0.1-0.9 -0.6-0.7-1.2-1.4-1.9-1.9 -0.3-0.2-0.7-0.2-0.9 0.1 -0.7 0.8-2 1.1-3 0.7 -1-0.4-1.7-1.5-1.6-2.6 0-0.4-0.2-0.7-0.6-0.7 -0.9-0.1-1.8-0.1-2.7 0C10.4 0.1 10.1 0.4 10.1 0.8 10.1 1.9 9.5 2.9 8.5 3.3 7.5 3.7 6.2 3.4 5.5 2.6c-0.2-0.3-0.6-0.3-0.9-0.1 -0.7 0.6-1.4 1.2-1.9 1.9C2.4 4.8 2.5 5.2 2.7 5.4c0.8 0.8 1.1 2 0.7 3 -0.4 1-1.4 1.6-2.6 1.6 -0.4 0-0.7 0.2-0.7 0.6 -0.1 0.9-0.1 1.8 0 2.7 0 0.3 0.4 0.6 0.8 0.6 1 0 2 0.6 2.5 1.6 0.4 1 0.2 2.2-0.7 3 -0.3 0.2-0.3 0.6-0.1 0.9 0.6 0.7 1.2 1.4 1.9 1.9 0.3 0.2 0.7 0.2 0.9-0.1 0.7-0.8 2-1.1 3-0.7 1 0.4 1.7 1.5 1.6 2.6 0 0.4 0.2 0.7 0.6 0.7C11.1 24 11.5 24 12 24c0.4 0 0.9 0 1.3-0.1 0.3 0 0.6-0.3 0.6-0.7 0-1.1 0.6-2.1 1.6-2.6 1-0.4 2.3-0.1 3 0.7 0.2 0.3 0.6 0.3 0.9 0.1 0.7-0.6 1.4-1.2 1.9-1.9 0.2-0.3 0.2-0.7-0.1-0.9 -0.8-0.8-1.1-2-0.7-3 0.4-1 1.4-1.6 2.5-1.6l0.1 0c0.3 0 0.7-0.2 0.7-0.6C24 12.5 24 11.6 23.9 10.7zM12 18c-3.3 0-6-2.7-6-6s2.7-6 6-6c3.3 0 6 2.7 6 6S15.3 18 12 18zM12 16"/>
@@ -143,7 +148,7 @@ let ui_style =
     font-size:10pt;
     background:rgba(0,0,0,0.4);
 }
-.hlv .ghost-line {
+.hlv .progress .ghost-line {
     height:4px;
     background:rgba(255,255,255,0.5);
     top:8px;
@@ -152,7 +157,7 @@ let ui_style =
     right:0;
     border-radius:2px;
 }
-.hlv .line {
+.hlv .progress .line {
     height:4px;
     background:#fff;
     top:8px;
@@ -161,7 +166,7 @@ let ui_style =
     right:0;
     border-radius:2px;
 }
-.hlv .knob {
+.hlv .progress .knob {
     position:absolute;
     width:12px;
     height:12px;
@@ -171,7 +176,7 @@ let ui_style =
     top:4px;
     margin-left:-6px;
 }
-.hlv .ghost-knob {
+.hlv .progress .ghost-knob {
     position:absolute;
     width:8px;
     height:8px;
@@ -239,7 +244,63 @@ let ui_style =
 .hlv .time-divider {
     margin:0 6px;
 }
-.hlv .left-buttons .button {
+.hlv .volume {
+    position:relative;
+    display:flex;
+}
+.hlv .volume > .button {
+    width:28px;
+    height:28px;
+    padding:2px;
+}
+.hlv .volume > .bar {
+    position:relative;
+    width:80px;
+    margin-left:6px;
+    margin-right:14px;
+    cursor:pointer;
+}
+.hlv .volume > .bar > .ghost-line {
+    height:4px;
+    background:rgba(255,255,255,0.5);
+    top:13px;
+    position:absolute;
+    left:0;
+    right:0;
+    border-radius:2px;
+}
+.hlv .volume > .bar > .line {
+    height:4px;
+    background:#fff;
+    top:13px;
+    position:absolute;
+    left:0;
+    right:0;
+    border-radius:2px;
+}
+.hlv .volume > .bar > .knob {
+    position:absolute;
+    width:12px;
+    height:12px;
+    background:#fff;
+    border-radius:6px;
+    left:100%;
+    top:9px;
+    margin-left:-6px;
+}
+.hlv .volume > .bar > .ghost-knob {
+    position:absolute;
+    width:8px;
+    height:8px;
+    background:#fff;
+    box-sizing:border-box;
+    border-radius:8px;
+    left:0;
+    top:11px;
+    margin-left:-4px;
+    display:none;
+}
+.hlv .left-buttons > .button {
     box-sizing:border-box;
     width:32px;
     height:32px;
@@ -323,9 +384,18 @@ let ui_template =
                         <div class="speeddown button">${ui_speed_btn}</div>
                         <div class="play button">${ui_play_btn}</div>
                         <div class="speedup button">${ui_speed_btn}</div>
+                        <div class="volume">
+                            <div class="button">${ui_speaker}</div>
+                            <div class="bar">
+                                <div class="ghost-line"></div>
+                                <div class="line"></div>
+                                <div class="knob"></div>
+                                <div class="ghost-knob"></div>
+                            </div>
+                        </div>
                         <div class="time">
                             <span class="current">01:23</span>
-                            <span class="time-divider"> / </span>
+                            <span class="time-divider"> &#47; </span>
                             <span class="total">01:55</span>
                         </div>
                     </div>
@@ -409,7 +479,11 @@ export default class UI {
             settings: root.querySelector('.settings.button'),
             settingsMenu: root.querySelector('.settings-menu'),
             modeReplay: root.querySelector('.settings-item.replay-mode'),
-            modeFree: root.querySelector('.settings-item.free-mode')
+            modeFree: root.querySelector('.settings-item.free-mode'),
+            volume: root.querySelector('.volume > .button'),
+            volumeBar: root.querySelector('.volume > .bar'),
+            volumeKnob: root.querySelector('.volume > .bar > .knob'),
+            volumeLine: root.querySelector('.volume > .bar > .line')
         }
         this.dom.screen.appendChild(game.getCanvas())
 
@@ -563,6 +637,16 @@ export default class UI {
             this.dom.progressTime.innerText = `${minutes}:${seconds}`
         })
 
+        this.dom.volumeBar.addEventListener('click', e => {
+            let bb = e.currentTarget.getBoundingClientRect()
+            let totalWidth = e.currentTarget.offsetWidth
+            let value = (e.pageX - bb.left) / totalWidth
+
+            this.dom.volumeKnob.style.left = `${value * 100}%`
+            this.dom.volumeLine.style.right = `${100 - value * 100}%`
+            game.soundSystem.setVolume(value)
+        })
+
         window.addEventListener('mousedown', (e) => {
             let path = [e.target]
             while (path[path.length - 1].parentElement) {
@@ -585,29 +669,47 @@ export default class UI {
             }
 
             if (game.mode === Game.MODE_REPLAY) {
-                if (e.which === 70) {
-                    // 70 === 'F'
-                    toggleFullscreen()
-                } else if (e.which === 74 || e.which === 37) {
-                    // 74 === 'J' || 'left arrow'
-                    let currentTime = game.player.currentTime
-                    game.player.seek(currentTime - 5)
-                } else if (e.which === 75 || e.which === 32) {
-                    // 74 === 'K' || 'space'
-                    if (!game.player.isPlaying || game.player.isPaused) {
-                        game.player.play()
-                    } else {
-                        game.player.pause()
+                switch (e.which) {
+                    case 70: { // F
+                        toggleFullscreen()
+                        break
                     }
-                } else if (e.which === 76 || e.which === 39) {
-                    // 74 === 'L' || 'right arrow'
-                    let currentTime = game.player.currentTime
-                    game.player.seek(currentTime + 5)
+                    case 74:   // J
+                    case 37: { // left arrow
+                        let currentTime = game.player.currentTime
+                        game.player.seek(currentTime - 5)
+                        break
+                    }
+                    case 75:   // K
+                    case 32: { // space
+                        if (!game.player.isPlaying || game.player.isPaused) {
+                            game.player.play()
+                        } else {
+                            game.player.pause()
+                        }
+                        break
+                    }
+                    case 76:   // L
+                    case 39: { // right arrow
+                        let currentTime = game.player.currentTime
+                        game.player.seek(currentTime + 5)
+                        break
+                    }
+                    case 38: { // up arrow
+                        let volume = Math.min(1, game.soundSystem.getVolume() + 0.05)
+                        game.soundSystem.setVolume(volume)
+                        this.dom.volumeKnob.style.left = `${volume * 100}%`
+                        this.dom.volumeLine.style.right = `${100 - volume * 100}%`
+                        break
+                    }
+                    case 40: { // down arrow
+                        let volume = Math.max(0, game.soundSystem.getVolume() - 0.05)
+                        game.soundSystem.setVolume(volume)
+                        this.dom.volumeKnob.style.left = `${volume * 100}%`
+                        this.dom.volumeLine.style.right = `${100 - volume * 100}%`
+                        break
+                    }
                 }
-
-                // TODO:
-                // volume up 38
-                // volume down 40
             }
         })
 

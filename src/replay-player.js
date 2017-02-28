@@ -182,18 +182,34 @@ export default class ReplayPlayer {
                         }
                     } else if (message.type === 9) {
                         message.data.commands.forEach(command => {
-                            let func = command.func
-                            if (!(func === 'speak' || func === 'spk')
-                                || command.params.length !== 1) {
-                                return
+                            switch (command.func) {
+                                case 'speak':
+                                case 'spk':
+                                case 'play': {
+                                    let soundName = command.params[0] + '.wav'
+                                    let sound = this.game.sounds
+                                        .find(s => s.name === soundName)
+                                    if (!sound) return
+
+                                    this.game.soundSystem.play(sound, 1, 0.7)
+                                    break
+                                }
+                                case 'playvol': {
+                                    let soundName = command.params[0] + '.wav'
+                                    let volume
+                                    if (isNaN(command.params[1])) {
+                                        volume = 1
+                                    } else {
+                                        volume = Number.parseFloat(command.params[1])
+                                    }
+                                    let sound = this.game.sounds
+                                        .find(s => s.name === soundName)
+                                    if (!sound) return
+
+                                    this.game.soundSystem.play(sound, 1, volume)
+                                    break
+                                }
                             }
-
-                            let soundName = command.params[0] + '.wav'
-                            let sound = this.game.sounds
-                                .find(s => s.name === soundName)
-                            if (!sound) return
-
-                            this.game.soundSystem.play(sound, 1, 0.7)
                         })
                     }
                 }

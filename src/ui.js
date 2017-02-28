@@ -6,38 +6,48 @@ import Game from './game'
 import * as Time from './time'
 
 let ui_play_btn =
-`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
-    <path d='M0 0 L0 64 L64 32 Z' />
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentcolor">
+    <path d="M0 0 L0 64 L64 32 Z" />
 </svg>`
 
 let ui_pause_btn =
-`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
-    <path d='M0 0 L0 64 L20 64 L20 0 M44 0 L64 0 L64 64 L44 64 Z' />
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentcolor">
+    <path d="M0 0 L0 64 L20 64 L20 0 M44 0 L64 0 L64 64 L44 64 Z" />
 </svg>`
 
 let ui_step_btn =
-`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
-    <path d='M0 0 L0 64 L8 64 L8 0 M16 0 L16 64 L64 32 Z' />
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentcolor">
+    <path d="M0 0 L0 64 L8 64 L8 0 M16 0 L16 64 L64 32 Z" />
 </svg>`
 
 let ui_speed_btn =
-`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
-    <path d='M0 0 L0 64 L32 32 L32 64 L64 32 L32 0 L32 32 Z' />
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentcolor">
+    <path d="M0 0 L0 64 L32 32 L32 64 L64 32 L32 0 L32 32 Z" />
 </svg>`
 
 let ui_fullscreen_btn =
-`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
-    <path d='M0 22 L8 22 L8 8 L22 8 L22 0 L0 0 M42 0 L42 8 L56 8 L56 22 L64 22 L64 0 M0 64 L0 42 L8 42 L8 56 L22 56 L22 64 M64 64 L42 64 L42 56 L56 56 L56 42 L64 42 Z' />
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentcolor">
+    <path d="M0 22 L8 22 L8 8 L22 8 L22 0 L0 0 M42 0 L42 8 L56 8 L56 22 L64 22 L64 0 M0 64 L0 42 L8 42 L8 56 L22 56 L22 64 M64 64 L42 64 L42 56 L56 56 L56 42 L64 42 Z" />
 </svg>`
 
 let ui_smallscreen_btn =
-`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='currentcolor'>
-    <path d='M0 22 L22 22 L22 0 L14 0 L14 14 L0 14 M42 0 L42 22 L64 22 L64 14 L50 14 L50 0 M14 50 L0 50 L0 42 L22 42 L22 64 L14 64 M42 64 L42 42 L64 42 L64 50 L50 50 L50 64 Z' />
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentcolor">
+    <path d="M0 22 L22 22 L22 0 L14 0 L14 14 L0 14 M42 0 L42 22 L64 22 L64 14 L50 14 L50 0 M14 50 L0 50 L0 42 L22 42 L22 64 L14 64 M42 64 L42 42 L64 42 L64 50 L50 50 L50 64 Z" />
 </svg>`
 
-let ui_speaker =
-`<svg xmlns='http://www.w3.org/2000/svg' viewBox="0 0 48 48" fill='currentcolor'>
-    <path d='M6 18v12h8l10 10V8L14 18H6zm27 6c0-3.53-2.04-6.58-5-8.05v16.11c2.96-1.48 5-4.53 5-8.06zM28 6.46v4.13c5.78 1.72 10 7.07 10 13.41s-4.22 11.69-10 13.41v4.13c8.01-1.82 14-8.97 14-17.54S36.01 8.28 28 6.46z' />
+let ui_speaker_high =
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="currentcolor">
+    <path d="M6 18v12h8l10 10V8L14 18H6zm27 6c0-3.53-2.04-6.58-5-8.05v16.11c2.96-1.48 5-4.53 5-8.06zM28 6.46v4.13c5.78 1.72 10 7.07 10 13.41s-4.22 11.69-10 13.41v4.13c8.01-1.82 14-8.97 14-17.54S36.01 8.28 28 6.46z" />
+</svg>`
+
+let ui_speaker_low =
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="currentcolor">
+    <path d="M37 24c0-3.53-2.04-6.58-5-8.05v16.11c2.96-1.48 5-4.53 5-8.06zm-27-6v12h8l10 10V8L18 18h-8z" />
+</svg>`
+
+let ui_speaker_off =
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="currentcolor">
+    <path d="M14 18v12h8l10 10V8L22 18h-8z" />
 </svg>`
 
 let ui_settings_btn =
@@ -46,28 +56,9 @@ let ui_settings_btn =
 </svg>`
 
 let ui_loading_anim =
-`<svg version="1.1" xmlns="http://www.w3.org/2000/svg"
-    xmlns:xlink="http://www.w3.org/1999/xlink" 
-    x="0px" y="0px"
-    width="80px" height="80px"
-    viewBox="0 0 80 80"
-    xml:space="preserve">
-    <path
-        fill="#ffffff"
-        width="10px"
-        d="M40,72C22.4,72,8,57.6,8,40C8,22.4,
-        22.4,8,40,8c17.6,0,32,14.4,32,32c0,1.1-0.9,2-2,2
-        s-2-0.9-2-2c0-15.4-12.6-28-28-28S12,24.6,12,40s12.6,
-        28,28,28c1.1,0,2,0.9,2,2S41.1,72,40,72z">
-        <animateTransform
-            attributeType="xml"
-            attributeName="transform"
-            type="rotate"
-            from="0 40 40"
-            to="360 40 40"
-            dur="0.6s"
-            repeatCount="indefinite"
-        />
+`<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="80px" height="80px" viewBox="0 0 80 80" xml:space="preserve">
+    <path fill="#ffffff" width="10px" d="M40,72C22.4,72,8,57.6,8,40C8,22.4,22.4,8,40,8c17.6,0,32,14.4,32,32c0,1.1-0.9,2-2,2s-2-0.9-2-2c0-15.4-12.6-28-28-28S12,24.6,12,40s12.6,28,28,28c1.1,0,2,0.9,2,2S41.1,72,40,72z">
+        <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 40 40" to="360 40 40" dur="0.6s" repeatCount="indefinite" />
     </path>
 </svg>`
 
@@ -252,6 +243,7 @@ let ui_style =
     width:28px;
     height:28px;
     padding:2px;
+    cursor:pointer;
 }
 .hlv .volume > .bar {
     position:relative;
@@ -385,7 +377,7 @@ let ui_template =
                         <div class="play button">${ui_play_btn}</div>
                         <div class="speedup button">${ui_speed_btn}</div>
                         <div class="volume">
-                            <div class="button">${ui_speaker}</div>
+                            <div class="button">${ui_speaker_high}</div>
                             <div class="bar">
                                 <div class="ghost-line"></div>
                                 <div class="line"></div>
@@ -452,7 +444,10 @@ export default class UI {
             pause: createDomFromHtml(ui_pause_btn),
             fullscreen: createDomFromHtml(ui_fullscreen_btn),
             smallscreen: createDomFromHtml(ui_smallscreen_btn),
-            settings: createDomFromHtml(ui_settings_btn)
+            settings: createDomFromHtml(ui_settings_btn),
+            speakerHigh: createDomFromHtml(ui_speaker_high),
+            speakerLow: createDomFromHtml(ui_speaker_low),
+            speakerOff: createDomFromHtml(ui_speaker_off)
         }
 
         let root = target.querySelector('.hlv')
@@ -637,14 +632,39 @@ export default class UI {
             this.dom.progressTime.innerText = `${minutes}:${seconds}`
         })
 
+        let preMuteVolume = 1
+        const updateVolume = (value) => {
+            value = Math.max(0, Math.min(1, value))
+            if (value === 0) {
+                preMuteVolume = game.soundSystem.getVolume()
+            }
+
+            this.dom.volume.removeChild(this.dom.volume.firstChild)
+            if (value >= 0.5) {
+                this.dom.volume.appendChild(this.buttons.speakerHigh)
+            } else if (value > 0) {
+                this.dom.volume.appendChild(this.buttons.speakerLow)
+            } else {
+                this.dom.volume.appendChild(this.buttons.speakerOff)
+            }
+            this.dom.volumeKnob.style.left = `${value * 100}%`
+            this.dom.volumeLine.style.right = `${100 - value * 100}%`
+
+            game.soundSystem.setVolume(value)
+        }
+
+        this.dom.volume.addEventListener('click', e => {
+            if (game.soundSystem.getVolume() === 0) {
+                updateVolume(preMuteVolume)
+            } else {
+                updateVolume(0)
+            }
+        })
         this.dom.volumeBar.addEventListener('click', e => {
             let bb = e.currentTarget.getBoundingClientRect()
             let totalWidth = e.currentTarget.offsetWidth
             let value = (e.pageX - bb.left) / totalWidth
-
-            this.dom.volumeKnob.style.left = `${value * 100}%`
-            this.dom.volumeLine.style.right = `${100 - value * 100}%`
-            game.soundSystem.setVolume(value)
+            updateVolume(value)
         })
 
         window.addEventListener('mousedown', (e) => {
@@ -696,17 +716,11 @@ export default class UI {
                         break
                     }
                     case 38: { // up arrow
-                        let volume = Math.min(1, game.soundSystem.getVolume() + 0.05)
-                        game.soundSystem.setVolume(volume)
-                        this.dom.volumeKnob.style.left = `${volume * 100}%`
-                        this.dom.volumeLine.style.right = `${100 - volume * 100}%`
+                        updateVolume(game.soundSystem.getVolume() + 0.05)
                         break
                     }
                     case 40: { // down arrow
-                        let volume = Math.max(0, game.soundSystem.getVolume() - 0.05)
-                        game.soundSystem.setVolume(volume)
-                        this.dom.volumeKnob.style.left = `${volume * 100}%`
-                        this.dom.volumeLine.style.right = `${100 - volume * 100}%`
+                        updateVolume(game.soundSystem.getVolume() - 0.05)
                         break
                     }
                 }

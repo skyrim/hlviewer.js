@@ -236,6 +236,9 @@ let ui_style =
     -ms-user-select:none;
     -moz-user-select:none;
 }
+.hlv .time-divider {
+    margin:0 6px;
+}
 .hlv .left-buttons .button {
     box-sizing:border-box;
     width:32px;
@@ -320,7 +323,11 @@ let ui_template =
                         <div class="speeddown button">${ui_speed_btn}</div>
                         <div class="play button">${ui_play_btn}</div>
                         <div class="speedup button">${ui_speed_btn}</div>
-                        <div class="time">01:23 / 01:55</div>
+                        <div class="time">
+                            <span class="current">01:23</span>
+                            <span class="time-divider"> / </span>
+                            <span class="total">01:55</span>
+                        </div>
                     </div>
                     <div class="right-buttons">
                         <div class="settings button">${ui_settings_btn}</div>    
@@ -393,7 +400,8 @@ export default class UI {
             progressBarKnob: root.querySelector('.progress .knob'),
             progressGhostKnob: root.querySelector('.progress .ghost-knob'),
             leftButtons: root.querySelector('.controls .left-buttons'),
-            time: root.querySelector('.controls .left-buttons .time'),
+            currentTime: root.querySelector('.controls .time .current'),
+            totalTime: root.querySelector('.controls .time .total'),
             play: root.querySelector('.play.button'),
             speedDown: root.querySelector('.speeddown.button'),
             speedUp: root.querySelector('.speedup.button'),
@@ -512,8 +520,7 @@ export default class UI {
                 let p = game.player
                 if (p.replay) {
                     let currentTime = Time.formatTime(p.currentTime)
-                    let totalTime = Time.formatTime(p.replay.length)
-                    this.dom.time.innerText = `${currentTime} / ${totalTime}`
+                    this.dom.currentTime.innerText = currentTime
                 }
             }
         })
@@ -698,6 +705,11 @@ export default class UI {
                 this.dom.modeReplay.style.color = '#fff'
                 this.dom.modeReplay.style.textDecoration = 'none'
                 this.game.player.isPlaying = false
+
+                this.dom.currentTime.innerText = '00:00'
+                let totalTime = game.player.replay.length
+                this.dom.totalTime.innerText = Time.formatTime(totalTime)
+
                 this.selectMode(Game.MODE_REPLAY)
             } else {
                 this.dom.modeReplay.style.cursor = 'not-allowed'

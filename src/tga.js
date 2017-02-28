@@ -67,9 +67,9 @@ export default class Tga {
                 for (let i = 0; i < h; ++i) {
                     for (let j = 0; j < w; ++j) {
                         let dst = (h - 1 - i) * w + j
-                        temp[dst * 4    ] = imageData[(i * w + j) * 3 + 2]
-                        temp[dst * 4 + 1] = imageData[(i * w + j) * 3 + 1]
-                        temp[dst * 4 + 2] = imageData[(i * w + j) * 3]
+                        temp[dst * 4    ] = imageData[(i * w + j) * 4 + 2]
+                        temp[dst * 4 + 1] = imageData[(i * w + j) * 4 + 1]
+                        temp[dst * 4 + 2] = imageData[(i * w + j) * 4]
                         temp[dst * 4 + 3] = 255
                     }
                 }

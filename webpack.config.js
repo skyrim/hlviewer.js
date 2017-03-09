@@ -5,24 +5,28 @@ var license = fs.readFileSync('LICENSE', 'utf8')
 
 module.exports = {
     entry: {
-        'hlviewer':     './src/index.js',
-        'hlviewer.min': './src/index.js'
+        'hlviewer':     './src/index.ts',
+        'hlviewer.min': './src/index.ts'
     },
     output: {
         path: './dist',
-        filename: '[name].js',
-        library: 'HLViewer',
-        libraryTarget: 'umd'
+        filename: '[name].js'
+    },
+    resolve: {
+        extensions: ['.ts', '.tsx', '.js']
     },
     module: {
         rules: [{
-            test: /\.js$/,
+            test: /\.tsx?$/,
             exclude: [/node_modules/],
             use: [{
-                loader: 'babel-loader',
-                options: {
-                    presets: ['es2015']
-                }
+                loader: 'ts-loader'
+            }]
+        }, {
+            test: /(\.css|\.svg)$/,
+            exclude: [/node_modules/],
+            use: [{
+                loader: 'raw-loader'
             }]
         }]
     },

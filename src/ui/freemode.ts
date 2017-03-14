@@ -1,14 +1,17 @@
+import { Component } from '../component'
 import { DOM } from '../dom'
 import { Game } from '../game'
-import { Component } from './component'
 import { UI } from './ui'
 
-class FreeMode implements Component {
+class FreeMode extends Component {
+    node: HTMLElement
     private ui: UI
     private game: Game
-    private node: HTMLElement
 
-    constructor(ui: UI, game: Game) {
+    constructor(ui: UI) {
+        super()
+
+        let game = ui.game
         this.ui = ui
         this.game = game
 

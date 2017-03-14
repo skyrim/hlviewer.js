@@ -1,65 +1,48 @@
-import { DOM } from '../dom'
+import { Component, div, li, ul } from '../component'
 import { Game } from '../game'
 import { Loader } from '../loader'
-import { Component } from './component'
-import { FreeMode } from './freemode'
-import { ReplayMode } from './replaymode'
 import { UI } from './ui'
 
-class Loading implements Component {
+class Loading extends Component {
     private ui: UI
     private game: Game
-    private node: Element
+
     private onLoad: (loader: Loader) => void
     private onItemLoad: (item: any) => void
     private onItemProgress: (item: any) => void
 
-    constructor(ui: UI, game: Game) {
+    constructor(ui: UI) {
+        super()
+
+        let game = ui.game
         this.ui = ui
         this.game = game
 
-        const LOADING_ANIMATION = require('./icons/loading.svg')
-        const TEMPLATE =
-            `<div class="loading">
-                <div class="spinner">${LOADING_ANIMATION}</div>
-                <ul class="log"></ul>
-            </div>`
-        this.node = DOM.htmlToElement(TEMPLATE)
+        let spinner = div({class: 'spinner'})
+        spinner.node.innerHTML = require('./icons/loading.svg')
 
-        let root = this.ui.getNode().querySelector('.style-wrapper')
-        if (root) {
-            root.appendChild(this.node)
-        }
+        let log = ul({class: 'log'})
 
-        let log = this.node.querySelector('.log')
+        let root = div({class: 'loading'}, [
+            spinner,
+            log
+        ])
+        this.node = root.node
 
-        let items: Array<{item: any, node: Element}> = []
+        let items: Array<{item: any, node: Component}> = []
 
-        const formatItem = (name: string, status: string, color: string) => {
+        const formatItem = (name: string, status: string) => {
             let length = 59 - name.length - status.length
             if (length < 2) {
                 name = name.substr(0, 50)
                 length = 9 - status.length
             }
+
             let dots = Array(length).join('.')
 
-            let format =
-                `<span style="color:${color}">
-                    ${name}${dots}${status}
-                </span>`
-
-            return format
+            return `${name}${dots}${status}`
         }
 
-        this.onLoad = (loader: Loader) => {
-            if (loader.replay) {
-                let replay = new ReplayMode(this.ui, this.game)
-                this.ui.changeToComponent(replay)
-            } else {
-                let free = new FreeMode(this.ui, this.game)
-                this.ui.changeToComponent(free)
-            }
-        }
         this.onItemLoad = (item: any) => {
             for (let i = 0; i < items.length; ++i) {
                 if (items[i] === item) {
@@ -67,16 +50,11 @@ class Loading implements Component {
                 }
             }
 
-            let node = DOM.htmlToElement('<li></li>')
-            node.innerHTML = formatItem(item.name, '0%', 'white')
-            items.push({
-                item,
-                node
-            })
-            if (log) {
-                log.appendChild(node)
-            }
+            let node = li({}, formatItem(item.name, '0%'))
+            items.push({ item, node })
+            log.node.appendChild(node.node)
         }
+
         this.onItemProgress = (item: any) => {
             let entry
             for (let i = 0; i < items.length; ++i) {
@@ -92,8 +70,17 @@ class Loading implements Component {
 
             let name = entry.item.name
             let progress = `${Math.round(entry.item.progress * 100)}%`
-            entry.node.innerHTML = formatItem(name, progress, 'white')
+            entry.node.node.textContent = formatItem(name, progress)
         }
+
+        this.onLoad = (loader: Loader) => {
+            if (loader.replay) {
+                this.ui.changeToComponent(UI.Mode.Replay)
+            } else {
+                this.ui.changeToComponent(UI.Mode.Free)
+            }
+        }
+
         game.loader.events.on('loadstart', this.onItemLoad)
         game.loader.events.on('progress', this.onItemProgress)
         game.events.on('load', this.onLoad)

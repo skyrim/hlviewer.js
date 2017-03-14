@@ -1,9 +1,7 @@
-import { button, div, span } from '../component'
+import { button, Component, div, li, span, ul } from '../component'
 import { DOM } from '../dom'
 import { Game } from '../game'
 import * as Time from '../time'
-import { Component } from './component'
-import { FreeMode } from './freemode'
 import { UI } from './ui'
 
 const progressBar = (game: Game) => {
@@ -27,11 +25,47 @@ const progressBar = (game: Game) => {
         time.node.style.display = 'none'
     })
 
+    let active = false
+    progressBar.on('mousedown', (e: MouseEvent) => {
+        e.preventDefault()
+        e.returnValue = false
+
+        let bb = progressBar.node.getBoundingClientRect()
+        let width = progressBar.node.offsetWidth
+        let percent = ((e.pageX - bb.left) / width) * 100
+        percent = Math.max(0, Math.min(100, percent))
+        game.player.seekByPercent(percent)
+        game.player.pause()
+
+        active = true
+    })
+
+    window.addEventListener('mouseup', () => {
+        active = false
+    })
+
+    let lastUpdate = 0
+    game.on('postupdate', () => {
+        if (Time.now() - lastUpdate < 100) {
+            return
+        }
+
+        let percent = game.player.currentTime / game.player.replay.length * 100
+        knob.node.style.left = `${percent}%`
+        line.node.style.right = `${100 - percent}%`
+
+        lastUpdate = Time.now()
+    })
+
     progressBar.on('mousemove', (e: MouseEvent) => {
         let bb = progressBar.node.getBoundingClientRect()
         let width = progressBar.node.offsetWidth
         let percent = ((e.pageX - bb.left) / width) * 100
         percent = Math.max(0, Math.min(100, percent))
+
+        if (active) {
+            game.player.seekByPercent(percent)
+        }
 
         ghostKnob.node.style.left = `${percent}%`
 
@@ -216,15 +250,6 @@ const playButton = (game: Game) => {
     return play
 }
 
-/*const settingsButton = () => {
-    const component = button({class: 'button settings'})
-    component.node.innerHTML = require('./icons/settings.svg')
-
-    // TODO
-
-    return component
-}*/
-
 const fullscreenButton = (ui: UI) => {
     const ICON_FULLSCREEN = require('./icons/fullscreen.svg')
     const ICON_SMALLSCREEN = require('./icons/smallscreen.svg')
@@ -244,272 +269,88 @@ const fullscreenButton = (ui: UI) => {
 
     ui.on('fullscreen', onChange)
 
-    // init
-    onChange(false)
+    onChange(ui.isFullscreened())
 
     return component
 }
 
-class ReplayMode implements Component {
+const settingsComponent = () => {
+    const freeItem = li({class: 'settings-item free-mode'}, 'Free')
+    freeItem.on('click', () => {
+        // TODO
+        // let freeMode = new FreeMode(ui, game)
+        // ui.changeToComponent(freeMode)
+    })
+    const menu = ul({class: 'settings-menu'}, [
+        li({class: 'mode'}, 'Mode'),
+        li({class: 'settings-item replay-mode'}, 'Replay'),
+        freeItem
+    ])
+
+    const ICON_SETTINGS = require('./icons/settings.svg')
+    const settingsButton = button({class: 'button settings'})
+    settingsButton.node.innerHTML = ICON_SETTINGS
+    settingsButton.on('click', () => {
+        if (menu.node.style.display === 'block') {
+            menu.node.style.display = 'none'
+        } else {
+            menu.node.style.display = 'block'
+        }
+    })
+
+    const settings = div({class: 'settings'}, [
+        menu,
+        settingsButton
+    ])
+
+    return settings
+}
+
+class ReplayMode extends Component {
+    node: HTMLElement
     private ui: UI
     private game: Game
-    private node: HTMLElement
 
-    private inFocus: boolean
     private onPlayerChange: () => void
 
-    constructor(ui: UI, game: Game) {
+    constructor(ui: UI) {
+        super()
+
+        let game = ui.game
         this.ui = ui
         this.game = game
 
-        const SETTINGS = require('./icons/settings.svg')
-        const TEMPLATE =
-            `<div class="controls">
-                <ul class="settings-menu">
-                    <li class="mode">Mode</li>
-                    <li class="settings-item replay-mode active">Replay</li>
-                    <li class="settings-item free-mode">Free</li>
-                </ul>
-                <div class="buttons">
-                    <div class="right-buttons">
-                        <button class="settings button">${SETTINGS}</button>
-                    </div>
-                </div>
-            </div>`
-
-        let controls = DOM.htmlToElement(TEMPLATE)
         let root = DOM.find(this.ui.getNode(), '.style-wrapper')
-        root.appendChild(controls)
 
-        game.mode = Game.MODE_REPLAY
-        this.inFocus = false
-
-        let pb = progressBar(game)
-        if (controls.firstChild) {
-            controls.insertBefore(pb.node, controls.firstChild)
-        } else {
-            controls.appendChild(pb.node)
-        }
-
-        const leftButtons = div({class: 'left-buttons'}, [
-            speedDownButton(game),
-            playButton(game),
-            speedUpButton(game),
-            volumeControl(game),
-            replayTime(game)
+        let controls = div({class: 'controls'}, [
+            progressBar(game),
+            div({class: 'buttons'}, [
+                div({class: 'left-buttons'}, [
+                    speedDownButton(game),
+                    playButton(game),
+                    speedUpButton(game),
+                    volumeControl(game),
+                    replayTime(game)
+                ]),
+                div({class: 'right-buttons'}, [
+                    settingsComponent(),
+                    fullscreenButton(ui)
+                ])
+            ])
         ])
 
-        const buttons = DOM.find(controls, '.buttons')
-        if (buttons.firstChild) {
-            buttons.insertBefore(leftButtons.node, buttons.firstChild)
-        } else {
-            buttons.appendChild(leftButtons.node)
-        }
+        root.appendChild(controls.node)
 
-        const fullscreenBtn = fullscreenButton(ui)
-        const rightButtons = DOM.find(controls, '.buttons .right-buttons')
-        rightButtons.appendChild(fullscreenBtn.node)
-
-        // settings
-        const settingsMenu = DOM.find(controls, '.settings-menu')
-        const settingsBtn = DOM.find(controls, '.settings')
-        settingsBtn.addEventListener('click', () => {
-            if (!settingsMenu) {
-                return
-            }
-
-            if (settingsMenu.style.display === 'block') {
-                settingsMenu.style.display = 'none'
-            } else {
-                settingsMenu.style.display = 'block'
-            }
-        })
-
-        const settingsFreeMode = DOM.find(controls, '.settings-menu .free-mode')
-        settingsFreeMode.addEventListener('click', () => {
-            let freeMode = new FreeMode(ui, game)
-            this.ui.changeToComponent(freeMode)
-        })
-
-        // ui visibility
-        let hideControlsTimer: any
-
-        root.addEventListener('mouseover', () => {
-            controls.style.opacity = '1'
-        })
-
-        root.addEventListener('mouseout', () => {
-            controls.style.opacity = '0'
-            if (hideControlsTimer) {
-                clearTimeout(hideControlsTimer)
-            }
-        })
-
-        root.addEventListener('mousemove', () => {
-            controls.style.opacity = '1'
-            root.style.cursor = 'default'
-            clearTimeout(hideControlsTimer)
-            hideControlsTimer = setTimeout(
-                () => {
-                    controls.style.opacity = '0'
-                    root.style.cursor = 'none'
-                },
-                3000)
-        })
-
-        /*window.addEventListener('mousedown', (e) => {
-            let path = DOM.createPath(e)
-
-            let el = path.find(e => e === ui.getNode())
-            this.inFocus = (el !== undefined)
-        })*/
-
-        // time
-        /*const totalTimeText = DOM.find(controls, '.time .total')
-        totalTimeText.innerText = Time.formatTime(game.player.replay.length)
-
-        let progressBarActive = false
-        const progressBar = DOM.find(controls, '.progress')
-        const progressBarTime = DOM.find(controls, '.progress .time')
-        const progressBarGhostKnob = DOM.find(controls, '.progress .ghost-knob')
-
-        progressBar.addEventListener('mousedown', (e) => {
-            if (!game.player.isPlaying) {
-                this.game.player.pause()
-            }
-
-            progressBarActive = true
-            let bb = progressBar.getBoundingClientRect()
-            let percent = ((e.pageX - bb.left) / progressBar.offsetWidth) * 100
-            game.player.seekByPercent(percent)
-        })
-
-        window.addEventListener('mouseup', () => {
-            progressBarActive = false
-        })
-
-        progressBar.addEventListener('mouseover', () => {
-            progressBarGhostKnob.style.display = 'block'
-            progressBarTime.style.display = 'block'
-        })
-
-        progressBar.addEventListener('mouseout', () => {
-            progressBarGhostKnob.style.display = 'none'
-            progressBarTime.style.display = 'none'
-        })
-
-        progressBar.addEventListener('mousemove', (e) => {
-            let bb = progressBar.getBoundingClientRect()
-            let parentWidth = progressBar.offsetWidth
-            let percent = ((e.pageX - bb.left) / parentWidth) * 100
-            percent = Math.max(0, Math.min(100, percent))
-            progressBarGhostKnob.style.left = `${percent}%`
-            if (progressBarActive) {
-                game.player.seekByPercent(percent)
-            }
-
-            let time = percent * this.game.player.replay.length / 100
-            let timePos = Math.max(14, percent * parentWidth / 100)
-            timePos = Math.min(parentWidth - 10, timePos)
-            progressBarTime.style.left = `${timePos}px`
-            progressBarTime.innerText = Time.formatTime(time)
-        })
-
-        let progressBarLastUpdate = 0
-        let timeTextUpdate = 0
-        const timeText = DOM.find(controls, '.time .current')
-        const progressBarKnob = DOM.find(controls, '.progress .knob')
-        const progressBarLine = DOM.find(controls, '.progress .line')
-        game.events.addListener('postupdate', () => {
-            let time = Time.now()
-            if (time - progressBarLastUpdate >= 100) {
-                let p = game.player
-                if (p.replay) {
-                    let pnt = p.currentTime / p.replay.length * 100
-                    progressBarKnob.style.left = `${pnt}%`
-                    progressBarLine.style.right = `${100 - pnt}%`
-                }
-
-                progressBarLastUpdate = time
-            }
-
-            if (time - timeTextUpdate >= 1000) {
-                let p = game.player
-                if (p.replay) {
-                    let currentTime = Time.formatTime(p.currentTime)
-                    timeText.innerText = currentTime
-                }
-            }
-        })*/
-
-        // This may seem silly, but...
-        // When I used "click" event it stopped working after third doubleclick
-        // on the same spot. So I tried creating my own click using
-        // "mousedown" + "mouseup" events and now user can spam doubleclicks
-        // on the same spot and player will go in and out of fullscreen
-        // as intended.
-        let screenPauseDownOnScreen = false
-        let screenPauseTimer: any = 0
-        const screen = DOM.find(ui.getNode(), '.screen')
-
-        screen.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) {
-                return
-            }
-
-            screenPauseDownOnScreen = true
-        })
-
-        window.addEventListener('mouseup', (e) => {
-            if (e.button !== 0) {
-                return
-            }
-
-            let path = DOM.createPath(e)
-            if (path[1] !== screen) {
-                screenPauseDownOnScreen = false
-            }
-        })
-
-        screen.addEventListener('mouseup', (e) => {
-            if (e.button !== 0 || !screenPauseDownOnScreen) {
-                return
-            }
-
-            if (game.mode === Game.MODE_REPLAY) {
-                if (screenPauseTimer) {
-                    // toggleFullscreen()
-                    clearTimeout(screenPauseTimer)
-                    screenPauseTimer = 0
-                } else {
-                    screenPauseTimer = 1
-                    screenPauseTimer = setTimeout(
-                        () => {
-                            screenPauseTimer = 0
-                            let p = this.game.player
-                            if (!p.isPlaying || p.isPaused) {
-                                p.play()
-                            } else {
-                                p.pause()
-                            }
-                        },
-                        200)
-                }
-            }
-        })
+        game.mode = Game.MODE_REPLAY
 
         // keyboard shortcuts
         window.addEventListener('keydown', (e) => {
-            if (!this.inFocus) {
+            if (!this.ui.isFocused()) {
                 return
             }
 
             if (game.mode === Game.MODE_REPLAY) {
                 switch (e.which) {
-                    case 70: { // F
-                        // toggleFullscreen()
-                        break
-                    }
                     case 74:   // J
                     case 37: { // left arrow
                         let currentTime = game.player.currentTime
@@ -532,22 +373,24 @@ class ReplayMode implements Component {
                         break
                     }
                     case 38: { // up arrow
-                        // updateVolume(game.soundSystem.getVolume() + 0.05)
+                        let volume = game.soundSystem.getVolume()
+                        game.soundSystem.setVolume(volume + 0.05)
                         break
                     }
                     case 40: { // down arrow
-                        // updateVolume(game.soundSystem.getVolume() - 0.05)
+                        let volume = game.soundSystem.getVolume()
+                        game.soundSystem.setVolume(volume - 0.05)
                         break
                     }
                     case 77: { // M
-                        // toggleMute()
+                        game.soundSystem.toggleMute()
                         break
                     }
                 }
             }
         })
 
-        this.node = controls
+        this.node = controls.node
     }
 
     detach() {

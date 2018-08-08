@@ -1,54 +1,47 @@
-import { Game } from './game'
-import { UI } from './ui/ui'
+import defaultsDeep from 'lodash-es/defaultsDeep'
+import { PlayerInterface } from './PlayerInterface/index'
+import { Game, Config } from './Game'
+
+declare var VERSION: string
 
 class HLViewer {
-    static readonly VERSION = require('../package.json').version
+  static readonly VERSION = VERSION
 
-    root: HTMLElement
-    paths: any
-    game: Game
-    ui: UI
+  game: Game
+  interface: PlayerInterface
 
-    constructor(rootSelector: string, { paths }: any) {
-        let root = document.querySelector(rootSelector)
-        if (!(root && root instanceof HTMLElement)) {
-            throw new Error(`Could not find element with id: ${rootSelector}`)
+  constructor(rootSelector: string, params: Config | string) {
+    const basePath = typeof params === 'string' ? params : ''
+    const config = defaultsDeep(
+      {
+        paths: {
+          base: `${basePath}`,
+          replays: `${basePath}/replays`,
+          maps: `${basePath}/maps`,
+          wads: `${basePath}/wads`,
+          skies: `${basePath}/skies`,
+          sounds: `${basePath}/sounds`
         }
+      },
+      params
+    )
 
-        paths = paths || {
-            replays: '',
-            maps:    '',
-            wads:    '',
-            skies:   '',
-            sounds:  ''
-        }
-        if (typeof paths === 'string') {
-            paths = {
-                replays: `${paths}/replays`,
-                maps:    `${paths}/maps`,
-                wads:    `${paths}/wads`,
-                skies:   `${paths}/skies`,
-                sounds:  `${paths}/sounds`
-            }
-        } else if (typeof paths === 'object') {
-            if (!paths.replays) { paths.replays = '' }
-            if (!paths.maps)    { paths.maps = '' }
-            if (!paths.wads)    { paths.wads = '' }
-            if (!paths.skies)   { paths.skies = '' }
-            if (!paths.sounds)  { paths.sounds = '' }
-        } else {
-            throw new Error('Invalid paths option')
-        }
+    this.game = new Game(config)
+    this.interface = new PlayerInterface(this.game)
+    this.interface.draw(rootSelector)
+  }
 
-        this.root = root
-        this.paths = paths
-        this.game = new Game(paths)
-        this.ui = new UI(this.root, this.game)
-    }
+  load(name: string) {
+    this.game.load(name)
+  }
 
-    load(name: string) {
-        this.game.load(name)
-    }
+  setTitle(title: string) {
+    this.game.setTitle(title)
+  }
+
+  getTitle() {
+    return this.game.getTitle()
+  }
 }
 
 // had to do this instead of "export default class"

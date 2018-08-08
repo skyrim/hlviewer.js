@@ -1,45 +1,61 @@
 var fs = require('fs')
 var webpack = require('webpack')
-
+var path = require('path')
+var CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin
 var license = fs.readFileSync('LICENSE', 'utf8')
 
+var mode = 'development'
+
 module.exports = {
-    entry: {
-        'hlviewer':     './src/index.ts',
-        'hlviewer.min': './src/index.ts'
-    },
-    output: {
-        path: './dist',
-        filename: '[name].js'
-    },
-    resolve: {
-        extensions: ['.ts', '.tsx', '.js']
-    },
-    module: {
-        rules: [{
-            test: /\.tsx?$/,
-            exclude: [/node_modules/],
-            use: [{
-                loader: 'ts-loader'
-            }]
-        }, {
-            test: /(\.css|\.svg)$/,
-            exclude: [/node_modules/],
-            use: [{
-                loader: 'raw-loader'
-            }]
-        }]
-    },
-    plugins: [
-        new webpack.optimize.UglifyJsPlugin({
-            include: /\.min\.js$/,
-            minimize: true
-        }),
-        new webpack.BannerPlugin({
-            banner: license
-        })
-    ],
-    node: {
-        fs: 'empty'
-    }
-};
+  mode: mode,
+  entry: {
+    hlviewer: './src/index.ts'
+  },
+  output: {
+    filename: '[name].js',
+    path: path.resolve(__dirname, './dist')
+  },
+  devtool: 'source-map',
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        include: [path.resolve(__dirname, './src')],
+        exclude: [],
+        use: [
+          {
+            loader: 'awesome-typescript-loader'
+          }
+        ]
+      },
+      {
+        test: /\.scss$/,
+        use: [
+          'style-loader', // creates style nodes from JS strings
+          {
+            loader: 'css-loader', // translates CSS into CommonJS
+            options: {
+              url: false
+            }
+          },
+          'sass-loader' // compiles Sass to CSS
+        ]
+      }
+    ]
+  },
+  resolve: {
+    extensions: ['.js', '.ts', '.tsx', '.jsx']
+  },
+  plugins: [
+    new CheckerPlugin(),
+    new webpack.BannerPlugin({
+      banner: license
+    }),
+    new webpack.DefinePlugin({
+      VERSION: JSON.stringify(require('./package.json').version)
+    })
+  ],
+  node: {
+    fs: 'empty'
+  }
+}

@@ -1,0 +1,51 @@
+.timeline {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 26px;
+  cursor: pointer;
+}
+
+.timeline__ghostline {
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.5);
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+}
+
+.timeline__line {
+  height: 4px;
+  background-color: #fff;
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+}
+
+.timeline__knob {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #fff;
+  border-radius: 6px;
+  left: 100%;
+  margin-left: -6px;
+}
+
+.timeline__ghostknob {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #fff;
+  box-sizing: border-box;
+  border-radius: 8px;
+  left: 0;
+  margin-left: -4px;
+  display: none;
+}
+
+.timeline:hover .timeline__ghostknob {
+  display: block;
+}

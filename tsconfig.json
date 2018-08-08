@@ -7,13 +7,24 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "strictNullChecks": true,
-        "target": "ES6"
+        "removeComments": true,
+        "module": "commonjs",
+        "target": "es2015",
+        "jsx": "react",
+        "jsxFactory": "h",
+        "lib": [
+            "dom",
+            "es2017"
+        ]
     },
     "include": [
-        "src/**/*.ts"
+        "src/**/*.ts",
+        "src/**/*.tsx"
     ],
     "exclude": [
-        "dist",
-        "node_modules"
-    ]
+        "dist"
+    ],
+    "awesomeTypescriptLoaderOptions": {
+      "useCache": true
+    }
 }

@@ -11,8 +11,8 @@
   ],
   "main": "dist/hlviewer.js",
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "lint": "tslint -c tslint.json 'src/**/*.ts'"
+    "build": "webpack --config webpack.config.min.js",
+    "build-dev": "webpack --config webpack.config.js"
   },
   "repository": {
     "type": "git",
@@ -25,16 +25,23 @@
   },
   "homepage": "https://skyrim.github.io/hlviewer.js",
   "devDependencies": {
-    "@types/node": "^7.0.5",
-    "@types/three": "^0.83.4",
+    "@types/lodash-es": "^4.17.1",
+    "@types/node": "^10.5.4",
+    "@types/three": "^0.92.14",
+    "awesome-typescript-loader": "^5.2.0",
+    "babel-minify-webpack-plugin": "^0.3.1",
     "chai": "3.5.0",
-    "json-loader": "^0.5.4",
+    "css-loader": "^1.0.0",
+    "lodash-es": "^4.17.10",
     "mocha": "3.2.0",
-    "raw-loader": "^0.5.1",
-    "three": "0.82.1",
-    "ts-loader": "^2.0.1",
-    "tslint": "^4.5.1",
-    "typescript": "^2.2.1",
-    "webpack": "2.2.1"
+    "node-sass": "^4.9.2",
+    "optimize-css-assets-webpack-plugin": "^5.0.0",
+    "preact": "^8.2.9",
+    "sass-loader": "^7.0.3",
+    "style-loader": "^0.21.0",
+    "three": "^0.94.0",
+    "typescript": "^2.9.2",
+    "webpack": "^4.16.3",
+    "webpack-cli": "^3.1.0"
   }
 }

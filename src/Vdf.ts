@@ -10,7 +10,7 @@ export function vdf(input: string): any[] {
     switch (state) {
       case 0: {
         // ROOT
-        if (c === ' ' || c === '\n' || c === '\t') {
+        if (/\s/.test(c)) {
           continue
         } else if (c === '{') {
           objects.push({})
@@ -23,7 +23,7 @@ export function vdf(input: string): any[] {
 
       case 1: {
         // OBJECT
-        if (c === ' ' || c === '\n' || c === '\t') {
+        if (/\s/.test(c)) {
           continue
         } else if (c === '}') {
           state = 0
@@ -48,7 +48,7 @@ export function vdf(input: string): any[] {
 
       case 3: {
         // BETWEEN KEY AND VALUE
-        if (c === ' ' || c === '\n' || c === '\t') {
+        if (/\s/.test(c)) {
           continue
         } else if (c === '"') {
           val = ''

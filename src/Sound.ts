@@ -2,9 +2,13 @@ import { SoundSystem } from './SoundSystem'
 import { ProgressCallback, xhr } from './Xhr'
 
 class Sound {
+  index: number
+  name: string
   buffer: AudioBuffer
 
   constructor(buffer: AudioBuffer) {
+    this.index = -1
+    this.name = ''
     this.buffer = buffer
   }
 
@@ -15,7 +19,7 @@ class Sound {
       progressCallback
     }).then(
       response =>
-        new Promise((resolve, reject) => {
+        new Promise<Sound>((resolve, reject) => {
           SoundSystem.getContext().decodeAudioData(
             response,
             (buffer: AudioBuffer) => {

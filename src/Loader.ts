@@ -135,7 +135,7 @@ class Loader {
     }
   }
 
-  loadReplay(name: string) {
+  async loadReplay(name: string) {
     this.replay = new LoadItem(name)
     this.events.emit('loadstart', this.replay)
 
@@ -148,36 +148,37 @@ class Loader {
     }
 
     const replayPath = this.game.config.paths.replays
-    Replay.loadFromUrl(`${replayPath}/${name}`, progressCbk)
-      .then(replay => {
-        if (!this.replay) {
-          return
-        }
+    const replay = await Replay.loadFromUrl(
+      `${replayPath}/${name}`,
+      progressCbk
+    ).catch((err: any) => {
+      if (this.replay) {
+        this.replay.error()
+      }
 
-        this.replay.done(replay)
+      this.events.emit('error', err, this.replay)
+    })
 
-        this.loadMap(replay.maps[0].name + '.bsp')
+    if (!this.replay || !replay) {
+      return
+    }
 
-        const sounds = replay.maps[0].resources.sounds
-        sounds.forEach((sound: any) => {
-          if (sound.used) {
-            this.loadSound(sound.name, sound.index)
-          }
-        })
+    this.replay.done(replay)
 
-        this.events.emit('load', this.replay)
-        this.checkStatus()
-      })
-      .catch((err: any) => {
-        if (this.replay) {
-          this.replay.error()
-        }
+    this.loadMap(replay.maps[0].name + '.bsp')
 
-        this.events.emit('error', err, this.replay)
-      })
+    const sounds = replay.maps[0].resources.sounds
+    sounds.forEach((sound: any) => {
+      if (sound.used) {
+        this.loadSound(sound.name, sound.index)
+      }
+    })
+
+    this.events.emit('load', this.replay)
+    this.checkStatus()
   }
 
-  loadMap(name: string) {
+  async loadMap(name: string) {
     this.map = new LoadItem(name)
     this.events.emit('loadstart', this.map)
 
@@ -190,40 +191,41 @@ class Loader {
     }
 
     const mapsPath = this.game.config.paths.maps
-    Map.loadFromUrl(`${mapsPath}/${name}`, progressCbk)
-      .then(map => {
-        if (!this.map) {
-          return
-        }
-
-        map.name = this.map.name
-        this.map.done(map)
-
-        const skyname = map.entities[0].skyname
-        if (skyname) {
-          ['bk', 'dn', 'ft', 'lf', 'rt', 'up']
-            .map(a => `${skyname}${a}.tga`)
-            .forEach(a => this.loadSky(a))
-        }
-
-        if (map.hasMissingTextures()) {
-          const wads = map.entities[0].wad
-          wads.forEach((wad: string) => this.loadWad(wad))
-        }
-
-        this.events.emit('load', this.map)
-        this.checkStatus()
-      })
-      .catch(err => {
+    const map = await Map.loadFromUrl(`${mapsPath}/${name}`, progressCbk).catch(
+      err => {
         if (this.map) {
           this.map.error()
         }
 
         this.events.emit('error', err, this.map)
-      })
+      }
+    )
+
+    if (!map) {
+      return
+    }
+
+    map.name = this.map.name
+    this.map.done(map)
+
+    const skyname = map.entities[0].skyname
+    if (skyname) {
+      ;['bk', 'dn', 'ft', 'lf', 'rt', 'up']
+        .map(a => `${skyname}${a}.tga`)
+        .forEach(a => this.loadSky(a))
+    }
+
+    if (map.hasMissingTextures()) {
+      const wads = map.entities[0].wad
+      const wadPromises = wads.map((w: string) => this.loadWad(w))
+      await Promise.all(wadPromises)
+    }
+
+    this.events.emit('load', this.map)
+    this.checkStatus()
   }
 
-  loadSky(name: string) {
+  async loadSky(name: string) {
     const sky = new LoadItem(name)
     this.skies.push(sky)
     this.events.emit('loadstart', sky)
@@ -234,59 +236,59 @@ class Loader {
     }
 
     const skiesPath = this.game.config.paths.skies
-    Tga.loadFromUrl(`${skiesPath}/${name}`, progressCbk)
-      .then((image: any) => {
-        sky.done(image)
-        this.events.emit('load', sky)
-        this.checkStatus()
-      })
-      .catch((err: any) => {
-        sky.error()
-        this.events.emit('error', err, sky)
-        this.checkStatus()
-      })
+    const image = await Tga.loadFromUrl(
+      `${skiesPath}/${name}`,
+      progressCbk
+    ).catch((err: any) => {
+      sky.error()
+      this.events.emit('error', err, sky)
+      this.checkStatus()
+    })
+
+    sky.done(image)
+    this.events.emit('load', sky)
+    this.checkStatus()
   }
 
-  loadWad(name: string) {
-    const wad = new LoadItem(name)
-    this.wads.push(wad)
-    this.events.emit('loadstart', wad)
+  async loadWad(name: string) {
+    const wadItem = new LoadItem(name)
+    this.wads.push(wadItem)
+    this.events.emit('loadstart', wadItem)
 
     const progressCbk: ProgressCallback = (_1, progress) => {
-      wad.progress = progress
-      this.events.emit('progress', wad)
+      wadItem.progress = progress
+      this.events.emit('progress', wadItem)
     }
 
     const wadsPath = this.game.config.paths.wads
-    Wad.loadFromUrl(`${wadsPath}/${name}`, progressCbk)
-      .then((w: Wad) => {
-        wad.done(w)
+    const wad = await Wad.loadFromUrl(`${wadsPath}/${name}`, progressCbk).catch(
+      (err: any) => {
+        wadItem.error()
+        this.events.emit('error', err, wadItem)
+        this.checkStatus()
+      }
+    )
+    wadItem.done(wad)
 
-        if (!this.map) {
-          return
+    if (!this.map || !wad) {
+      return
+    }
+
+    const map = this.map.data
+    const cmp = (a: any, b: any) => a.toLowerCase() === b.toLowerCase()
+    wad.entries.forEach((entry: any) => {
+      map.textures.forEach((texture: any) => {
+        if (cmp(entry.name, texture.name)) {
+          texture.mipmaps = entry.data.texture.mipmaps
         }
-
-        const map = this.map.data
-        const cmp = (a: any, b: any) => a.toLowerCase() === b.toLowerCase()
-        w.entries.forEach((entry: any) => {
-          map.textures.forEach((texture: any) => {
-            if (cmp(entry.name, texture.name)) {
-              texture.mipmaps = entry.data.texture.mipmaps
-            }
-          })
-        })
-
-        this.events.emit('load', wad)
-        this.checkStatus()
       })
-      .catch((err: any) => {
-        wad.error()
-        this.events.emit('error', err, wad)
-        this.checkStatus()
-      })
+    })
+
+    this.events.emit('load', wadItem)
+    this.checkStatus()
   }
 
-  loadSound(name: string, index: number) {
+  async loadSound(name: string, index: number) {
     const sound = new LoadItem(name)
     this.sounds.push(sound)
     this.events.emit('loadstart', sound)
@@ -297,19 +299,24 @@ class Loader {
     }
 
     const soundsPath = this.game.config.paths.sounds
-    Sound.loadFromUrl(`${soundsPath}/${name}`, progressCbk)
-      .then((data: any) => {
-        data.index = index
-        data.name = name
-        sound.done(data)
-        this.events.emit('load', sound)
-        this.checkStatus()
-      })
-      .catch((err: any) => {
-        sound.error()
-        this.events.emit('error', err, sound)
-        this.checkStatus()
-      })
+    const data = await Sound.loadFromUrl(
+      `${soundsPath}/${name}`,
+      progressCbk
+    ).catch((err: any) => {
+      sound.error()
+      this.events.emit('error', err, sound)
+      this.checkStatus()
+    })
+
+    if (!data) {
+      return
+    }
+
+    data.index = index
+    data.name = name
+    sound.done(data)
+    this.events.emit('load', sound)
+    this.checkStatus()
   }
 }
 

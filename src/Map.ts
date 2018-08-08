@@ -80,9 +80,11 @@ class Map {
     this.skies = skies
   }
 
+  // TODO: refactor everything related to this
   hasMissingTextures() {
     for (let i = 0; i < this.textures.length; ++i) {
-      if (this.textures[i].mipmaps.length === 0) {
+      const texture = this.textures[i]
+      if (texture.mipmaps.length !== texture.width * texture.height) {
         return true
       }
     }

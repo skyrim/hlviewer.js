@@ -54382,6 +54382,10 @@ class Entities {
                         }
                         t.model = model;
                     }
+                    else if (typeof e.model === 'string' &&
+                        e.model.indexOf('.spr') > -1) {
+                        console.log(e.model);
+                    }
                     break;
                 }
             }
@@ -54833,6 +54837,14 @@ exports.Keyboard = Keyboard;
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 const Path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
@@ -54937,18 +54949,23 @@ class Loader {
         }
     }
     loadReplay(name) {
-        this.replay = new LoadItem(name);
-        this.events.emit('loadstart', this.replay);
-        const progressCbk = (_1, progress) => {
-            if (this.replay) {
-                this.replay.progress = progress;
-            }
-            this.events.emit('progress', this.replay);
-        };
-        const replayPath = this.game.config.paths.replays;
-        Replay_1.Replay.loadFromUrl(`${replayPath}/${name}`, progressCbk)
-            .then(replay => {
-            if (!this.replay) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.replay = new LoadItem(name);
+            this.events.emit('loadstart', this.replay);
+            const progressCbk = (_1, progress) => {
+                if (this.replay) {
+                    this.replay.progress = progress;
+                }
+                this.events.emit('progress', this.replay);
+            };
+            const replayPath = this.game.config.paths.replays;
+            const replay = yield Replay_1.Replay.loadFromUrl(`${replayPath}/${name}`, progressCbk).catch((err) => {
+                if (this.replay) {
+                    this.replay.error();
+                }
+                this.events.emit('error', err, this.replay);
+            });
+            if (!this.replay || !replay) {
                 return;
             }
             this.replay.done(replay);
@@ -54961,125 +54978,120 @@ class Loader {
             });
             this.events.emit('load', this.replay);
             this.checkStatus();
-        })
-            .catch((err) => {
-            if (this.replay) {
-                this.replay.error();
-            }
-            this.events.emit('error', err, this.replay);
         });
     }
     loadMap(name) {
-        this.map = new LoadItem(name);
-        this.events.emit('loadstart', this.map);
-        const progressCbk = (_1, progress) => {
-            if (this.map) {
-                this.map.progress = progress;
-            }
-            this.events.emit('progress', this.map);
-        };
-        const mapsPath = this.game.config.paths.maps;
-        Map_1.Map.loadFromUrl(`${mapsPath}/${name}`, progressCbk)
-            .then(map => {
-            if (!this.map) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.map = new LoadItem(name);
+            this.events.emit('loadstart', this.map);
+            const progressCbk = (_1, progress) => {
+                if (this.map) {
+                    this.map.progress = progress;
+                }
+                this.events.emit('progress', this.map);
+            };
+            const mapsPath = this.game.config.paths.maps;
+            const map = yield Map_1.Map.loadFromUrl(`${mapsPath}/${name}`, progressCbk).catch(err => {
+                if (this.map) {
+                    this.map.error();
+                }
+                this.events.emit('error', err, this.map);
+            });
+            if (!map) {
                 return;
             }
             map.name = this.map.name;
             this.map.done(map);
             const skyname = map.entities[0].skyname;
             if (skyname) {
+                ;
                 ['bk', 'dn', 'ft', 'lf', 'rt', 'up']
                     .map(a => `${skyname}${a}.tga`)
                     .forEach(a => this.loadSky(a));
             }
             if (map.hasMissingTextures()) {
                 const wads = map.entities[0].wad;
-                wads.forEach((wad) => this.loadWad(wad));
+                const wadPromises = wads.map((w) => this.loadWad(w));
+                yield Promise.all(wadPromises);
             }
             this.events.emit('load', this.map);
             this.checkStatus();
-        })
-            .catch(err => {
-            if (this.map) {
-                this.map.error();
-            }
-            this.events.emit('error', err, this.map);
         });
     }
     loadSky(name) {
-        const sky = new LoadItem(name);
-        this.skies.push(sky);
-        this.events.emit('loadstart', sky);
-        const progressCbk = (_1, progress) => {
-            sky.progress = progress;
-            this.events.emit('progress', sky);
-        };
-        const skiesPath = this.game.config.paths.skies;
-        Tga_1.Tga.loadFromUrl(`${skiesPath}/${name}`, progressCbk)
-            .then((image) => {
+        return __awaiter(this, void 0, void 0, function* () {
+            const sky = new LoadItem(name);
+            this.skies.push(sky);
+            this.events.emit('loadstart', sky);
+            const progressCbk = (_1, progress) => {
+                sky.progress = progress;
+                this.events.emit('progress', sky);
+            };
+            const skiesPath = this.game.config.paths.skies;
+            const image = yield Tga_1.Tga.loadFromUrl(`${skiesPath}/${name}`, progressCbk).catch((err) => {
+                sky.error();
+                this.events.emit('error', err, sky);
+                this.checkStatus();
+            });
             sky.done(image);
             this.events.emit('load', sky);
-            this.checkStatus();
-        })
-            .catch((err) => {
-            sky.error();
-            this.events.emit('error', err, sky);
             this.checkStatus();
         });
     }
     loadWad(name) {
-        const wad = new LoadItem(name);
-        this.wads.push(wad);
-        this.events.emit('loadstart', wad);
-        const progressCbk = (_1, progress) => {
-            wad.progress = progress;
-            this.events.emit('progress', wad);
-        };
-        const wadsPath = this.game.config.paths.wads;
-        Wad_1.Wad.loadFromUrl(`${wadsPath}/${name}`, progressCbk)
-            .then((w) => {
-            wad.done(w);
-            if (!this.map) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const wadItem = new LoadItem(name);
+            this.wads.push(wadItem);
+            this.events.emit('loadstart', wadItem);
+            const progressCbk = (_1, progress) => {
+                wadItem.progress = progress;
+                this.events.emit('progress', wadItem);
+            };
+            const wadsPath = this.game.config.paths.wads;
+            const wad = yield Wad_1.Wad.loadFromUrl(`${wadsPath}/${name}`, progressCbk).catch((err) => {
+                wadItem.error();
+                this.events.emit('error', err, wadItem);
+                this.checkStatus();
+            });
+            wadItem.done(wad);
+            if (!this.map || !wad) {
                 return;
             }
             const map = this.map.data;
             const cmp = (a, b) => a.toLowerCase() === b.toLowerCase();
-            w.entries.forEach((entry) => {
+            wad.entries.forEach((entry) => {
                 map.textures.forEach((texture) => {
                     if (cmp(entry.name, texture.name)) {
                         texture.mipmaps = entry.data.texture.mipmaps;
                     }
                 });
             });
-            this.events.emit('load', wad);
-            this.checkStatus();
-        })
-            .catch((err) => {
-            wad.error();
-            this.events.emit('error', err, wad);
+            this.events.emit('load', wadItem);
             this.checkStatus();
         });
     }
     loadSound(name, index) {
-        const sound = new LoadItem(name);
-        this.sounds.push(sound);
-        this.events.emit('loadstart', sound);
-        const progressCbk = (_1, progress) => {
-            sound.progress = progress;
-            this.events.emit('progress', sound);
-        };
-        const soundsPath = this.game.config.paths.sounds;
-        Sound_1.Sound.loadFromUrl(`${soundsPath}/${name}`, progressCbk)
-            .then((data) => {
+        return __awaiter(this, void 0, void 0, function* () {
+            const sound = new LoadItem(name);
+            this.sounds.push(sound);
+            this.events.emit('loadstart', sound);
+            const progressCbk = (_1, progress) => {
+                sound.progress = progress;
+                this.events.emit('progress', sound);
+            };
+            const soundsPath = this.game.config.paths.sounds;
+            const data = yield Sound_1.Sound.loadFromUrl(`${soundsPath}/${name}`, progressCbk).catch((err) => {
+                sound.error();
+                this.events.emit('error', err, sound);
+                this.checkStatus();
+            });
+            if (!data) {
+                return;
+            }
             data.index = index;
             data.name = name;
             sound.done(data);
             this.events.emit('load', sound);
-            this.checkStatus();
-        })
-            .catch((err) => {
-            sound.error();
-            this.events.emit('error', err, sound);
             this.checkStatus();
         });
     }
@@ -55098,6 +55110,14 @@ exports.Loader = Loader;
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const Path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
 const Reader_1 = __webpack_require__(/*! ./Reader */ "./src/Reader.ts");
@@ -55105,7 +55125,7 @@ const Vdf_1 = __webpack_require__(/*! ./Vdf */ "./src/Vdf.ts");
 const Xhr_1 = __webpack_require__(/*! ./Xhr */ "./src/Xhr.ts");
 function parseEntities(r, lumps) {
     r.seek(lumps[Map.Lump.Entities].offset);
-    let entities = Vdf_1.vdf(r.nstr(lumps[Map.Lump.Entities].length));
+    const entities = Vdf_1.vdf(r.nstr(lumps[Map.Lump.Entities].length));
     const VECTOR_ATTRS = [
         'origin',
         'angles',
@@ -55115,7 +55135,7 @@ function parseEntities(r, lumps) {
         'avelocity'
     ];
     const NUMBER_ATTRS = ['renderamt', 'rendermode'];
-    let worldSpawn = entities[0];
+    const worldSpawn = entities[0];
     if (worldSpawn.wad) {
         worldSpawn.wad = worldSpawn.wad
             .split(';')
@@ -55125,7 +55145,7 @@ function parseEntities(r, lumps) {
     }
     entities.forEach(e => {
         if (e.model) {
-            let modelNum = Number.parseInt(e.model.substr(1));
+            const modelNum = Number.parseInt(e.model.substr(1));
             if (!isNaN(modelNum)) {
                 e.model = modelNum;
             }
@@ -55164,36 +55184,37 @@ class Map {
     }
     hasMissingTextures() {
         for (let i = 0; i < this.textures.length; ++i) {
-            if (this.textures[i].mipmaps.length === 0) {
+            const texture = this.textures[i];
+            if (texture.mipmaps.length !== texture.width * texture.height) {
                 return true;
             }
         }
         return false;
     }
     static parseFromArrayBuffer(buffer) {
-        let r = new Reader_1.Reader(buffer);
-        let version = r.ui();
+        const r = new Reader_1.Reader(buffer);
+        const version = r.ui();
         if (version !== 30) {
             throw new Error('Invalid map version');
         }
-        let lumps = [];
+        const lumps = [];
         for (let i = 0; i < 15; ++i) {
             lumps.push({
                 offset: r.ui(),
                 length: r.ui()
             });
         }
-        let parseTextures = (r) => {
-            let parseTexture = (r) => {
-                let parseMipMaps = (r, texture) => {
-                    let isTransparent = texture.name.charAt(0) === '{';
-                    let w = texture.width;
-                    let h = texture.height;
-                    let mipmaps = [r.arrx(w * h, Reader_1.Reader.Type.UByte)];
+        const parseTextures = (r) => {
+            const parseTexture = (r) => {
+                const parseMipMaps = (r, texture) => {
+                    const isTransparent = texture.name.charAt(0) === '{';
+                    const w = texture.width;
+                    const h = texture.height;
+                    const mipmaps = [r.arrx(w * h, Reader_1.Reader.Type.UByte)];
                     r.skip((21 * w * h) / 64 + 2);
-                    let palette = r.arrx(256 * 3, Reader_1.Reader.Type.UByte);
+                    const palette = r.arrx(256 * 3, Reader_1.Reader.Type.UByte);
                     return mipmaps.map(m => {
-                        let t = new Uint8Array(m.length * 4);
+                        const t = new Uint8Array(m.length * 4);
                         for (let i = 0; i < m.length; ++i) {
                             if (isTransparent && m[i] === 255) {
                                 t[4 * i + 3] = 0;
@@ -55208,14 +55229,14 @@ class Map {
                         return t;
                     });
                 };
-                let baseOffset = r.tell();
-                let texture = {
+                const baseOffset = r.tell();
+                const texture = {
                     name: r.nstr(16),
                     width: r.ui(),
                     height: r.ui(),
                     mipmaps: [new Uint8Array(4)]
                 };
-                let mipmapOffset = r.ui();
+                const mipmapOffset = r.ui();
                 if (mipmapOffset !== 0) {
                     r.seek(baseOffset + mipmapOffset);
                     texture.mipmaps = parseMipMaps(r, texture);
@@ -55223,15 +55244,15 @@ class Map {
                 return texture;
             };
             r.seek(lumps[Map.Lump.Textures].offset);
-            let count = r.ui();
-            let offsets = [];
+            const count = r.ui();
+            const offsets = [];
             for (let i = 0; i < count; ++i) {
                 offsets.push(r.ui());
             }
-            let textures = [];
+            const textures = [];
             for (let i = 0; i < count; ++i) {
                 if (offsets[i] === 0xffffffff) {
-                    let mipmap = new Uint8Array([0, 255, 0, 255]);
+                    const mipmap = new Uint8Array([0, 255, 0, 255]);
                     textures.push({
                         name: 'ERROR404',
                         width: 1,
@@ -55246,9 +55267,9 @@ class Map {
             }
             return textures;
         };
-        let loadModels = (r, offset, length) => {
+        const loadModels = (r, offset, length) => {
             r.seek(offset);
-            let models = [];
+            const models = [];
             for (let i = 0; i < length / 64; ++i) {
                 models.push({
                     mins: [r.f(), r.f(), r.f()],
@@ -55262,9 +55283,9 @@ class Map {
             }
             return models;
         };
-        let loadFaces = (r, offset, length) => {
+        const loadFaces = (r, offset, length) => {
             r.seek(offset);
-            let faces = [];
+            const faces = [];
             for (let i = 0; i < length / 20; ++i) {
                 faces.push({
                     plane: r.us(),
@@ -55278,33 +55299,33 @@ class Map {
             }
             return faces;
         };
-        let loadEdges = (r, offset, length) => {
+        const loadEdges = (r, offset, length) => {
             r.seek(offset);
-            let edges = [];
+            const edges = [];
             for (let i = 0; i < length / 4; ++i) {
                 edges.push([r.us(), r.us()]);
             }
             return edges;
         };
-        let loadSurfEdges = (r, offset, length) => {
+        const loadSurfEdges = (r, offset, length) => {
             r.seek(offset);
-            let surfEdges = [];
+            const surfEdges = [];
             for (let i = 0; i < length / 4; ++i) {
                 surfEdges.push(r.i());
             }
             return surfEdges;
         };
-        let loadVertices = (r, offset, length) => {
+        const loadVertices = (r, offset, length) => {
             r.seek(offset);
-            let vertices = [];
+            const vertices = [];
             for (let i = 0; i < length / 12; ++i) {
                 vertices.push([r.f(), r.f(), r.f()]);
             }
             return vertices;
         };
-        let loadTexInfo = (r, offset, length) => {
+        const loadTexInfo = (r, offset, length) => {
             r.seek(offset);
-            let texinfo = [];
+            const texinfo = [];
             for (let i = 0; i < length / 40; ++i) {
                 texinfo.push({
                     s: [r.f(), r.f(), r.f()],
@@ -55317,26 +55338,26 @@ class Map {
             }
             return texinfo;
         };
-        let entities = parseEntities(r, lumps);
-        let textures = parseTextures(r);
-        let models = loadModels(r, lumps[Map.Lump.Models].offset, lumps[Map.Lump.Models].length);
-        let faces = loadFaces(r, lumps[Map.Lump.Faces].offset, lumps[Map.Lump.Faces].length);
-        let edges = loadEdges(r, lumps[Map.Lump.Edges].offset, lumps[Map.Lump.Edges].length);
-        let surfEdges = loadSurfEdges(r, lumps[Map.Lump.SurfEdges].offset, lumps[Map.Lump.SurfEdges].length);
-        let vertices = loadVertices(r, lumps[Map.Lump.Vertices].offset, lumps[Map.Lump.Vertices].length);
-        let texinfo = loadTexInfo(r, lumps[Map.Lump.TexInfo].offset, lumps[Map.Lump.TexInfo].length);
-        let parsedModels = ((models, faces, edges, surfEdges, vertices, texinfo, textures) => models.map(model => {
-            let modelVertices = [];
-            let modelUVs = [];
-            let modelTextureIndices = [];
-            let modelFaces = [];
+        const entities = parseEntities(r, lumps);
+        const textures = parseTextures(r);
+        const models = loadModels(r, lumps[Map.Lump.Models].offset, lumps[Map.Lump.Models].length);
+        const faces = loadFaces(r, lumps[Map.Lump.Faces].offset, lumps[Map.Lump.Faces].length);
+        const edges = loadEdges(r, lumps[Map.Lump.Edges].offset, lumps[Map.Lump.Edges].length);
+        const surfEdges = loadSurfEdges(r, lumps[Map.Lump.SurfEdges].offset, lumps[Map.Lump.SurfEdges].length);
+        const vertices = loadVertices(r, lumps[Map.Lump.Vertices].offset, lumps[Map.Lump.Vertices].length);
+        const texinfo = loadTexInfo(r, lumps[Map.Lump.TexInfo].offset, lumps[Map.Lump.TexInfo].length);
+        const parsedModels = ((models, faces, edges, surfEdges, vertices, texinfo, textures) => models.map(model => {
+            const modelVertices = [];
+            const modelUVs = [];
+            const modelTextureIndices = [];
+            const modelFaces = [];
             for (let i = model.firstFace; i < model.firstFace + model.faceCount; ++i) {
-                let faceTexInfo = texinfo[faces[i].textureInfo];
-                let faceTexture = textures[faceTexInfo.textureIndex];
-                let faceSurfEdges = surfEdges.slice(faces[i].firstEdge, faces[i].firstEdge + faces[i].edgeCount);
-                let v1 = vertices[edges[Math.abs(faceSurfEdges[0])][faceSurfEdges[0] > 0 ? 0 : 1]];
+                const faceTexInfo = texinfo[faces[i].textureInfo];
+                const faceTexture = textures[faceTexInfo.textureIndex];
+                const faceSurfEdges = surfEdges.slice(faces[i].firstEdge, faces[i].firstEdge + faces[i].edgeCount);
+                const v1 = vertices[edges[Math.abs(faceSurfEdges[0])][faceSurfEdges[0] > 0 ? 0 : 1]];
                 modelVertices.push(v1);
-                let uv1 = [
+                const uv1 = [
                     (v1[0] * faceTexInfo.s[0] +
                         v1[1] * faceTexInfo.s[1] +
                         v1[2] * faceTexInfo.s[2] +
@@ -55363,8 +55384,8 @@ class Map {
                         faceTexture.height
                 ];
                 for (let j = 2; j < faces[i].edgeCount; ++j) {
-                    let v3 = vertices[edges[Math.abs(faceSurfEdges[j])][faceSurfEdges[j] > 0 ? 0 : 1]];
-                    let uv3 = [
+                    const v3 = vertices[edges[Math.abs(faceSurfEdges[j])][faceSurfEdges[j] > 0 ? 0 : 1]];
+                    const uv3 = [
                         (v3[0] * faceTexInfo.s[0] +
                             v3[1] * faceTexInfo.s[1] +
                             v3[2] * faceTexInfo.s[2] +
@@ -55398,11 +55419,14 @@ class Map {
         return new Map(entities, textures, parsedModels);
     }
     static loadFromUrl(url, progressCallback) {
-        return Xhr_1.xhr(url, {
-            method: 'GET',
-            isBinary: true,
-            progressCallback
-        }).then(response => Map.parseFromArrayBuffer(response));
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield Xhr_1.xhr(url, {
+                method: 'GET',
+                isBinary: true,
+                progressCallback
+            });
+            return Map.parseFromArrayBuffer(data);
+        });
     }
 }
 exports.Map = Map;
@@ -59475,6 +59499,8 @@ const SoundSystem_1 = __webpack_require__(/*! ./SoundSystem */ "./src/SoundSyste
 const Xhr_1 = __webpack_require__(/*! ./Xhr */ "./src/Xhr.ts");
 class Sound {
     constructor(buffer) {
+        this.index = -1;
+        this.name = '';
         this.buffer = buffer;
     }
     static loadFromUrl(url, progressCallback) {
@@ -59770,7 +59796,7 @@ function vdf(input) {
         const c = input[i];
         switch (state) {
             case 0: {
-                if (c === ' ' || c === '\n' || c === '\t') {
+                if (/\s/.test(c)) {
                     continue;
                 }
                 else if (c === '{') {
@@ -59783,7 +59809,7 @@ function vdf(input) {
                 break;
             }
             case 1: {
-                if (c === ' ' || c === '\n' || c === '\t') {
+                if (/\s/.test(c)) {
                     continue;
                 }
                 else if (c === '}') {
@@ -59808,7 +59834,7 @@ function vdf(input) {
                 break;
             }
             case 3: {
-                if (c === ' ' || c === '\n' || c === '\t') {
+                if (/\s/.test(c)) {
                     continue;
                 }
                 else if (c === '"') {
@@ -60129,7 +60155,7 @@ class HLViewer {
         return this.game.getTitle();
     }
 }
-HLViewer.VERSION = "0.4.0";
+HLViewer.VERSION = "0.4.1";
 let wnd = window;
 wnd.HLViewer = HLViewer;
 

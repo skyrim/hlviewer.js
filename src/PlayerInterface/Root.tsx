@@ -43,31 +43,47 @@ export class Root extends Component<RootProps, RootState> {
       return
     }
 
-    this.node.appendChild(this.props.game.renderer.domElement)
+    const game = this.props.game
+    const root = this.props.root
 
-    this.props.game.on('loadstart', this.onLoadStart)
-    this.props.game.on('load', this.onLoadEnd)
-    this.props.game.on('modechange', this.onModeChange)
-    this.props.game.on('titlechange', this.onTitleChange)
+    this.node.appendChild(game.renderer.domElement)
+
+    game.on('loadstart', this.onLoadStart)
+    game.on('load', this.onLoadEnd)
+    game.on('modechange', this.onModeChange)
+    game.on('titlechange', this.onTitleChange)
+
+    root.addEventListener('click', this.onRootClick)
     window.addEventListener('click', this.onWindowClick)
-    this.props.root.addEventListener('click', this.onRootClick)
     window.addEventListener('keydown', this.onKeyDown)
-    this.props.root.addEventListener('mouseover', this.onMouseEnter)
-    this.props.root.addEventListener('mousemove', this.onMouseMove)
-    this.props.root.addEventListener('mouseout', this.onMouseLeave)
+
+    root.addEventListener('mouseover', this.onMouseEnter)
+    root.addEventListener('mousemove', this.onMouseMove)
+    root.addEventListener('mouseout', this.onMouseLeave)
+    root.addEventListener('contextmenu', this.onContextMenu)
   }
 
   componentWillUnmount() {
-    this.props.game.off('loadstart', this.onLoadStart)
-    this.props.game.off('load', this.onLoadEnd)
-    this.props.game.off('modechange', this.onModeChange)
-    this.props.game.off('titlechange', this.onTitleChange)
+    const game = this.props.game
+    const root = this.props.root
+
+    game.off('loadstart', this.onLoadStart)
+    game.off('load', this.onLoadEnd)
+    game.off('modechange', this.onModeChange)
+    game.off('titlechange', this.onTitleChange)
+
+    root.removeEventListener('click', this.onRootClick)
     window.removeEventListener('click', this.onWindowClick)
-    this.props.root.removeEventListener('click', this.onRootClick)
     window.removeEventListener('keydown', this.onKeyDown)
-    this.props.root.removeEventListener('mouseover', this.onMouseEnter)
-    this.props.root.removeEventListener('mousemove', this.onMouseMove)
-    this.props.root.removeEventListener('mouseout', this.onMouseLeave)
+
+    root.removeEventListener('mouseover', this.onMouseEnter)
+    root.removeEventListener('mousemove', this.onMouseMove)
+    root.removeEventListener('mouseout', this.onMouseLeave)
+    root.removeEventListener('contextmenu', this.onContextMenu)
+  }
+
+  onContextMenu = (e: Event) => {
+    e.preventDefault()
   }
 
   onWindowClick = () => {

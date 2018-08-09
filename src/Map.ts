@@ -5,7 +5,7 @@ import { ProgressCallback, xhr } from './Xhr'
 
 function parseEntities(r: Reader, lumps: any[]) {
   r.seek(lumps[Map.Lump.Entities].offset)
-  let entities = vdf(r.nstr(lumps[Map.Lump.Entities].length))
+  const entities = vdf(r.nstr(lumps[Map.Lump.Entities].length))
 
   const VECTOR_ATTRS = [
     'origin',
@@ -17,7 +17,7 @@ function parseEntities(r: Reader, lumps: any[]) {
   ]
   const NUMBER_ATTRS = ['renderamt', 'rendermode']
 
-  let worldSpawn = entities[0]
+  const worldSpawn = entities[0]
   if (worldSpawn.wad) {
     worldSpawn.wad = worldSpawn.wad
       .split(';')
@@ -28,7 +28,7 @@ function parseEntities(r: Reader, lumps: any[]) {
 
   entities.forEach(e => {
     if (e.model) {
-      let modelNum = Number.parseInt(e.model.substr(1))
+      const modelNum = Number.parseInt(e.model.substr(1))
       if (!isNaN(modelNum)) {
         e.model = modelNum
       }
@@ -93,13 +93,13 @@ class Map {
   }
 
   static parseFromArrayBuffer(buffer: ArrayBuffer) {
-    let r = new Reader(buffer)
-    let version = r.ui()
+    const r = new Reader(buffer)
+    const version = r.ui()
     if (version !== 30) {
       throw new Error('Invalid map version')
     }
 
-    let lumps: any[] = []
+    const lumps: any[] = []
     for (let i = 0; i < 15; ++i) {
       lumps.push({
         offset: r.ui(),
@@ -107,20 +107,20 @@ class Map {
       })
     }
 
-    let parseTextures = (r: Reader) => {
-      let parseTexture = (r: Reader) => {
-        let parseMipMaps = (r: Reader, texture: any) => {
-          let isTransparent = texture.name.charAt(0) === '{'
-          let w = texture.width
-          let h = texture.height
+    const parseTextures = (r: Reader) => {
+      const parseTexture = (r: Reader) => {
+        const parseMipMaps = (r: Reader, texture: any) => {
+          const isTransparent = texture.name.charAt(0) === '{'
+          const w = texture.width
+          const h = texture.height
 
-          let mipmaps = [r.arrx(w * h, Reader.Type.UByte)]
+          const mipmaps = [r.arrx(w * h, Reader.Type.UByte)]
           r.skip((21 * w * h) / 64 + 2)
 
-          let palette = r.arrx(256 * 3, Reader.Type.UByte)
+          const palette = r.arrx(256 * 3, Reader.Type.UByte)
 
           return mipmaps.map(m => {
-            let t = new Uint8Array(m.length * 4)
+            const t = new Uint8Array(m.length * 4)
 
             for (let i = 0; i < m.length; ++i) {
               if (isTransparent && m[i] === 255) {
@@ -137,16 +137,16 @@ class Map {
           })
         }
 
-        let baseOffset = r.tell()
+        const baseOffset = r.tell()
 
-        let texture = {
+        const texture = {
           name: r.nstr(16),
           width: r.ui(),
           height: r.ui(),
           mipmaps: [new Uint8Array(4)]
         }
 
-        let mipmapOffset = r.ui()
+        const mipmapOffset = r.ui()
 
         if (mipmapOffset !== 0) {
           r.seek(baseOffset + mipmapOffset)
@@ -158,16 +158,16 @@ class Map {
 
       r.seek(lumps[Map.Lump.Textures].offset)
 
-      let count = r.ui()
-      let offsets = []
+      const count = r.ui()
+      const offsets = []
       for (let i = 0; i < count; ++i) {
         offsets.push(r.ui())
       }
 
-      let textures = []
+      const textures = []
       for (let i = 0; i < count; ++i) {
         if (offsets[i] === 0xffffffff) {
-          let mipmap = new Uint8Array([0, 255, 0, 255])
+          const mipmap = new Uint8Array([0, 255, 0, 255])
           textures.push({
             name: 'ERROR404',
             width: 1,
@@ -183,10 +183,10 @@ class Map {
       return textures
     }
 
-    let loadModels = (r: Reader, offset: number, length: number) => {
+    const loadModels = (r: Reader, offset: number, length: number) => {
       r.seek(offset)
 
-      let models = []
+      const models = []
       for (let i = 0; i < length / 64; ++i) {
         models.push({
           mins: [r.f(), r.f(), r.f()],
@@ -201,10 +201,10 @@ class Map {
       return models
     }
 
-    let loadFaces = (r: Reader, offset: number, length: number) => {
+    const loadFaces = (r: Reader, offset: number, length: number) => {
       r.seek(offset)
 
-      let faces = []
+      const faces = []
       for (let i = 0; i < length / 20; ++i) {
         faces.push({
           plane: r.us(),
@@ -219,40 +219,40 @@ class Map {
       return faces
     }
 
-    let loadEdges = (r: Reader, offset: number, length: number) => {
+    const loadEdges = (r: Reader, offset: number, length: number) => {
       r.seek(offset)
 
-      let edges = []
+      const edges = []
       for (let i = 0; i < length / 4; ++i) {
         edges.push([r.us(), r.us()])
       }
       return edges
     }
 
-    let loadSurfEdges = (r: Reader, offset: number, length: number) => {
+    const loadSurfEdges = (r: Reader, offset: number, length: number) => {
       r.seek(offset)
 
-      let surfEdges = []
+      const surfEdges = []
       for (let i = 0; i < length / 4; ++i) {
         surfEdges.push(r.i())
       }
       return surfEdges
     }
 
-    let loadVertices = (r: Reader, offset: number, length: number) => {
+    const loadVertices = (r: Reader, offset: number, length: number) => {
       r.seek(offset)
 
-      let vertices = []
+      const vertices = []
       for (let i = 0; i < length / 12; ++i) {
         vertices.push([r.f(), r.f(), r.f()])
       }
       return vertices
     }
 
-    let loadTexInfo = (r: Reader, offset: number, length: number) => {
+    const loadTexInfo = (r: Reader, offset: number, length: number) => {
       r.seek(offset)
 
-      let texinfo = []
+      const texinfo = []
       for (let i = 0; i < length / 40; ++i) {
         texinfo.push({
           s: [r.f(), r.f(), r.f()],
@@ -266,46 +266,46 @@ class Map {
       return texinfo
     }
 
-    let entities = parseEntities(r, lumps)
-    let textures = parseTextures(r)
+    const entities = parseEntities(r, lumps)
+    const textures = parseTextures(r)
 
-    let models = loadModels(
+    const models = loadModels(
       r,
       lumps[Map.Lump.Models].offset,
       lumps[Map.Lump.Models].length
     )
 
-    let faces = loadFaces(
+    const faces = loadFaces(
       r,
       lumps[Map.Lump.Faces].offset,
       lumps[Map.Lump.Faces].length
     )
 
-    let edges = loadEdges(
+    const edges = loadEdges(
       r,
       lumps[Map.Lump.Edges].offset,
       lumps[Map.Lump.Edges].length
     )
 
-    let surfEdges = loadSurfEdges(
+    const surfEdges = loadSurfEdges(
       r,
       lumps[Map.Lump.SurfEdges].offset,
       lumps[Map.Lump.SurfEdges].length
     )
 
-    let vertices = loadVertices(
+    const vertices = loadVertices(
       r,
       lumps[Map.Lump.Vertices].offset,
       lumps[Map.Lump.Vertices].length
     )
 
-    let texinfo = loadTexInfo(
+    const texinfo = loadTexInfo(
       r,
       lumps[Map.Lump.TexInfo].offset,
       lumps[Map.Lump.TexInfo].length
     )
 
-    let parsedModels = ((
+    const parsedModels = ((
       models,
       faces,
       edges,
@@ -315,29 +315,29 @@ class Map {
       textures
     ) =>
       models.map(model => {
-        let modelVertices = []
-        let modelUVs = []
-        let modelTextureIndices = []
-        let modelFaces = []
+        const modelVertices = []
+        const modelUVs = []
+        const modelTextureIndices = []
+        const modelFaces = []
 
         for (
           let i = model.firstFace;
           i < model.firstFace + model.faceCount;
           ++i
         ) {
-          let faceTexInfo = texinfo[faces[i].textureInfo]
-          let faceTexture = textures[faceTexInfo.textureIndex]
-          let faceSurfEdges = surfEdges.slice(
+          const faceTexInfo = texinfo[faces[i].textureInfo]
+          const faceTexture = textures[faceTexInfo.textureIndex]
+          const faceSurfEdges = surfEdges.slice(
             faces[i].firstEdge,
             faces[i].firstEdge + faces[i].edgeCount
           )
 
-          let v1 =
+          const v1 =
             vertices[
               edges[Math.abs(faceSurfEdges[0])][faceSurfEdges[0] > 0 ? 0 : 1]
             ]
           modelVertices.push(v1)
-          let uv1 = [
+          const uv1 = [
             (v1[0] * faceTexInfo.s[0] +
               v1[1] * faceTexInfo.s[1] +
               v1[2] * faceTexInfo.s[2] +
@@ -370,11 +370,11 @@ class Map {
           ]
 
           for (let j = 2; j < faces[i].edgeCount; ++j) {
-            let v3 =
+            const v3 =
               vertices[
                 edges[Math.abs(faceSurfEdges[j])][faceSurfEdges[j] > 0 ? 0 : 1]
               ]
-            let uv3 = [
+            const uv3 = [
               (v3[0] * faceTexInfo.s[0] +
                 v3[1] * faceTexInfo.s[1] +
                 v3[2] * faceTexInfo.s[2] +
@@ -412,12 +412,14 @@ class Map {
     return new Map(entities, textures, parsedModels)
   }
 
-  static loadFromUrl(url: string, progressCallback: ProgressCallback) {
-    return xhr(url, {
+  static async loadFromUrl(url: string, progressCallback: ProgressCallback) {
+    const data = await xhr(url, {
       method: 'GET',
       isBinary: true,
       progressCallback
-    }).then(response => Map.parseFromArrayBuffer(response))
+    })
+
+    return Map.parseFromArrayBuffer(data)
   }
 }
 

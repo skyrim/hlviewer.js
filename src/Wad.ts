@@ -67,8 +67,19 @@ function parseEntry(r: Reader, entry: any) {
   }
 }
 
+interface WadEntry {
+  name: string
+  data: {
+    texture: {
+      width: number
+      height: number
+      mipmaps: Uint8Array[]
+    }
+  }
+}
+
 class Wad {
-  entries: any[]
+  entries: WadEntry[]
 
   constructor(entries: any[]) {
     this.entries = entries

@@ -2,12 +2,13 @@ var fs = require('fs')
 var webpack = require('webpack')
 var path = require('path')
 var CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin
+var nodeExternals = require('webpack-node-externals')
 var license = fs.readFileSync('LICENSE', 'utf8')
 
 module.exports = {
   mode: 'development',
   entry: {
-    hlviewer: './src/index.ts'
+    wadexporter: './tools/WadExporter/index.ts'
   },
   output: {
     filename: '[name].js',
@@ -17,26 +18,19 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
-        include: [path.resolve(__dirname, './src')],
+        test: /\.ts?$/,
+        include: [
+          path.resolve(__dirname, './src'),
+          path.resolve(__dirname, './tools')
+        ],
         exclude: [],
         use: [
           {
-            loader: 'awesome-typescript-loader'
-          }
-        ]
-      },
-      {
-        test: /\.scss$/,
-        use: [
-          'style-loader', // creates style nodes from JS strings
-          {
-            loader: 'css-loader', // translates CSS into CommonJS
+            loader: 'awesome-typescript-loader',
             options: {
-              url: false
+              configFileName: 'tsconfig.tools.json'
             }
-          },
-          'sass-loader' // compiles Sass to CSS
+          }
         ]
       }
     ]
@@ -53,7 +47,9 @@ module.exports = {
       VERSION: JSON.stringify(require('./package.json').version)
     })
   ],
+  target: 'node',
+  externals: [nodeExternals()],
   node: {
-    fs: 'empty'
-  }
+    __dirname: false
+  } 
 }

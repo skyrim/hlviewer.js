@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "strictNullChecks": true,
+        "removeComments": true,
+        "module": "commonjs",
+        "target": "es2015",
+        "jsx": "react",
+        "jsxFactory": "h",
+        "lib": [
+            "dom",
+            "es2017"
+        ]
+    },
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "tools/**/*.ts"
+    ],
+    "exclude": [
+        "dist"
+    ],
+    "awesomeTypescriptLoaderOptions": {
+      "useCache": true
+    }
+}

@@ -40,6 +40,8 @@ export class SettingsButton extends Component<
     const clsOpen = this.state.isOpen ? 'settings--open' : ''
     const cls = `settings ${clsOpen} ${this.props.class}`
 
+    const hasReplay = !!this.props.game.player.replay
+
     return (
       <div class={cls}>
         <div
@@ -58,16 +60,20 @@ export class SettingsButton extends Component<
 
         <div class="settings__menu">
           <span class="settings__menuitemh">Mode</span>
-          <span
-            class={`settings__menuitem ${
-              this.props.game.mode === PlayerMode.REPLAY
-                ? 'settings__menuitem--selected'
-                : ''
-            }`}
-            onClick={this.onReplayModeClick}
-          >
-            Replay
-          </span>
+          {
+            hasReplay ?
+            <span
+              class={`settings__menuitem ${
+                this.props.game.mode === PlayerMode.REPLAY
+                  ? 'settings__menuitem--selected'
+                  : ''
+              }`}
+              onClick={this.onReplayModeClick}
+            >
+              Replay
+            </span>
+            : <span />
+          }
           <span
             class={`settings__menuitem ${
               this.props.game.mode === PlayerMode.FREE

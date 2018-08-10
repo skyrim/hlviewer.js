@@ -1,5 +1,5 @@
-import { Reader } from './Reader'
-import { ProgressCallback, xhr } from './Xhr'
+import { Reader } from '../Reader'
+import { ProgressCallback, xhr } from '../Xhr'
 
 function parseMipMaps(r: Reader, width: number, height: number) {
   const pixelCount = width * height

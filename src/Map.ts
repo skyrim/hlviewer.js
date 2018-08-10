@@ -2,6 +2,8 @@ import * as Path from 'path'
 import { Reader } from './Reader'
 import { vdf } from './Vdf'
 import { ProgressCallback, xhr } from './Xhr'
+import { Sprite } from './Parsers/Sprite'
+import { Tga } from './Parsers/Tga';
 
 function parseEntities(r: Reader, lumps: any[]) {
   r.seek(lumps[Map.Lump.Entities].offset)
@@ -28,11 +30,6 @@ function parseEntities(r: Reader, lumps: any[]) {
 
   entities.forEach(e => {
     if (e.model) {
-      const modelNum = Number.parseInt(e.model.substr(1))
-      if (!isNaN(modelNum)) {
-        e.model = modelNum
-      }
-
       if (typeof e.renderamt === 'undefined') {
         e.renderamt = 0
       }
@@ -66,14 +63,27 @@ function parseEntities(r: Reader, lumps: any[]) {
   return entities
 }
 
+interface MapModel {
+  vertices: number[][]
+  faces: number[][]
+  uv: number[][][]
+  textureIndices: number[]
+}
+
 class Map {
   name: string
   entities: any[]
   textures: any[]
-  models: any[]
-  skies: any[]
+  models: MapModel[]
+  skies: Tga[]
+  sprites: { [name: string]: Sprite } = {}
 
-  constructor(entities: any[], textures: any[], models: any[], skies = []) {
+  constructor(
+    entities: any[],
+    textures: any[],
+    models: MapModel[],
+    skies = []
+  ) {
     this.entities = entities
     this.textures = textures
     this.models = models

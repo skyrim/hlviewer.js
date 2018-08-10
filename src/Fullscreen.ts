@@ -38,7 +38,7 @@ let apiIdx = 0
 interface Doc {
   [key: string]: any
 }
-let doc: Doc = document
+const doc: Doc = document
 
 for (let i = 0; i < apis.length; ++i) {
   if (typeof doc[apis[i].enabled] !== 'undefined') {

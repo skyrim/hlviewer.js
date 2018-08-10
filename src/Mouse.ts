@@ -1,6 +1,6 @@
 import { Vector2 } from './Vector'
 
-class Mouse {
+export class Mouse {
   click: boolean
   leftClick: boolean
   rightClick: boolean
@@ -15,5 +15,3 @@ class Mouse {
     this.delta = new Vector2()
   }
 }
-
-export { Mouse }

@@ -28,49 +28,49 @@ class Reader {
   }
 
   b() {
-    let r = this.data.getInt8(this.offset)
+    const r = this.data.getInt8(this.offset)
     this.skip(1)
     return r
   }
 
   ub() {
-    let r = this.data.getUint8(this.offset)
+    const r = this.data.getUint8(this.offset)
     this.skip(1)
     return r
   }
 
   s(isLittleEndian = true) {
-    let r = this.data.getInt16(this.offset, isLittleEndian)
+    const r = this.data.getInt16(this.offset, isLittleEndian)
     this.skip(2)
     return r
   }
 
   us(isLittleEndian = true) {
-    let r = this.data.getUint16(this.offset, isLittleEndian)
+    const r = this.data.getUint16(this.offset, isLittleEndian)
     this.skip(2)
     return r
   }
 
   i(isLittleEndian = true) {
-    let r = this.data.getInt32(this.tell(), isLittleEndian)
+    const r = this.data.getInt32(this.tell(), isLittleEndian)
     this.skip(4)
     return r
   }
 
   ui(isLittleEndian = true) {
-    let r = this.data.getUint32(this.tell(), isLittleEndian)
+    const r = this.data.getUint32(this.tell(), isLittleEndian)
     this.skip(4)
     return r
   }
 
   f(isLittleEndian = true) {
-    let r = this.data.getFloat32(this.tell(), isLittleEndian)
+    const r = this.data.getFloat32(this.tell(), isLittleEndian)
     this.skip(4)
     return r
   }
 
   lf(isLittleEndian = true) {
-    let r = this.data.getFloat64(this.tell(), isLittleEndian)
+    const r = this.data.getFloat64(this.tell(), isLittleEndian)
     this.skip(8)
     return r
   }
@@ -94,7 +94,7 @@ class Reader {
     let r = ''
     while (n > 0) {
       n -= 1
-      let charCode = this.ub()
+      const charCode = this.ub()
       if (charCode === 0) {
         break
       }
@@ -111,7 +111,7 @@ class Reader {
 
   arr(n: number, f: () => any) {
     f.bind(this)
-    let r = []
+    const r = []
     while (n-- > 0) {
       r.push(f())
     }

@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+import { Resources, Model } from './Resources'
+import { Game } from './Game'
 
 const isInvisible = (entity: any) => {
   const INVISIBLE_ENTITIES = [
@@ -34,8 +36,28 @@ const isInvisible = (entity: any) => {
   return false
 }
 
-class Entities {
-  list: any[]
+export class Entity {
+  meta: any
+  model: Model | null
+
+  constructor(meta: any, model?: Model) {
+    this.meta = meta
+    if (model) {
+      this.model = model.clone()
+    } else {
+      this.model = null
+    }
+  }
+
+  update(dt: number, game: Game) {
+    if (this.model) {
+      this.model.update(dt, this, game)
+    }
+  }
+}
+
+export class Entities {
+  list: Entity[]
 
   constructor() {
     this.list = []
@@ -45,75 +67,80 @@ class Entities {
     this.list.length = 0
   }
 
-  initialize(entities: any[], resources: any) {
+  initialize(entities: any[], resources: Resources) {
     this.clear()
 
     entities.forEach(e => {
-      let t = {
-        meta: e,
-        model: null
-      }
+      let model
 
       switch (e.classname) {
         case 'worldspawn': {
-          let model = resources.models[0]
-          let materials = model.material
-          materials.forEach((m: any, idx: number) => {
-            if (m.map.name.charAt(0) === '{') {
-              let data = Uint8Array.from(m.map.image.data)
-              for (let i = 3; i < data.length; i += 4) {
-                data[i] = 255
+          model = resources.models['*0']
+          const mesh = model.mesh
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((m: any, idx: number) => {
+              if (m.map.name.charAt(0) === '{') {
+                let data = Uint8Array.from(m.map.image.data)
+                for (let i = 3; i < data.length; i += 4) {
+                  data[i] = 255
+                }
+
+                let w = m.map.image.width
+                let h = m.map.image.height
+
+                let newTexture = new THREE.DataTexture(
+                  data,
+                  w,
+                  h,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  THREE.Texture.DEFAULT_MAPPING,
+                  THREE.RepeatWrapping,
+                  THREE.RepeatWrapping,
+                  THREE.LinearFilter,
+                  THREE.LinearMipMapLinearFilter
+                )
+
+                newTexture.name = m.map.name
+                newTexture.premultiplyAlpha = true
+                newTexture.anisotropy = m.map.anisotropy
+                newTexture.generateMipmaps = true
+                newTexture.repeat.y = -1
+                newTexture.needsUpdate = true
+
+                let newMaterial = new THREE.MeshLambertMaterial({
+                  map: newTexture,
+                  transparent: false,
+                  visible: m.visible
+                })
+
+                if (Array.isArray(mesh.material)) {
+                  mesh.material[idx] = newMaterial
+                }
               }
-
-              let w = m.map.image.width
-              let h = m.map.image.height
-
-              let newTexture = new THREE.DataTexture(
-                data,
-                w,
-                h,
-                THREE.RGBAFormat,
-                THREE.UnsignedByteType,
-                THREE.Texture.DEFAULT_MAPPING,
-                THREE.RepeatWrapping,
-                THREE.RepeatWrapping,
-                THREE.LinearFilter,
-                THREE.LinearMipMapLinearFilter
-              )
-
-              newTexture.name = m.map.name
-              newTexture.premultiplyAlpha = true
-              newTexture.anisotropy = m.map.anisotropy
-              newTexture.generateMipmaps = true
-              newTexture.repeat.y = -1
-              newTexture.needsUpdate = true
-
-              let newMaterial = new THREE.MeshLambertMaterial({
-                map: newTexture,
-                transparent: false,
-                visible: m.visible
-              })
-
-              model.material[idx] = newMaterial
-            }
-          })
-          t.model = model
+            })
+          }
 
           break
         }
 
         default: {
-          if (typeof e.model === 'number' && !isInvisible(e)) {
-            let model = resources.models[e.model].clone()
-            model.rotation.order = 'ZXY'
+          if (
+            e.model &&
+            (e.model[0] === '*' || e.model.indexOf('.spr') > -1) &&
+            !isInvisible(e)
+          ) {
+            model = resources.models[e.model]
+            const mesh = model.mesh.clone()
+            mesh.rotation.order = 'ZXY'
             if (e.origin) {
-              model.position.x = e.origin[0]
-              model.position.y = e.origin[1]
-              model.position.z = e.origin[2]
+              mesh.position.x = e.origin[0]
+              mesh.position.y = e.origin[1]
+              mesh.position.z = e.origin[2]
               if (e.angles) {
-                model.rotation.x = (e.angles[0] * Math.PI) / 180
-                model.rotation.y = (e.angles[2] * Math.PI) / 180
-                model.rotation.z = (e.angles[1] * Math.PI) / 180
+                mesh.rotation.x = (e.angles[0] * Math.PI) / 180
+                mesh.rotation.y = (e.angles[2] * Math.PI) / 180
+                mesh.rotation.z = (e.angles[1] * Math.PI) / 180
               }
             }
 
@@ -122,38 +149,40 @@ class Entities {
             }
 
             if (e.rendermode !== 4 && e.renderamt < 255) {
-              let materials = model.material
-              materials.forEach((m: any) => {
-                model.renderOrder = 1
-                m.depthWrite = false
-                m.alphaTest = 0.05
-                m.opacity = e.renderamt / 255
-              })
+              if (Array.isArray(mesh.material)) {
+                mesh.material.forEach((m: any) => {
+                  mesh.renderOrder = 1
+                  m.depthWrite = false
+                  m.alphaTest = 0.05
+                  m.opacity = e.renderamt / 255
+                })
+              } else {
+                mesh.renderOrder = 1
+                mesh.material.depthWrite = false
+                mesh.material.alphaTest = 0.05
+                mesh.material.opacity = e.renderamt / 255
+              }
             }
 
             if (e.rendermode === 5) {
-              let materials = model.material
-              materials.forEach((m: any) => {
-                model.renderOrder = 1
-                m.depthWrite = false
-                m.blending = THREE.AdditiveBlending
-              })
+              if (Array.isArray(mesh.material)) {
+                mesh.material.forEach((m: any) => {
+                  mesh.renderOrder = 1
+                  m.depthWrite = false
+                  m.blending = THREE.AdditiveBlending
+                })
+              } else {
+                mesh.renderOrder = 1
+                mesh.material.depthWrite = false
+                mesh.material.blending = THREE.AdditiveBlending
+              }
             }
-
-            t.model = model
-          } else if (
-            typeof e.model === 'string' &&
-            e.model.indexOf('.spr') > -1
-          ) {
-            console.log(e.model)
           }
           break
         }
       }
 
-      this.list.push(t)
+      this.list.push(new Entity(e, model))
     })
   }
 }
-
-export { Entities }

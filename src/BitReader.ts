@@ -8,7 +8,7 @@ class BitView {
   }
 
   getBits(offset: number, bits: number, signed = false) {
-    let available = this.view.length * 8 - offset
+    const available = this.view.length * 8 - offset
 
     if (bits > available) {
       throw new Error('Bits out of bounds')
@@ -16,17 +16,17 @@ class BitView {
 
     let value = 0
     for (let i = 0; i < bits; ) {
-      let remaining = bits - i
-      let bitOffset = offset & 7
-      let currentByte = this.view[offset >> 3]
+      const remaining = bits - i
+      const bitOffset = offset & 7
+      const currentByte = this.view[offset >> 3]
 
       // the max number of bits we can read from the current byte
-      let read = Math.min(remaining, 8 - bitOffset)
+      const read = Math.min(remaining, 8 - bitOffset)
 
       // create a mask with the correct bit width
-      let mask = (1 << read) - 1
+      const mask = (1 << read) - 1
       // shift bits we want to the start of the byte and mask of the rest
-      let readBits = (currentByte >> bitOffset) & mask
+      const readBits = (currentByte >> bitOffset) & mask
       value |= readBits << i
 
       offset += read
@@ -94,68 +94,68 @@ class BitStream {
   }
 
   readBits(bits: number, signed = false) {
-    let val = this.view.getBits(this.index, bits, signed)
+    const val = this.view.getBits(this.index, bits, signed)
     this.index += bits
     return val
   }
 
   readInt8() {
-    let val = this.view.getInt8(this.index)
+    const val = this.view.getInt8(this.index)
     this.index += 8
     return val
   }
 
   readUint8() {
-    let val = this.view.getUint8(this.index)
+    const val = this.view.getUint8(this.index)
     this.index += 8
     return val
   }
 
   readInt16() {
-    let val = this.view.getInt16(this.index)
+    const val = this.view.getInt16(this.index)
     this.index += 16
     return val
   }
 
   readUint16() {
-    let val = this.view.getUint16(this.index)
+    const val = this.view.getUint16(this.index)
     this.index += 16
     return val
   }
 
   readInt32() {
-    let val = this.view.getInt32(this.index)
+    const val = this.view.getInt32(this.index)
     this.index += 32
     return val
   }
 
   readUint32() {
-    let val = this.view.getUint32(this.index)
+    const val = this.view.getUint32(this.index)
     this.index += 32
     return val
   }
 
   readFloat32() {
-    let val = this.view.getFloat32(this.index)
+    const val = this.view.getFloat32(this.index)
     this.index += 32
     return val
   }
 
   readFloat64() {
-    let val = this.view.getFloat64(this.index)
+    const val = this.view.getFloat64(this.index)
     this.index += 64
     return val
   }
 
   readString(bytes = 0, utf8 = false) {
     let i = 0
-    let chars = []
+    const chars = []
     let append = true
 
     // Read while we still have space available, or until we've
     // hit the fixed byte length passed in.
     while (!bytes || (bytes && i < bytes)) {
-      let c = this.readUint8()
+      const c = this.readUint8()
 
       // Stop appending chars once we hit 0x00
       if (c === 0x00) {
@@ -173,7 +173,7 @@ class BitStream {
       i++
     }
 
-    let string = String.fromCharCode.apply(null, chars)
+    const string = String.fromCharCode.apply(null, chars)
     if (utf8) {
       try {
         // https://stackoverflow.com/a/17192845

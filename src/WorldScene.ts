@@ -1,6 +1,7 @@
 import * as THREE from 'three'
+import { Entities } from './Entities';
 
-class WorldScene {
+export class WorldScene {
   renderer: THREE.WebGLRenderer
 
   scene: THREE.Scene
@@ -22,15 +23,13 @@ class WorldScene {
     this.scene.children[1].children.length = 0
   }
 
-  initialize(entities: any) {
+  initialize(entities: Entities) {
     this.clear()
 
-    entities.list.forEach((e: any) => {
-      if (!e.model) {
-        return
+    entities.list.forEach(entity => {
+      if (entity.model) {
+        this.meshes.add(entity.model.mesh)
       }
-
-      this.meshes.add(e.model)
     })
   }
 
@@ -42,5 +41,3 @@ class WorldScene {
     this.renderer.render(this.scene, camera)
   }
 }
-
-export { WorldScene }

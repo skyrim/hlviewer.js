@@ -21,7 +21,7 @@ interface SpriteFrame {
   data: Uint8Array
 }
 
-enum SpriteType {
+export enum SpriteType {
   VP_PARALLEL_UPRIGHT = 0,
   FACING_UPRIGHT = 1,
   VP_PARALLEL = 2,
@@ -29,14 +29,14 @@ enum SpriteType {
   VP_PARALLEL_ORIENTED = 4
 }
 
-enum SpriteAlphaType {
+export enum SpriteAlphaType {
   SPR_NORMAL = 0,
   SPR_ADDITIVE = 1,
   SPR_INDEXALPHA = 2,
   SPR_ALPHTEST = 3
 }
 
-enum SpriteSyncType {
+export enum SpriteSyncType {
   SYNCHRONIZED = 0,
   RANDOM = 1
 }
@@ -94,7 +94,7 @@ export class Sprite {
           const r = palette[pixels[j] * 3]
           const g = palette[pixels[j] * 3 + 1]
           const b = palette[pixels[j] * 3 + 2]
-          const a = (r === alphaR && g === alphaG && b === alphaB) ? 0 : 255
+          const a = r === alphaR && g === alphaG && b === alphaB ? 0 : 255
 
           frame.data[4 * j] = r
           frame.data[4 * j + 1] = g
@@ -133,4 +133,3 @@ export class Sprite {
     return sprite
   }
 }
-

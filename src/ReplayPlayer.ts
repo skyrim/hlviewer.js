@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events'
-import { Array } from './Array'
 import { Game } from './Game'
 import { Replay, ReplayState } from './Replay'
 
@@ -242,7 +241,7 @@ class ReplayPlayer {
         }
       } else if (frame.type === 8) {
         let sample = frame.sound.sample
-        let sound = Array.find(sounds, (s: any) => s.name === sample)
+        let sound = sounds.find(s => s.name === sample)
         if (sound && sound.name !== 'common/null.wav') {
           let channel = frame.sound.channel
           let volume = frame.sound.volume

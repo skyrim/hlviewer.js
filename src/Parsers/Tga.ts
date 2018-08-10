@@ -1,6 +1,6 @@
 import * as Path from 'path'
-import { Reader } from './Reader'
-import { ProgressCallback, xhr } from './Xhr'
+import { Reader } from '../Reader'
+import { ProgressCallback, xhr } from '../Xhr'
 
 class Tga {
   name: string

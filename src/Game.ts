@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events'
 import * as THREE from 'three'
-import { Array } from './Array'
 import { Entities } from './Entities'
 import { Keyboard } from './Keyboard'
 import { Loader } from './Loader'
@@ -11,6 +10,9 @@ import { SkyScene } from './SkyScene'
 import { SoundSystem } from './SoundSystem'
 import * as Time from './Time'
 import { WorldScene } from './WorldScene'
+import { Sound } from './Sound'
+import { Map } from './Map'
+import { Replay } from './Replay';
 
 export interface Config {
   paths: {
@@ -83,7 +85,7 @@ export class Game {
   resources: Resources
   entities: Entities
   soundSystem: SoundSystem
-  sounds: any[]
+  sounds: Sound[]
   events: EventEmitter
   player: ReplayPlayer
 
@@ -121,23 +123,34 @@ export class Game {
 
     this.config = config
     this.loader = new Loader(this)
-    this.loader.events.addListener('loadall', (loader: any) => {
+    this.loader.events.addListener('loadall', (loader: Loader) => {
       if (loader && loader.replay) {
         this.changeReplay(loader.replay.data)
+      }
+
+      if (!loader.map || !loader.map.data) {
+        return
       }
 
       const map = loader.map.data
       const skies = loader.skies
       let skiesValid = true
-      skies.forEach((sky: any) => {
+      skies.forEach(sky => {
         skiesValid = skiesValid && sky.isDone()
       })
       if (skiesValid) {
-        map.skies = skies.map((sky: any) => sky.data)
+        skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0))
       }
 
+      // add sprites
+      Object.entries(loader.sprites).forEach(([name, item]) => {
+        if (item.data) {
+          map.sprites[name] = item.data
+        }
+      })
+
       if (loader.sounds.length > 0) {
-        loader.sounds.forEach((sound: any) => {
+        loader.sounds.forEach(sound => {
           if (sound.data) {
             this.sounds.push(sound.data)
           }
@@ -196,7 +209,7 @@ export class Game {
     this.loader.load(name)
   }
 
-  changeMap(map: any, mapName: string) {
+  changeMap(map: Map, mapName: string) {
     if (this.mapName.toLowerCase() === mapName.toLowerCase()) {
       return
     }
@@ -208,14 +221,14 @@ export class Game {
     this.worldScene.initialize(this.entities)
     this.skyScene.initialize(this.resources.sky)
 
-    const startEntity = Array.find(
-      this.entities.list,
-      (e: any) => e.meta.classname === 'info_player_start'
+    const spawnEntity = this.entities.list.find(
+      e => e.meta.classname === 'info_player_start'
     )
-    if (startEntity) {
-      this.camera.position.x = startEntity.meta.origin[0]
-      this.camera.position.y = startEntity.meta.origin[1]
-      this.camera.position.z = startEntity.meta.origin[2]
+
+    if (spawnEntity) {
+      this.camera.position.x = spawnEntity.meta.origin[0]
+      this.camera.position.y = spawnEntity.meta.origin[1]
+      this.camera.position.z = spawnEntity.meta.origin[2]
     }
 
     this.camera.rotation.x = Math.PI / 2
@@ -224,7 +237,7 @@ export class Game {
     this.events.emit('mapchange', this, map, mapName)
   }
 
-  changeReplay(replay: any) {
+  changeReplay(replay: Replay) {
     this.events.emit('prereplaychange', this, replay)
 
     this.player.changeReplay(replay)
@@ -334,17 +347,39 @@ export class Game {
       }
     }
 
+    this.entities.list.forEach(entity => entity.update(dt, this))
+
+    // for (let i = 0; i < this.entities.list.length; ++i) {
+    //   const entity = this.entities.list[i]
+    //   const model = entity.meta.model
+    //   if (model && model.indexOf('.spr') > -1) {
+    //     // TODO: refactor/optimize
+    //     const mesh = entity.model
+    //     if (mesh) {
+    //       mesh.lookAt(camera.position)
+    //       mesh.rotation.x = Math.PI / 2
+    //       mesh.rotation.order = 'ZXY'
+    //       mesh.up.x = 0
+    //       mesh.up.y = 0
+    //       mesh.up.z = 1
+    //       mesh.scale.x = 0.5
+    //       mesh.scale.y = 0.5
+    //       mesh.scale.z = 0.5
+    //     }
+    //   }
+    // }
+
     mouse.delta.x = 0
     mouse.delta.y = 0
 
     this.events.emit('postupdate', this)
   }
 
-  on(eventName: string, callback: any) {
+  on(eventName: string, callback: (...args: any[]) => void) {
     return this.events.addListener(eventName, callback)
   }
 
-  off(eventName: string, callback: any) {
+  off(eventName: string, callback: (...args: any[]) => void) {
     this.events.removeListener(eventName, callback)
   }
 

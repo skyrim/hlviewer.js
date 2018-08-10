@@ -14,7 +14,8 @@
         "jsxFactory": "h",
         "lib": [
             "dom",
-            "es2017"
+            "es2017",
+            
         ]
     },
     "include": [

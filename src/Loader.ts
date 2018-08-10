@@ -4,15 +4,16 @@ import { Game } from './Game'
 import { Map } from './Map'
 import { Replay } from './Replay'
 import { Sound } from './Sound'
-import { Tga } from './Tga'
-import { Wad } from './Wad'
+import { Tga } from './Parsers/Tga'
+import { Wad } from './Parsers/Wad'
 import { ProgressCallback } from './Xhr'
+import { Sprite } from './Parsers/Sprite'
 
-class LoadItem {
+class LoadItem<T> {
   name: string
   progress: number
   status: LoadItem.Status
-  data: any
+  data: T | null
 
   constructor(name: string) {
     this.name = name
@@ -42,7 +43,7 @@ class LoadItem {
     return this.status === LoadItem.Status.Error
   }
 
-  done(data: any) {
+  done(data: T) {
     this.status = LoadItem.Status.Done
     this.data = data
   }
@@ -64,11 +65,12 @@ namespace LoadItem {
 class Loader {
   game: Game
 
-  replay: LoadItem | undefined
-  map: LoadItem | undefined
-  skies: LoadItem[]
-  wads: LoadItem[]
-  sounds: LoadItem[]
+  replay?: LoadItem<any>
+  map?: LoadItem<Map>
+  skies: LoadItem<Tga>[]
+  wads: LoadItem<any>[]
+  sounds: LoadItem<Sound>[]
+  sprites: { [name: string]: LoadItem<Sprite> } = {}
   events: EventEmitter
 
   constructor(game: Game) {
@@ -92,6 +94,7 @@ class Loader {
     this.skies.length = 0
     this.wads.length = 0
     this.sounds.length = 0
+    this.sprites = {}
   }
 
   checkStatus() {
@@ -117,6 +120,13 @@ class Loader {
 
     for (let i = 0; i < this.sounds.length; ++i) {
       if (this.sounds[i].isLoading()) {
+        return
+      }
+    }
+
+    const sprites = Object.entries(this.sprites)
+    for (let i = 0; i < sprites.length; ++i) {
+      if (sprites[i][1].isLoading()) {
         return
       }
     }
@@ -179,7 +189,7 @@ class Loader {
   }
 
   async loadMap(name: string) {
-    this.map = new LoadItem(name)
+    this.map = new LoadItem<Map>(name)
     this.events.emit('loadstart', this.map)
 
     const progressCbk: ProgressCallback = (_1, progress) => {
@@ -208,6 +218,15 @@ class Loader {
     map.name = this.map.name
     this.map.done(map)
 
+    map.entities
+      .map((e: any) => {
+        if (typeof e.model === 'string' && e.model.indexOf('.spr') > -1) {
+          return e.model
+        }
+      })
+      .filter((a, pos, arr) => a && arr.indexOf(a) === pos)
+      .forEach(a => this.loadSprite(a))
+
     const skyname = map.entities[0].skyname
     if (skyname) {
       ;['bk', 'dn', 'ft', 'lf', 'rt', 'up']
@@ -225,33 +244,64 @@ class Loader {
     this.checkStatus()
   }
 
-  async loadSky(name: string) {
-    const sky = new LoadItem(name)
-    this.skies.push(sky)
-    this.events.emit('loadstart', sky)
+  async loadSprite(name: string) {
+    const item = new LoadItem<Sprite>(name)
+    this.sprites[name] = item
+    this.events.emit('loadstart', item)
 
     const progressCbk: ProgressCallback = (_1, progress) => {
-      sky.progress = progress
-      this.events.emit('progress', sky)
+      item.progress = progress
+      this.events.emit('progress', item)
+    }
+
+    const sprite = await Sprite.loadFromUrl(
+      `${this.game.config.paths.base}/${name}`,
+      progressCbk
+    ).catch((err: any) => {
+      item.error()
+      this.events.emit('error', err, item)
+      this.checkStatus()
+    })
+    if (!sprite) {
+      return
+    }
+
+    item.done(sprite)
+    this.events.emit('load', item)
+    this.checkStatus()
+  }
+
+  async loadSky(name: string) {
+    const item = new LoadItem<Tga>(name)
+    this.skies.push(item)
+    this.events.emit('loadstart', item)
+
+    const progressCbk: ProgressCallback = (_1, progress) => {
+      item.progress = progress
+      this.events.emit('progress', item)
     }
 
     const skiesPath = this.game.config.paths.skies
-    const image = await Tga.loadFromUrl(
+    const skyImage = await Tga.loadFromUrl(
       `${skiesPath}/${name}`,
       progressCbk
     ).catch((err: any) => {
-      sky.error()
-      this.events.emit('error', err, sky)
+      item.error()
+      this.events.emit('error', err, item)
       this.checkStatus()
     })
 
-    sky.done(image)
-    this.events.emit('load', sky)
+    if (!skyImage) {
+      return
+    }
+
+    item.done(skyImage)
+    this.events.emit('load', item)
     this.checkStatus()
   }
 
   async loadWad(name: string) {
-    const wadItem = new LoadItem(name)
+    const wadItem = new LoadItem<any>(name)
     this.wads.push(wadItem)
     this.events.emit('loadstart', wadItem)
 
@@ -270,7 +320,7 @@ class Loader {
     )
     wadItem.done(wad)
 
-    if (!this.map || !wad) {
+    if (!this.map || !wad || !this.map.data) {
       return
     }
 
@@ -289,7 +339,7 @@ class Loader {
   }
 
   async loadSound(name: string, index: number) {
-    const sound = new LoadItem(name)
+    const sound = new LoadItem<Sound>(name)
     this.sounds.push(sound)
     this.events.emit('loadstart', sound)
 

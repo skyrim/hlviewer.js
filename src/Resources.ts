@@ -2,6 +2,9 @@ import * as THREE from 'three'
 import { Face3, Mesh, Vector2 as Vec2, Vector3 as Vec3 } from 'three'
 import { Game } from './Game'
 import { Map } from './Map'
+import { Tga } from './Parsers/Tga'
+import { Sprite, SpriteType, SpriteAlphaType } from './Parsers/Sprite'
+import { Entity } from './Entities';
 
 const resizeTexture = (
   pixels: Uint8Array,
@@ -10,23 +13,23 @@ const resizeTexture = (
   newWidth: number,
   newHeight: number
 ) => {
-  let canvas = document.createElement('canvas')
-  let ctx = canvas.getContext('2d')
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
   if (!ctx) {
     throw new Error('Runtime error.')
   }
   canvas.width = width
   canvas.height = height
 
-  let nc = document.createElement('canvas')
-  let nctx = nc.getContext('2d')
+  const nc = document.createElement('canvas')
+  const nctx = nc.getContext('2d')
   if (!nctx) {
     throw new Error('Runtime error.')
   }
   nc.width = newWidth
   nc.height = newHeight
 
-  let cid = ctx.createImageData(width, height)
+  const cid = ctx.createImageData(width, height)
   for (let i = 0, size = width * height * 4; i < size; i += 4) {
     cid.data[i] = pixels[i]
     cid.data[i + 1] = pixels[i + 1]
@@ -50,20 +53,29 @@ const nextPowerOfTwo = (n: number) => {
   return n + 1
 }
 
-const createTexture = (data: any, renderer: THREE.WebGLRenderer) => {
-  let pixels = data.mipmaps[0]
-  let w = data.width
-  let h = data.height
+const createTexture = (params: {
+  width: number
+  height: number
+  pixels: Uint8Array
+  renderer: THREE.WebGLRenderer
+}) => {
+  let w = params.width
+  let h = params.height
+  let pixels = params.pixels
+
+  // let pixels = data.mipmaps[0]
+  // let w = data.width
+  // let h = data.height
 
   if (!isPowerOfTwo(w) || !isPowerOfTwo(h)) {
-    let nw = nextPowerOfTwo(w)
-    let nh = nextPowerOfTwo(h)
+    const nw = nextPowerOfTwo(w)
+    const nh = nextPowerOfTwo(h)
     pixels = resizeTexture(pixels, w, h, nw, nh)
     w = nw
     h = nh
   }
 
-  let texture = new THREE.DataTexture(
+  const texture = new THREE.DataTexture(
     pixels,
     w,
     h,
@@ -77,14 +89,14 @@ const createTexture = (data: any, renderer: THREE.WebGLRenderer) => {
   )
 
   texture.premultiplyAlpha = true
-  texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
+  texture.anisotropy = params.renderer.capabilities.getMaxAnisotropy()
   texture.generateMipmaps = true
 
   return texture
 }
 
 const createMissingTexture = () => {
-  let pixels = new Uint8Array([
+  const pixels = new Uint8Array([
     255,
     255,
     255,
@@ -103,7 +115,7 @@ const createMissingTexture = () => {
     255
   ])
 
-  let texture = new THREE.DataTexture(
+  const texture = new THREE.DataTexture(
     pixels,
     2,
     2,
@@ -132,11 +144,18 @@ const INVISIBLE_TEXTURES = [
   'fog'
 ]
 
-const createMaterials = (map: Map, renderer: THREE.WebGLRenderer) =>
-  map.textures.map(data => {
+const createMaterials = (map: Map, renderer: THREE.WebGLRenderer) => {
+  const materials: { [name: string]: THREE.MeshLambertMaterial } = {}
+
+  map.textures.forEach(data => {
     let texture
     if (data.mipmaps.length > 0) {
-      texture = createTexture(data, renderer)
+      texture = createTexture({
+        width: data.width,
+        height: data.height,
+        pixels: data.mipmaps[0],
+        renderer
+      })
     } else {
       texture = createMissingTexture()
     }
@@ -148,7 +167,7 @@ const createMaterials = (map: Map, renderer: THREE.WebGLRenderer) =>
     texture.needsUpdate = true
 
     let visible = true
-    let lowerName = data.name.toLowerCase()
+    const lowerName = data.name.toLowerCase()
     for (let i = 0; i < INVISIBLE_TEXTURES.length; ++i) {
       if (INVISIBLE_TEXTURES[i] === lowerName) {
         visible = false
@@ -156,7 +175,7 @@ const createMaterials = (map: Map, renderer: THREE.WebGLRenderer) =>
       }
     }
 
-    return new THREE.MeshLambertMaterial({
+    materials[data.name] = new THREE.MeshLambertMaterial({
       map: texture,
       transparent: true,
       alphaTest: 0.5,
@@ -164,30 +183,61 @@ const createMaterials = (map: Map, renderer: THREE.WebGLRenderer) =>
     })
   })
 
-const createModels = (map: Map, materials: any[]) => {
-  return map.models.map(model => {
-    let geometry = new THREE.Geometry()
+  Object.entries(map.sprites).forEach(([name, sprite]) => {
+    const texture = createTexture({
+      width: sprite.header.width,
+      height: sprite.header.height,
+      pixels: sprite.frames[0].data,
+      renderer
+    })
+
+    texture.name = name
+    texture.wrapS = THREE.RepeatWrapping
+    texture.wrapT = THREE.RepeatWrapping
+    texture.repeat.y = -1
+    texture.needsUpdate = true
+
+    materials[name] = new THREE.MeshLambertMaterial({
+      map: texture,
+      transparent: true,
+      alphaTest: 0.5,
+      visible: true
+    })
+  })
+
+  return materials
+}
+
+const createModels = (
+  map: Map,
+  materials: { [name: string]: THREE.MeshLambertMaterial }
+) => {
+  const models: { [name: string]: Model } = {}
+  const orderedMaterials = Object.values(materials)
+
+  map.models.forEach((model, i) => {
+    const geometry = new THREE.Geometry()
 
     geometry.vertices = model.vertices.map(
-      (vertex: any) => new Vec3(vertex[0], vertex[1], vertex[2])
+      vertex => new Vec3(vertex[0], vertex[1], vertex[2])
     )
 
-    geometry.faces = model.faces.map((face: any, i: number) => {
-      let f = new Face3(face[0], face[1], face[2])
+    geometry.faces = model.faces.map((face, i) => {
+      const f = new Face3(face[0], face[1], face[2])
       f.materialIndex = model.textureIndices[i]
       return f
     })
 
-    geometry.faceVertexUvs[0] = model.uv.map((uv: any) => [
+    geometry.faceVertexUvs[0] = model.uv.map(uv => [
       new Vec2(uv[0][0], uv[0][1] * -1),
       new Vec2(uv[1][0], uv[1][1] * -1),
       new Vec2(uv[2][0], uv[2][1] * -1)
     ])
 
-    let nfuv: any[] = []
-    let nf = geometry.faces.filter((face, i) => {
-      let mat: any = materials[face.materialIndex]
-      let lowerName = mat.map.name.toLowerCase()
+    const nfuv: THREE.Vector2[][] = []
+    const nf = geometry.faces.filter((face, i) => {
+      const mat = orderedMaterials[face.materialIndex]
+      const lowerName = mat.map.name.toLowerCase()
       for (let j = 0; j < INVISIBLE_TEXTURES.length; ++j) {
         if (INVISIBLE_TEXTURES[j] === lowerName) {
           return false
@@ -202,17 +252,41 @@ const createModels = (map: Map, materials: any[]) => {
 
     geometry.mergeVertices()
 
-    return new Mesh(geometry, materials.map(m => m.clone()))
+    models[`*${i}`] = new ModelBasic(
+      new Mesh(geometry, orderedMaterials.map(m => m.clone()))
+    )
   })
+
+  return models
+}
+
+const createSpriteModels = (
+  map: Map,
+  materials: { [name: string]: THREE.MeshLambertMaterial }
+) => {
+  const models: { [name: string]: Model } = {}
+
+  for (const [name, sprite] of Object.entries(map.sprites)) {
+    const geometry = new THREE.PlaneGeometry(
+      sprite.header.width,
+      sprite.header.height
+    )
+
+    const material = materials[name]
+
+    models[name] = new ModelSprite(new Mesh(geometry, material), sprite)
+  }
+
+  return models
 }
 
 const createBlankSky = () => {
-  let geometry = new THREE.BoxGeometry(-1000, 1000, 1000)
-  let material = new THREE.MeshBasicMaterial({ color: 0x88aae2 })
+  const geometry = new THREE.BoxGeometry(-1000, 1000, 1000)
+  const material = new THREE.MeshBasicMaterial({ color: 0x88aae2 })
   return new THREE.Mesh(geometry, material)
 }
 
-const createSky = (skies: any, renderer: THREE.WebGLRenderer) => {
+const createSky = (skies: Tga[], renderer: THREE.WebGLRenderer) => {
   let geometry
   let material
 
@@ -220,12 +294,12 @@ const createSky = (skies: any, renderer: THREE.WebGLRenderer) => {
     throw new Error('Invalid number of sky textures given.')
   }
 
-  let canvas = document.createElement('canvas')
+  const canvas = document.createElement('canvas')
   canvas.width = 1024
   canvas.height = 1024
-  let ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d')
 
-  let coords: any = {
+  const coords: { [name: string]: number[] } = {
     up: [0, 256],
     rt: [0, 512],
     ft: [256, 512],
@@ -234,21 +308,22 @@ const createSky = (skies: any, renderer: THREE.WebGLRenderer) => {
     dn: [0, 768]
   }
 
-  skies.forEach((sky: any) => {
-    let smc = document.createElement('canvas')
-    let smctx = smc.getContext('2d')
+  skies.forEach((sky: Tga) => {
+    const smc = document.createElement('canvas')
+    const smctx = smc.getContext('2d')
     if (!smctx) {
       throw new Error('Runtime error.')
     }
     smc.width = sky.width
     smc.height = sky.height
-    let imageData = smctx.getImageData(0, 0, smc.width, smc.height)
+    const imageData = smctx.getImageData(0, 0, smc.width, smc.height)
     for (let i = 0; i < sky.data.length; ++i) {
       imageData.data[i] = sky.data[i]
     }
     smctx.putImageData(imageData, 0, 0)
 
-    let c = coords[sky.name.slice(-2)]
+    const side = sky.name.slice(-2)
+    const c = coords[side] ? coords[side] : []
 
     // TODO: remove this check
     if (!ctx) {
@@ -257,7 +332,7 @@ const createSky = (skies: any, renderer: THREE.WebGLRenderer) => {
     ctx.drawImage(smc, c[0], c[1])
   })
 
-  let texture = new THREE.Texture(canvas)
+  const texture = new THREE.Texture(canvas)
   texture.wrapS = THREE.ClampToEdgeWrapping
   texture.wrapT = THREE.ClampToEdgeWrapping
   if (renderer) {
@@ -271,7 +346,7 @@ const createSky = (skies: any, renderer: THREE.WebGLRenderer) => {
   })
 
   geometry = new THREE.BoxGeometry(4096, 4096, 4096)
-  let uvs = [
+  const uvs = [
     // back
     [[0.75, 0.499], [1.0, 0.499], [0.75, 0.251]],
     [[1.0, 0.499], [1.0, 0.251], [0.75, 0.251]],
@@ -301,48 +376,160 @@ const createSky = (skies: any, renderer: THREE.WebGLRenderer) => {
   return new THREE.Mesh(geometry, material)
 }
 
-class Resources {
+export interface Model {
+  mesh: THREE.Mesh
+  clone: () => Model
+  update: (dt: number, entity: Entity, game: Game) => void
+}
+
+export class ModelBasic implements Model {
+  mesh: THREE.Mesh
+
+  constructor(mesh: THREE.Mesh) {
+    this.mesh = mesh
+  }
+
+  clone() {
+    return new ModelBasic(this.mesh.clone())
+  }
+
+  update() {}
+}
+
+export class ModelSprite implements Model {
+  mesh: THREE.Mesh
+  sprite: Sprite
+
+  constructor(mesh: THREE.Mesh, sprite: Sprite) {
+    this.mesh = mesh
+    this.sprite = sprite
+    mesh.rotation.x = Math.PI / 2
+    mesh.rotation.order = 'ZXY'
+    mesh.up.x = 0
+    mesh.up.y = 0
+    mesh.up.z = 1;
+    (mesh.material as any).side = THREE.DoubleSide
+
+    switch (sprite.header.alphaType) {
+      case SpriteAlphaType.SPR_ADDITIVE: {
+        const material = (mesh.material as THREE.MeshLambertMaterial)
+        material.blending = THREE.AdditiveBlending
+      }
+    }
+  }
+
+  clone() {
+    return new ModelSprite(this.mesh.clone(), this.sprite)
+  }
+
+  update(_dt: number, entity: Entity, game: Game) {
+    const mesh = this.mesh
+
+    const origin = entity.meta['origin']
+    mesh.position.x = origin[0]
+    mesh.position.y = origin[1]
+    mesh.position.z = origin[2]   
+
+    const scale = entity.meta['scale']
+    mesh.scale.x = scale
+    mesh.scale.y = scale
+    mesh.scale.z = scale
+
+    switch (this.sprite.header.type) {
+      case SpriteType.VP_PARALLEL: {
+        mesh.lookAt(game.camera.position)
+        break
+      }
+
+      case SpriteType.VP_PARALLEL_UPRIGHT: {
+        mesh.rotation.x = 1.570796 // 90deg rad = pi/2
+        mesh.rotation.y = game.camera.rotation.z
+
+        break
+      }
+
+      case SpriteType.ORIENTED: {
+        const rotation = entity.meta['angles']
+        mesh.rotation.x = rotation[0] * 0.01745 // deg2rad
+        mesh.rotation.y = rotation[2] * 0.01745
+        mesh.rotation.z = rotation[1] * 0.01745
+        break
+      }
+
+      case SpriteType.VP_PARALLEL_ORIENTED: {
+        const rotation = entity.meta['angles']
+        mesh.rotation.x = 1.570796 // 90deg rad = pi/2
+        mesh.rotation.y = rotation[2] * 0.01745
+        mesh.rotation.z = rotation[1] * 0.01745
+        break
+      }
+
+      case SpriteType.FACING_UPRIGHT: {
+        // TODO: incorrect, but will do for now
+        mesh.lookAt(game.camera.position)
+        break
+      }
+    }
+  }
+}
+
+export class Resources {
   game: Game
-  models: any[]
-  sky: any
+  sky: THREE.Mesh
+  models: { [name: string]: Model } = {}
 
   constructor(game: Game) {
     this.game = game
-    this.models = []
     this.sky = createBlankSky()
   }
 
   clear() {
-    this.models.forEach(model => {
-      model.geometry.dispose()
-      model.material.materials.forEach((material: any) => {
-        material.map.dispose()
-        material.dispose()
-      })
-    })
+    for (const model of Object.values(this.models)) {
+      const mesh = model.mesh
+      mesh.geometry.dispose()
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach(material => {
+          if (material instanceof THREE.MeshLambertMaterial) {
+            material.map.dispose()
+          } else {
+            throw new Error('Material not of type MeshLambertMaterial')
+          }
+
+          material.dispose()
+        })
+      } else {
+        if (mesh.material instanceof THREE.MeshLambertMaterial) {
+          mesh.material.map.dispose()
+        } else {
+          throw new Error('Material not of type MeshLambertMaterial')
+        }
+        mesh.material.dispose()
+      }
+    }
 
     if (this.sky) {
       this.sky.geometry.dispose()
-      if (this.sky.material) {
+      if (this.sky.material instanceof THREE.MeshBasicMaterial) {
         this.sky.material.dispose()
       }
     }
 
-    this.models.length = 0
+    this.models = {}
     this.sky = createBlankSky()
   }
 
   initialize(map: Map) {
     this.clear()
 
-    this.sky = createSky(map.skies, this.game.renderer)
+    if (map.skies.length === 6) {
+      this.sky = createSky(map.skies, this.game.renderer)
+    }
 
-    let materials = createMaterials(map, this.game.renderer)
-    let models = createModels(map, materials)
-    models.forEach(model => {
-      this.models.push(model)
-    })
+    const materials = createMaterials(map, this.game.renderer)
+
+    this.models = {
+      ...createModels(map, materials),
+      ...createSpriteModels(map, materials)
+    }
   }
 }
-
-export { Resources }

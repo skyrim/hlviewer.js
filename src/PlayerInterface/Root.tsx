@@ -17,20 +17,17 @@ interface RootState {
   isLoading: boolean
   isMouseOver: boolean
   isVisible: boolean
-  screenClickTime: number
 }
 
 export class Root extends Component<RootProps, RootState> {
   private node: HTMLDivElement
   private fadeOut: any = 0
-  private doubleClickTimer: any = 0
 
   constructor(props: RootProps) {
     super(props)
 
     this.state = {
       title: props.game.title,
-      screenClickTime: 0,
       isActive: false,
       isLoading: false,
       isMouseOver: false,
@@ -217,31 +214,24 @@ export class Root extends Component<RootProps, RootState> {
   }
 
   onScreenClick = () => {
-    const currentTime = Date.now()
-
-    if (currentTime - this.state.screenClickTime < 500) {
-      clearTimeout(this.doubleClickTimer)
-      if (Fullscreen.isInFullscreen()) {
-        Fullscreen.exit()
-      } else {
-        Fullscreen.enter(this.props.root)
-      }
-    } else {
-      this.doubleClickTimer = setTimeout(() => {
-        if (this.props.game.mode !== PlayerMode.REPLAY) {
-          return
-        }
-
-        const player = this.props.game.player
-        if (!player.isPlaying || player.isPaused) {
-          player.play()
-        } else {
-          player.pause()
-        }
-      }, 500)
+    if (this.props.game.mode !== PlayerMode.REPLAY) {
+      return
     }
 
-    this.setState({ screenClickTime: currentTime })
+    const player = this.props.game.player
+    if (!player.isPlaying || player.isPaused) {
+      player.play()
+    } else {
+      player.pause()
+    }
+  }
+
+  onScreenDblClick = () => {
+    if (Fullscreen.isInFullscreen()) {
+      Fullscreen.exit()
+    } else {
+      Fullscreen.enter(this.props.root)
+    }
   }
 
   render() {
@@ -261,6 +251,7 @@ export class Root extends Component<RootProps, RootState> {
           class="hlv__screen"
           ref={node => (this.node = node)}
           onClick={this.onScreenClick}
+          onDblClick={this.onScreenDblClick}
         />
 
         {game.mode === PlayerMode.FREE ? (

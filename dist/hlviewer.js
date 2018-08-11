@@ -54062,49 +54062,6 @@ module.exports = function(originalModule) {
 
 /***/ }),
 
-/***/ "./src/Array.ts":
-/*!**********************!*\
-  !*** ./src/Array.ts ***!
-  \**********************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-class Array {
-    static indexOf(a, what) {
-        let result = [];
-        for (let i = 0; i < a.length; ++i) {
-            if (a[i] === what) {
-                result.push(a[i]);
-            }
-        }
-        return result;
-    }
-    static find(a, f) {
-        for (let i = 0; i < a.length; ++i) {
-            if (f(a[i])) {
-                return a[i];
-            }
-        }
-        return undefined;
-    }
-    static filter(a, f) {
-        let result = [];
-        for (let i = 0; i < a.length; ++i) {
-            if (f(a[i])) {
-                result.push(a[i]);
-            }
-        }
-        return result;
-    }
-}
-exports.Array = Array;
-
-
-/***/ }),
-
 /***/ "./src/BitReader.ts":
 /*!**************************!*\
   !*** ./src/BitReader.ts ***!
@@ -54120,18 +54077,18 @@ class BitView {
         this.view = new Uint8Array(buffer, 0, buffer.byteLength);
     }
     getBits(offset, bits, signed = false) {
-        let available = this.view.length * 8 - offset;
+        const available = this.view.length * 8 - offset;
         if (bits > available) {
             throw new Error('Bits out of bounds');
         }
         let value = 0;
         for (let i = 0; i < bits;) {
-            let remaining = bits - i;
-            let bitOffset = offset & 7;
-            let currentByte = this.view[offset >> 3];
-            let read = Math.min(remaining, 8 - bitOffset);
-            let mask = (1 << read) - 1;
-            let readBits = (currentByte >> bitOffset) & mask;
+            const remaining = bits - i;
+            const bitOffset = offset & 7;
+            const currentByte = this.view[offset >> 3];
+            const read = Math.min(remaining, 8 - bitOffset);
+            const mask = (1 << read) - 1;
+            const readBits = (currentByte >> bitOffset) & mask;
             value |= readBits << i;
             offset += read;
             i += read;
@@ -54180,56 +54137,56 @@ class BitStream {
         this.index = 0;
     }
     readBits(bits, signed = false) {
-        let val = this.view.getBits(this.index, bits, signed);
+        const val = this.view.getBits(this.index, bits, signed);
         this.index += bits;
         return val;
     }
     readInt8() {
-        let val = this.view.getInt8(this.index);
+        const val = this.view.getInt8(this.index);
         this.index += 8;
         return val;
     }
     readUint8() {
-        let val = this.view.getUint8(this.index);
+        const val = this.view.getUint8(this.index);
         this.index += 8;
         return val;
     }
     readInt16() {
-        let val = this.view.getInt16(this.index);
+        const val = this.view.getInt16(this.index);
         this.index += 16;
         return val;
     }
     readUint16() {
-        let val = this.view.getUint16(this.index);
+        const val = this.view.getUint16(this.index);
         this.index += 16;
         return val;
     }
     readInt32() {
-        let val = this.view.getInt32(this.index);
+        const val = this.view.getInt32(this.index);
         this.index += 32;
         return val;
     }
     readUint32() {
-        let val = this.view.getUint32(this.index);
+        const val = this.view.getUint32(this.index);
         this.index += 32;
         return val;
     }
     readFloat32() {
-        let val = this.view.getFloat32(this.index);
+        const val = this.view.getFloat32(this.index);
         this.index += 32;
         return val;
     }
     readFloat64() {
-        let val = this.view.getFloat64(this.index);
+        const val = this.view.getFloat64(this.index);
         this.index += 64;
         return val;
     }
     readString(bytes = 0, utf8 = false) {
         let i = 0;
-        let chars = [];
+        const chars = [];
         let append = true;
         while (!bytes || (bytes && i < bytes)) {
-            let c = this.readUint8();
+            const c = this.readUint8();
             if (c === 0x00) {
                 append = false;
                 if (!bytes) {
@@ -54241,7 +54198,7 @@ class BitStream {
             }
             i++;
         }
-        let string = String.fromCharCode.apply(null, chars);
+        const string = String.fromCharCode.apply(null, chars);
         if (utf8) {
             try {
                 return decodeURIComponent(string);
@@ -54302,6 +54259,23 @@ const isInvisible = (entity) => {
     }
     return false;
 };
+class Entity {
+    constructor(meta, model) {
+        this.meta = meta;
+        if (model) {
+            this.model = model.clone();
+        }
+        else {
+            this.model = null;
+        }
+    }
+    update(dt, game) {
+        if (this.model) {
+            this.model.update(dt, this, game);
+        }
+    }
+}
+exports.Entity = Entity;
 class Entities {
     constructor() {
         this.list = [];
@@ -54312,84 +54286,95 @@ class Entities {
     initialize(entities, resources) {
         this.clear();
         entities.forEach(e => {
-            let t = {
-                meta: e,
-                model: null
-            };
+            let model;
             switch (e.classname) {
                 case 'worldspawn': {
-                    let model = resources.models[0];
-                    let materials = model.material;
-                    materials.forEach((m, idx) => {
-                        if (m.map.name.charAt(0) === '{') {
-                            let data = Uint8Array.from(m.map.image.data);
-                            for (let i = 3; i < data.length; i += 4) {
-                                data[i] = 255;
+                    model = resources.models['*0'];
+                    const mesh = model.mesh;
+                    if (Array.isArray(mesh.material)) {
+                        mesh.material.forEach((m, idx) => {
+                            if (m.map.name.charAt(0) === '{') {
+                                let data = Uint8Array.from(m.map.image.data);
+                                for (let i = 3; i < data.length; i += 4) {
+                                    data[i] = 255;
+                                }
+                                let w = m.map.image.width;
+                                let h = m.map.image.height;
+                                let newTexture = new THREE.DataTexture(data, w, h, THREE.RGBAFormat, THREE.UnsignedByteType, THREE.Texture.DEFAULT_MAPPING, THREE.RepeatWrapping, THREE.RepeatWrapping, THREE.LinearFilter, THREE.LinearMipMapLinearFilter);
+                                newTexture.name = m.map.name;
+                                newTexture.premultiplyAlpha = true;
+                                newTexture.anisotropy = m.map.anisotropy;
+                                newTexture.generateMipmaps = true;
+                                newTexture.repeat.y = -1;
+                                newTexture.needsUpdate = true;
+                                let newMaterial = new THREE.MeshLambertMaterial({
+                                    map: newTexture,
+                                    transparent: false,
+                                    visible: m.visible
+                                });
+                                if (Array.isArray(mesh.material)) {
+                                    mesh.material[idx] = newMaterial;
+                                }
                             }
-                            let w = m.map.image.width;
-                            let h = m.map.image.height;
-                            let newTexture = new THREE.DataTexture(data, w, h, THREE.RGBAFormat, THREE.UnsignedByteType, THREE.Texture.DEFAULT_MAPPING, THREE.RepeatWrapping, THREE.RepeatWrapping, THREE.LinearFilter, THREE.LinearMipMapLinearFilter);
-                            newTexture.name = m.map.name;
-                            newTexture.premultiplyAlpha = true;
-                            newTexture.anisotropy = m.map.anisotropy;
-                            newTexture.generateMipmaps = true;
-                            newTexture.repeat.y = -1;
-                            newTexture.needsUpdate = true;
-                            let newMaterial = new THREE.MeshLambertMaterial({
-                                map: newTexture,
-                                transparent: false,
-                                visible: m.visible
-                            });
-                            model.material[idx] = newMaterial;
-                        }
-                    });
-                    t.model = model;
+                        });
+                    }
                     break;
                 }
                 default: {
-                    if (typeof e.model === 'number' && !isInvisible(e)) {
-                        let model = resources.models[e.model].clone();
-                        model.rotation.order = 'ZXY';
+                    if (e.model &&
+                        (e.model[0] === '*' || e.model.indexOf('.spr') > -1) &&
+                        !isInvisible(e)) {
+                        model = resources.models[e.model];
+                        const mesh = model.mesh.clone();
+                        mesh.rotation.order = 'ZXY';
                         if (e.origin) {
-                            model.position.x = e.origin[0];
-                            model.position.y = e.origin[1];
-                            model.position.z = e.origin[2];
+                            mesh.position.x = e.origin[0];
+                            mesh.position.y = e.origin[1];
+                            mesh.position.z = e.origin[2];
                             if (e.angles) {
-                                model.rotation.x = (e.angles[0] * Math.PI) / 180;
-                                model.rotation.y = (e.angles[2] * Math.PI) / 180;
-                                model.rotation.z = (e.angles[1] * Math.PI) / 180;
+                                mesh.rotation.x = (e.angles[0] * Math.PI) / 180;
+                                mesh.rotation.y = (e.angles[2] * Math.PI) / 180;
+                                mesh.rotation.z = (e.angles[1] * Math.PI) / 180;
                             }
                         }
                         if (e.rendermode === 0) {
                             e.renderamt = 255;
                         }
                         if (e.rendermode !== 4 && e.renderamt < 255) {
-                            let materials = model.material;
-                            materials.forEach((m) => {
-                                model.renderOrder = 1;
-                                m.depthWrite = false;
-                                m.alphaTest = 0.05;
-                                m.opacity = e.renderamt / 255;
-                            });
+                            if (Array.isArray(mesh.material)) {
+                                mesh.material.forEach((m) => {
+                                    mesh.renderOrder = 1;
+                                    m.depthWrite = false;
+                                    m.alphaTest = 0.05;
+                                    m.opacity = e.renderamt / 255;
+                                });
+                            }
+                            else {
+                                mesh.renderOrder = 1;
+                                mesh.material.depthWrite = false;
+                                mesh.material.alphaTest = 0.05;
+                                mesh.material.opacity = e.renderamt / 255;
+                            }
                         }
                         if (e.rendermode === 5) {
-                            let materials = model.material;
-                            materials.forEach((m) => {
-                                model.renderOrder = 1;
-                                m.depthWrite = false;
-                                m.blending = THREE.AdditiveBlending;
-                            });
+                            if (Array.isArray(mesh.material)) {
+                                mesh.material.forEach((m) => {
+                                    mesh.renderOrder = 1;
+                                    m.depthWrite = false;
+                                    m.blending = THREE.AdditiveBlending;
+                                });
+                            }
+                            else {
+                                mesh.renderOrder = 1;
+                                mesh.material.depthWrite = false;
+                                mesh.material.blending = THREE.AdditiveBlending;
+                            }
                         }
-                        t.model = model;
-                    }
-                    else if (typeof e.model === 'string' &&
-                        e.model.indexOf('.spr') > -1) {
-                        console.log(e.model);
                     }
                     break;
                 }
             }
-            this.list.push(t);
+            this.list.push(new Entity(e, model));
         });
     }
 }
@@ -54443,7 +54428,7 @@ const apis = [
     }
 ];
 let apiIdx = 0;
-let doc = document;
+const doc = document;
 for (let i = 0; i < apis.length; ++i) {
     if (typeof doc[apis[i].enabled] !== 'undefined') {
         apiIdx = i;
@@ -54493,7 +54478,6 @@ exports.Fullscreen = Fullscreen;
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 const THREE = __webpack_require__(/*! three */ "./node_modules/three/build/three.module.js");
-const Array_1 = __webpack_require__(/*! ./Array */ "./src/Array.ts");
 const Entities_1 = __webpack_require__(/*! ./Entities */ "./src/Entities.ts");
 const Keyboard_1 = __webpack_require__(/*! ./Keyboard */ "./src/Keyboard.ts");
 const Loader_1 = __webpack_require__(/*! ./Loader */ "./src/Loader.ts");
@@ -54546,6 +54530,7 @@ var PlayerMode;
 })(PlayerMode = exports.PlayerMode || (exports.PlayerMode = {}));
 class Game {
     constructor(config) {
+        this.pointerLocked = false;
         this.draw = () => {
             requestAnimationFrame(this.draw);
             const canvas = this.renderer.domElement;
@@ -54569,6 +54554,28 @@ class Game {
             this.skyScene.draw(this.camera);
             this.worldScene.draw(this.camera);
             this.lastTime = currTime;
+        };
+        this.mouseMove = (e) => {
+            this.mouse.delta.x = e.movementX * 0.5;
+            this.mouse.delta.y = e.movementY * 0.5;
+            this.mouse.position.x = e.pageX;
+            this.mouse.position.y = e.pageY;
+        };
+        this.keyDown = (e) => {
+            this.keyboard.keys[e.which] = 1;
+            if (this.pointerLocked) {
+                e.preventDefault();
+                return false;
+            }
+            return true;
+        };
+        this.keyUp = (e) => {
+            this.keyboard.keys[e.which] = 0;
+            if (this.pointerLocked) {
+                e.preventDefault();
+                return false;
+            }
+            return true;
         };
         const status = checkWebGLSupport();
         if (!status.hasSupport) {
@@ -54595,17 +54602,25 @@ class Game {
             if (loader && loader.replay) {
                 this.changeReplay(loader.replay.data);
             }
+            if (!loader.map || !loader.map.data) {
+                return;
+            }
             const map = loader.map.data;
             const skies = loader.skies;
             let skiesValid = true;
-            skies.forEach((sky) => {
+            skies.forEach(sky => {
                 skiesValid = skiesValid && sky.isDone();
             });
             if (skiesValid) {
-                map.skies = skies.map((sky) => sky.data);
+                skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0));
             }
+            Object.entries(loader.sprites).forEach(([name, item]) => {
+                if (item.data) {
+                    map.sprites[name] = item.data;
+                }
+            });
             if (loader.sounds.length > 0) {
-                loader.sounds.forEach((sound) => {
+                loader.sounds.forEach(sound => {
                     if (sound.data) {
                         this.sounds.push(sound.data);
                     }
@@ -54614,11 +54629,9 @@ class Game {
             this.changeMap(map, map.name);
             this.events.emit('load', loader);
         });
-        window.addEventListener('mousedown', this.mousedown.bind(this));
-        window.addEventListener('mouseup', this.mouseup.bind(this));
-        window.addEventListener('mousemove', this.mousemove.bind(this));
-        window.addEventListener('keydown', this.keydown.bind(this));
-        window.addEventListener('keyup', this.keyup.bind(this));
+        document.addEventListener('mousemove', this.mouseMove, false);
+        window.addEventListener('keydown', this.keyDown);
+        window.addEventListener('keyup', this.keyUp);
         this.camera = new THREE.PerspectiveCamera(70, 1, 1, 100000);
         this.camera.rotation.order = 'ZXY';
         this.camera.rotation.x = 1.57;
@@ -54659,11 +54672,11 @@ class Game {
         this.entities.initialize(map.entities, this.resources);
         this.worldScene.initialize(this.entities);
         this.skyScene.initialize(this.resources.sky);
-        const startEntity = Array_1.Array.find(this.entities.list, (e) => e.meta.classname === 'info_player_start');
-        if (startEntity) {
-            this.camera.position.x = startEntity.meta.origin[0];
-            this.camera.position.y = startEntity.meta.origin[1];
-            this.camera.position.z = startEntity.meta.origin[2];
+        const spawnEntity = this.entities.list.find(e => e.meta.classname === 'info_player_start');
+        if (spawnEntity) {
+            this.camera.position.x = spawnEntity.meta.origin[0];
+            this.camera.position.y = spawnEntity.meta.origin[1];
+            this.camera.position.z = spawnEntity.meta.origin[2];
         }
         this.camera.rotation.x = Math.PI / 2;
         this.camera.rotation.z = 0;
@@ -54694,7 +54707,7 @@ class Game {
             this.player.update(dt);
         }
         else if (this.mode === PlayerMode.FREE) {
-            if (mouse.click) {
+            if (this.pointerLocked) {
                 const mX = mouse.delta.y / 100;
                 const mY = mouse.delta.x / 100;
                 const x = Math.max(0.05, Math.min(3.09, camera.rotation.x - mX));
@@ -54708,8 +54721,8 @@ class Game {
             const KEY_S = Keyboard_1.Keyboard.KEYS.S;
             const KEY_A = Keyboard_1.Keyboard.KEYS.A;
             const KEY_D = Keyboard_1.Keyboard.KEYS.D;
-            const KEY_R = Keyboard_1.Keyboard.KEYS.R;
-            const KEY_F = Keyboard_1.Keyboard.KEYS.F;
+            const downKey = Keyboard_1.Keyboard.KEYS.CTRL;
+            const upKey = Keyboard_1.Keyboard.KEYS.SPACE;
             if (keyboard.keys[KEY_W] !== keyboard.keys[KEY_S]) {
                 if (keyboard.keys[KEY_W]) {
                     camera.position.y += Math.cos(camera.rotation.z) * ds;
@@ -54730,15 +54743,16 @@ class Game {
                     camera.position.x -= Math.sin(camera.rotation.z - 1.57) * ds;
                 }
             }
-            if (keyboard.keys[KEY_R] !== keyboard.keys[KEY_F]) {
-                if (keyboard.keys[KEY_R]) {
+            if (keyboard.keys[upKey] !== keyboard.keys[downKey]) {
+                if (keyboard.keys[upKey]) {
                     camera.position.z += ds;
                 }
-                else if (keyboard.keys[KEY_F]) {
+                else if (keyboard.keys[downKey]) {
                     camera.position.z -= ds;
                 }
             }
         }
+        this.entities.list.forEach(entity => entity.update(dt, this));
         mouse.delta.x = 0;
         mouse.delta.y = 0;
         this.events.emit('postupdate', this);
@@ -54748,24 +54762,6 @@ class Game {
     }
     off(eventName, callback) {
         this.events.removeListener(eventName, callback);
-    }
-    mousedown() {
-        this.mouse.click = true;
-    }
-    mouseup() {
-        this.mouse.click = false;
-    }
-    mousemove(e) {
-        this.mouse.delta.x = e.pageX - this.mouse.position.x;
-        this.mouse.delta.y = e.pageY - this.mouse.position.y;
-        this.mouse.position.x = e.pageX;
-        this.mouse.position.y = e.pageY;
-    }
-    keydown(e) {
-        this.keyboard.keys[e.which] = 1;
-    }
-    keyup(e) {
-        this.keyboard.keys[e.which] = 0;
     }
 }
 exports.Game = Game;
@@ -54821,6 +54817,9 @@ exports.Keyboard = Keyboard;
         KEYS[KEYS["X"] = 'X'.charCodeAt(0)] = "X";
         KEYS[KEYS["Y"] = 'Y'.charCodeAt(0)] = "Y";
         KEYS[KEYS["Z"] = 'Z'.charCodeAt(0)] = "Z";
+        KEYS[KEYS["CTRL"] = 17] = "CTRL";
+        KEYS[KEYS["ALT"] = 18] = "ALT";
+        KEYS[KEYS["SPACE"] = 32] = "SPACE";
     })(KEYS = Keyboard.KEYS || (Keyboard.KEYS = {}));
 })(Keyboard || (Keyboard = {}));
 exports.Keyboard = Keyboard;
@@ -54851,8 +54850,9 @@ const Path = __webpack_require__(/*! path */ "./node_modules/path-browserify/ind
 const Map_1 = __webpack_require__(/*! ./Map */ "./src/Map.ts");
 const Replay_1 = __webpack_require__(/*! ./Replay */ "./src/Replay.ts");
 const Sound_1 = __webpack_require__(/*! ./Sound */ "./src/Sound.ts");
-const Tga_1 = __webpack_require__(/*! ./Tga */ "./src/Tga.ts");
-const Wad_1 = __webpack_require__(/*! ./Wad */ "./src/Wad.ts");
+const Tga_1 = __webpack_require__(/*! ./Parsers/Tga */ "./src/Parsers/Tga.ts");
+const Wad_1 = __webpack_require__(/*! ./Parsers/Wad */ "./src/Parsers/Wad.ts");
+const Sprite_1 = __webpack_require__(/*! ./Parsers/Sprite */ "./src/Parsers/Sprite.ts");
 class LoadItem {
     constructor(name) {
         this.name = name;
@@ -54894,6 +54894,7 @@ class LoadItem {
 })(LoadItem || (LoadItem = {}));
 class Loader {
     constructor(game) {
+        this.sprites = {};
         this.game = game;
         this.replay = undefined;
         this.map = undefined;
@@ -54911,6 +54912,7 @@ class Loader {
         this.skies.length = 0;
         this.wads.length = 0;
         this.sounds.length = 0;
+        this.sprites = {};
     }
     checkStatus() {
         if (this.replay && !this.replay.isDone()) {
@@ -54931,6 +54933,12 @@ class Loader {
         }
         for (let i = 0; i < this.sounds.length; ++i) {
             if (this.sounds[i].isLoading()) {
+                return;
+            }
+        }
+        const sprites = Object.entries(this.sprites);
+        for (let i = 0; i < sprites.length; ++i) {
+            if (sprites[i][1].isLoading()) {
                 return;
             }
         }
@@ -55002,6 +55010,14 @@ class Loader {
             }
             map.name = this.map.name;
             this.map.done(map);
+            map.entities
+                .map((e) => {
+                if (typeof e.model === 'string' && e.model.indexOf('.spr') > -1) {
+                    return e.model;
+                }
+            })
+                .filter((a, pos, arr) => a && arr.indexOf(a) === pos)
+                .forEach(a => this.loadSprite(a));
             const skyname = map.entities[0].skyname;
             if (skyname) {
                 ;
@@ -55018,23 +55034,48 @@ class Loader {
             this.checkStatus();
         });
     }
-    loadSky(name) {
+    loadSprite(name) {
         return __awaiter(this, void 0, void 0, function* () {
-            const sky = new LoadItem(name);
-            this.skies.push(sky);
-            this.events.emit('loadstart', sky);
+            const item = new LoadItem(name);
+            this.sprites[name] = item;
+            this.events.emit('loadstart', item);
             const progressCbk = (_1, progress) => {
-                sky.progress = progress;
-                this.events.emit('progress', sky);
+                item.progress = progress;
+                this.events.emit('progress', item);
             };
-            const skiesPath = this.game.config.paths.skies;
-            const image = yield Tga_1.Tga.loadFromUrl(`${skiesPath}/${name}`, progressCbk).catch((err) => {
-                sky.error();
-                this.events.emit('error', err, sky);
+            const sprite = yield Sprite_1.Sprite.loadFromUrl(`${this.game.config.paths.base}/${name}`, progressCbk).catch((err) => {
+                item.error();
+                this.events.emit('error', err, item);
                 this.checkStatus();
             });
-            sky.done(image);
-            this.events.emit('load', sky);
+            if (!sprite) {
+                return;
+            }
+            item.done(sprite);
+            this.events.emit('load', item);
+            this.checkStatus();
+        });
+    }
+    loadSky(name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const item = new LoadItem(name);
+            this.skies.push(item);
+            this.events.emit('loadstart', item);
+            const progressCbk = (_1, progress) => {
+                item.progress = progress;
+                this.events.emit('progress', item);
+            };
+            const skiesPath = this.game.config.paths.skies;
+            const skyImage = yield Tga_1.Tga.loadFromUrl(`${skiesPath}/${name}`, progressCbk).catch((err) => {
+                item.error();
+                this.events.emit('error', err, item);
+                this.checkStatus();
+            });
+            if (!skyImage) {
+                return;
+            }
+            item.done(skyImage);
+            this.events.emit('load', item);
             this.checkStatus();
         });
     }
@@ -55054,7 +55095,7 @@ class Loader {
                 this.checkStatus();
             });
             wadItem.done(wad);
-            if (!this.map || !wad) {
+            if (!this.map || !wad || !this.map.data) {
                 return;
             }
             const map = this.map.data;
@@ -55145,10 +55186,6 @@ function parseEntities(r, lumps) {
     }
     entities.forEach(e => {
         if (e.model) {
-            const modelNum = Number.parseInt(e.model.substr(1));
-            if (!isNaN(modelNum)) {
-                e.model = modelNum;
-            }
             if (typeof e.renderamt === 'undefined') {
                 e.renderamt = 0;
             }
@@ -55177,6 +55214,7 @@ function parseEntities(r, lumps) {
 }
 class Map {
     constructor(entities, textures, models, skies = []) {
+        this.sprites = {};
         this.entities = entities;
         this.textures = textures;
         this.models = models;
@@ -55480,6 +55518,371 @@ exports.Mouse = Mouse;
 
 /***/ }),
 
+/***/ "./src/Parsers/Sprite.ts":
+/*!*******************************!*\
+  !*** ./src/Parsers/Sprite.ts ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const Xhr_1 = __webpack_require__(/*! ../Xhr */ "./src/Xhr.ts");
+const Reader_1 = __webpack_require__(/*! ../Reader */ "./src/Reader.ts");
+var SpriteType;
+(function (SpriteType) {
+    SpriteType[SpriteType["VP_PARALLEL_UPRIGHT"] = 0] = "VP_PARALLEL_UPRIGHT";
+    SpriteType[SpriteType["FACING_UPRIGHT"] = 1] = "FACING_UPRIGHT";
+    SpriteType[SpriteType["VP_PARALLEL"] = 2] = "VP_PARALLEL";
+    SpriteType[SpriteType["ORIENTED"] = 3] = "ORIENTED";
+    SpriteType[SpriteType["VP_PARALLEL_ORIENTED"] = 4] = "VP_PARALLEL_ORIENTED";
+})(SpriteType = exports.SpriteType || (exports.SpriteType = {}));
+var SpriteAlphaType;
+(function (SpriteAlphaType) {
+    SpriteAlphaType[SpriteAlphaType["SPR_NORMAL"] = 0] = "SPR_NORMAL";
+    SpriteAlphaType[SpriteAlphaType["SPR_ADDITIVE"] = 1] = "SPR_ADDITIVE";
+    SpriteAlphaType[SpriteAlphaType["SPR_INDEXALPHA"] = 2] = "SPR_INDEXALPHA";
+    SpriteAlphaType[SpriteAlphaType["SPR_ALPHTEST"] = 3] = "SPR_ALPHTEST";
+})(SpriteAlphaType = exports.SpriteAlphaType || (exports.SpriteAlphaType = {}));
+var SpriteSyncType;
+(function (SpriteSyncType) {
+    SpriteSyncType[SpriteSyncType["SYNCHRONIZED"] = 0] = "SYNCHRONIZED";
+    SpriteSyncType[SpriteSyncType["RANDOM"] = 1] = "RANDOM";
+})(SpriteSyncType = exports.SpriteSyncType || (exports.SpriteSyncType = {}));
+class Sprite {
+    constructor(header, frames) {
+        this.header = header;
+        this.frames = frames;
+    }
+    static parseFromArrayBuffer(buffer) {
+        const r = new Reader_1.Reader(buffer);
+        const magic = r.nstr(4);
+        if (magic !== 'IDSP') {
+            throw new Error('Invalid sprite file format');
+        }
+        const header = {
+            version: r.i(),
+            type: r.i(),
+            alphaType: r.i(),
+            radius: r.f(),
+            width: r.i(),
+            height: r.i(),
+            frameCount: r.i(),
+            beamLength: r.f(),
+            syncType: r.i()
+        };
+        const paletteSize = r.s();
+        const palette = r.arr(paletteSize * 3, r.ub.bind(r));
+        const frames = [];
+        for (let i = 0; i < header.frameCount; ++i) {
+            const frame = {
+                group: r.i(),
+                position: [r.i(), r.i()],
+                width: r.i(),
+                height: r.i(),
+                data: new Uint8Array(header.width * header.height * 4)
+            };
+            const pixels = r.arr(header.width * header.height, r.ub.bind(r));
+            if (header.alphaType === SpriteAlphaType.SPR_ALPHTEST) {
+                const alphaR = palette[palette.length - 3];
+                const alphaG = palette[palette.length - 2];
+                const alphaB = palette[palette.length - 1];
+                for (let j = 0; j < pixels.length; ++j) {
+                    const r = palette[pixels[j] * 3];
+                    const g = palette[pixels[j] * 3 + 1];
+                    const b = palette[pixels[j] * 3 + 2];
+                    const a = r === alphaR && g === alphaG && b === alphaB ? 0 : 255;
+                    frame.data[4 * j] = r;
+                    frame.data[4 * j + 1] = g;
+                    frame.data[4 * j + 2] = b;
+                    frame.data[4 * j + 3] = a;
+                }
+            }
+            else {
+                for (let j = 0; j < pixels.length; ++j) {
+                    const r = palette[pixels[j] * 3];
+                    const g = palette[pixels[j] * 3 + 1];
+                    const b = palette[pixels[j] * 3 + 2];
+                    const a = 255;
+                    frame.data[4 * j] = r;
+                    frame.data[4 * j + 1] = g;
+                    frame.data[4 * j + 2] = b;
+                    frame.data[4 * j + 3] = a;
+                }
+            }
+            frames.push(frame);
+        }
+        return new Sprite(header, frames);
+    }
+    static loadFromUrl(url, progressCallback) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const buffer = yield Xhr_1.xhr(url, {
+                method: 'GET',
+                isBinary: true,
+                progressCallback
+            });
+            const sprite = Sprite.parseFromArrayBuffer(buffer);
+            return sprite;
+        });
+    }
+}
+exports.Sprite = Sprite;
+
+
+/***/ }),
+
+/***/ "./src/Parsers/Tga.ts":
+/*!****************************!*\
+  !*** ./src/Parsers/Tga.ts ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
+const Reader_1 = __webpack_require__(/*! ../Reader */ "./src/Reader.ts");
+const Xhr_1 = __webpack_require__(/*! ../Xhr */ "./src/Xhr.ts");
+class Tga {
+    constructor(name, width, height, data) {
+        this.name = name;
+        this.width = width;
+        this.height = height;
+        this.data = data;
+    }
+    static parseFromArrayBuffer(buffer, url) {
+        let r = new Reader_1.Reader(buffer);
+        let header = {
+            idLength: r.ub(),
+            colorMapType: r.ub(),
+            imageType: r.ub(),
+            colorMap: {
+                firstEntryIndex: r.us(),
+                length: r.us(),
+                size: r.ub()
+            },
+            image: {
+                xOrigin: r.us(),
+                yOrigin: r.us(),
+                width: r.us(),
+                height: r.us(),
+                depth: r.ub(),
+                descriptor: r.ub()
+            }
+        };
+        if (header.idLength) {
+            r.arrx(header.idLength, Reader_1.Reader.Type.UByte);
+        }
+        if (header.colorMapType) {
+            throw new Error('Not implemented');
+        }
+        let w = header.image.width;
+        let h = header.image.height;
+        let pixelCount = w * h;
+        let imageData;
+        if (header.imageType === 0x02) {
+            let byteCount = (pixelCount * header.image.depth) / 8;
+            imageData = r.arrx(byteCount, Reader_1.Reader.Type.UByte);
+            if (header.image.depth === 24) {
+                let temp = new Uint8Array(pixelCount * 4);
+                for (let i = 0; i < h; ++i) {
+                    for (let j = 0; j < w; ++j) {
+                        let dst = (h - 1 - i) * w + j;
+                        temp[dst * 4] = imageData[(i * w + j) * 3 + 2];
+                        temp[dst * 4 + 1] = imageData[(i * w + j) * 3 + 1];
+                        temp[dst * 4 + 2] = imageData[(i * w + j) * 3];
+                        temp[dst * 4 + 3] = 255;
+                    }
+                }
+                imageData = temp;
+            }
+            else if (header.image.depth === 32) {
+                let temp = new Uint8Array(pixelCount * 4);
+                for (let i = 0; i < h; ++i) {
+                    for (let j = 0; j < w; ++j) {
+                        let dst = (h - 1 - i) * w + j;
+                        temp[dst * 4] = imageData[(i * w + j) * 4 + 2];
+                        temp[dst * 4 + 1] = imageData[(i * w + j) * 4 + 1];
+                        temp[dst * 4 + 2] = imageData[(i * w + j) * 4];
+                        temp[dst * 4 + 3] = 255;
+                    }
+                }
+                imageData = temp;
+            }
+        }
+        else if (header.imageType === 0x0a) {
+            imageData = new Uint8Array(pixelCount * 4);
+            if (header.image.depth === 24) {
+                for (let i = 0; i < h; ++i) {
+                    for (let j = 0; j < w;) {
+                        let repCount = r.ub();
+                        if (repCount & 0x80) {
+                            repCount = (repCount & 0x7f) + 1;
+                            let bl = r.ub();
+                            let gr = r.ub();
+                            let rd = r.ub();
+                            while (j < w && repCount) {
+                                let dst = (h - 1 - i) * w + j;
+                                imageData[dst * 4] = rd;
+                                imageData[dst * 4 + 1] = gr;
+                                imageData[dst * 4 + 2] = bl;
+                                imageData[dst * 4 + 3] = 255;
+                                ++j;
+                                --repCount;
+                            }
+                        }
+                        else {
+                            repCount = (repCount & 0x7f) + 1;
+                            while (j < w && repCount) {
+                                let dst = (h - 1 - i) * w + j;
+                                imageData[dst * 4 + 2] = r.ub();
+                                imageData[dst * 4 + 1] = r.ub();
+                                imageData[dst * 4] = r.ub();
+                                imageData[dst * 4 + 3] = 255;
+                                ++j;
+                                --repCount;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let name = Path.basename(url, '.tga');
+        return new Tga(name, header.image.width, header.image.height, imageData);
+    }
+    static loadFromUrl(url, progressCallback) {
+        return Xhr_1.xhr(url, {
+            method: 'GET',
+            isBinary: true,
+            progressCallback
+        }).then(response => Tga.parseFromArrayBuffer(response, url));
+    }
+}
+exports.Tga = Tga;
+
+
+/***/ }),
+
+/***/ "./src/Parsers/Wad.ts":
+/*!****************************!*\
+  !*** ./src/Parsers/Wad.ts ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Reader_1 = __webpack_require__(/*! ../Reader */ "./src/Reader.ts");
+const Xhr_1 = __webpack_require__(/*! ../Xhr */ "./src/Xhr.ts");
+function parseMipMaps(r, width, height) {
+    const pixelCount = width * height;
+    const mipmaps = [0, 0, 0, 0].map((_1, i) => r.arrx(pixelCount / Math.pow(1 << i, 2), Reader_1.Reader.Type.UByte));
+    r.skip(2);
+    const palette = r.arrx(256 * 3, Reader_1.Reader.Type.UByte);
+    return mipmaps.map(m => {
+        const pixels = new Uint8Array(m.length * 4);
+        for (let i = 0; i < m.length; ++i) {
+            const r = palette[m[i] * 3];
+            const g = palette[m[i] * 3 + 1];
+            const b = palette[m[i] * 3 + 2];
+            if (r === 0 && g === 0 && b === 255) {
+                pixels[4 * i] = 0;
+                pixels[4 * i + 1] = 0;
+                pixels[4 * i + 2] = 0;
+                pixels[4 * i + 3] = 0;
+            }
+            else {
+                pixels[4 * i] = r;
+                pixels[4 * i + 1] = g;
+                pixels[4 * i + 2] = b;
+                pixels[4 * i + 3] = 255;
+            }
+        }
+        return pixels;
+    });
+}
+function parseTexture(r) {
+    const baseOffset = r.tell();
+    r.skip(16);
+    const texture = {
+        width: r.ui(),
+        height: r.ui(),
+        mipmaps: []
+    };
+    const mipmapOffset = r.ui();
+    r.seek(baseOffset + mipmapOffset);
+    texture.mipmaps = parseMipMaps(r, texture.width, texture.height);
+    return { texture };
+}
+function parseEntry(r, entry) {
+    r.seek(entry.offset);
+    switch (entry.type) {
+        case 67: {
+            return parseTexture(r);
+        }
+        default: {
+            return r.arr(entry.length, r.ub.bind(r));
+        }
+    }
+}
+class Wad {
+    constructor(entries) {
+        this.entries = entries;
+    }
+    static parseFromArrayBuffer(buffer) {
+        const r = new Reader_1.Reader(buffer);
+        const magic = r.nstr(4);
+        if (magic !== 'WAD3') {
+            throw new Error('Invalid WAD file format');
+        }
+        const entryCount = r.ui();
+        const directoryOffset = r.ui();
+        r.seek(directoryOffset);
+        const entries = [];
+        for (let i = 0; i < entryCount; ++i) {
+            const entry = {
+                offset: r.ui(),
+                diskLength: r.ui(),
+                length: r.ui(),
+                type: r.b(),
+                isCompressed: r.b()
+            };
+            r.skip(2);
+            entry.name = r.nstr(16);
+            entries.push(entry);
+        }
+        entries.forEach(e => {
+            e.data = parseEntry(r, e);
+        });
+        return new Wad(entries.map(e => ({
+            name: e.name,
+            data: e.data
+        })));
+    }
+    static loadFromUrl(url, progressCallback) {
+        return Xhr_1.xhr(url, {
+            method: 'GET',
+            isBinary: true,
+            progressCallback
+        }).then(response => Wad.parseFromArrayBuffer(response));
+    }
+}
+exports.Wad = Wad;
+
+
+/***/ }),
+
 /***/ "./src/PlayerInterface/Buttons/FullscreenButton/index.tsx":
 /*!****************************************************************!*\
   !*** ./src/PlayerInterface/Buttons/FullscreenButton/index.tsx ***!
@@ -55642,15 +56045,18 @@ class SettingsButton extends preact_1.Component {
     render() {
         const clsOpen = this.state.isOpen ? 'settings--open' : '';
         const cls = `settings ${clsOpen} ${this.props.class}`;
+        const hasReplay = !!this.props.game.player.replay;
         return (preact_1.h("div", { class: cls },
             preact_1.h("div", { class: "hlv__button settings__button controls__button", onClick: this.toggleMenu },
                 preact_1.h("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24" },
                     preact_1.h("path", { "fill-rule": "evenodd", "clip-rule": "evenodd", fill: "#ffffff", d: "M23.9 10.7c0-0.3-0.4-0.6-0.8-0.6 -1.1 0-2.1-0.6-2.5-1.6 -0.4-1-0.1-2.2 0.7-3 0.3-0.2 0.3-0.6 0.1-0.9 -0.6-0.7-1.2-1.4-1.9-1.9 -0.3-0.2-0.7-0.2-0.9 0.1 -0.7 0.8-2 1.1-3 0.7 -1-0.4-1.7-1.5-1.6-2.6 0-0.4-0.2-0.7-0.6-0.7 -0.9-0.1-1.8-0.1-2.7 0C10.4 0.1 10.1 0.4 10.1 0.8 10.1 1.9 9.5 2.9 8.5 3.3 7.5 3.7 6.2 3.4 5.5 2.6c-0.2-0.3-0.6-0.3-0.9-0.1 -0.7 0.6-1.4 1.2-1.9 1.9C2.4 4.8 2.5 5.2 2.7 5.4c0.8 0.8 1.1 2 0.7 3 -0.4 1-1.4 1.6-2.6 1.6 -0.4 0-0.7 0.2-0.7 0.6 -0.1 0.9-0.1 1.8 0 2.7 0 0.3 0.4 0.6 0.8 0.6 1 0 2 0.6 2.5 1.6 0.4 1 0.2 2.2-0.7 3 -0.3 0.2-0.3 0.6-0.1 0.9 0.6 0.7 1.2 1.4 1.9 1.9 0.3 0.2 0.7 0.2 0.9-0.1 0.7-0.8 2-1.1 3-0.7 1 0.4 1.7 1.5 1.6 2.6 0 0.4 0.2 0.7 0.6 0.7C11.1 24 11.5 24 12 24c0.4 0 0.9 0 1.3-0.1 0.3 0 0.6-0.3 0.6-0.7 0-1.1 0.6-2.1 1.6-2.6 1-0.4 2.3-0.1 3 0.7 0.2 0.3 0.6 0.3 0.9 0.1 0.7-0.6 1.4-1.2 1.9-1.9 0.2-0.3 0.2-0.7-0.1-0.9 -0.8-0.8-1.1-2-0.7-3 0.4-1 1.4-1.6 2.5-1.6l0.1 0c0.3 0 0.7-0.2 0.7-0.6C24 12.5 24 11.6 23.9 10.7zM12 18c-3.3 0-6-2.7-6-6s2.7-6 6-6c3.3 0 6 2.7 6 6S15.3 18 12 18zM12 16" }))),
             preact_1.h("div", { class: "settings__menu" },
                 preact_1.h("span", { class: "settings__menuitemh" }, "Mode"),
-                preact_1.h("span", { class: `settings__menuitem ${this.props.game.mode === Game_1.PlayerMode.REPLAY
-                        ? 'settings__menuitem--selected'
-                        : ''}`, onClick: this.onReplayModeClick }, "Replay"),
+                hasReplay ?
+                    preact_1.h("span", { class: `settings__menuitem ${this.props.game.mode === Game_1.PlayerMode.REPLAY
+                            ? 'settings__menuitem--selected'
+                            : ''}`, onClick: this.onReplayModeClick }, "Replay")
+                    : preact_1.h("span", null),
                 preact_1.h("span", { class: `settings__menuitem ${this.props.game.mode === Game_1.PlayerMode.FREE
                         ? 'settings__menuitem--selected'
                         : ''}`, onClick: this.onFreeModeClick }, "Free"))));
@@ -56117,7 +56523,17 @@ class Root extends preact_1.Component {
     constructor(props) {
         super(props);
         this.fadeOut = 0;
-        this.doubleClickTimer = 0;
+        this.onPointerLockChange = () => {
+            if (document.pointerLockElement === this.props.root) {
+                this.props.game.pointerLocked = true;
+            }
+            else {
+                this.props.game.pointerLocked = false;
+            }
+        };
+        this.onContextMenu = (e) => {
+            e.preventDefault();
+        };
         this.onWindowClick = () => {
             this.setState({ isActive: false });
         };
@@ -56224,21 +56640,8 @@ class Root extends preact_1.Component {
             }, 5000);
         };
         this.onScreenClick = () => {
-            const currentTime = Date.now();
-            if (currentTime - this.state.screenClickTime < 500) {
-                clearTimeout(this.doubleClickTimer);
-                if (Fullscreen_1.Fullscreen.isInFullscreen()) {
-                    Fullscreen_1.Fullscreen.exit();
-                }
-                else {
-                    Fullscreen_1.Fullscreen.enter(this.props.root);
-                }
-            }
-            else {
-                this.doubleClickTimer = setTimeout(() => {
-                    if (this.props.game.mode !== Game_1.PlayerMode.REPLAY) {
-                        return;
-                    }
+            switch (this.props.game.mode) {
+                case Game_1.PlayerMode.REPLAY: {
                     const player = this.props.game.player;
                     if (!player.isPlaying || player.isPaused) {
                         player.play();
@@ -56246,13 +56649,24 @@ class Root extends preact_1.Component {
                     else {
                         player.pause();
                     }
-                }, 500);
+                    break;
+                }
+                case Game_1.PlayerMode.FREE: {
+                    this.props.root.requestPointerLock();
+                    break;
+                }
             }
-            this.setState({ screenClickTime: currentTime });
+        };
+        this.onScreenDblClick = () => {
+            if (Fullscreen_1.Fullscreen.isInFullscreen()) {
+                Fullscreen_1.Fullscreen.exit();
+            }
+            else {
+                Fullscreen_1.Fullscreen.enter(this.props.root);
+            }
         };
         this.state = {
             title: props.game.title,
-            screenClickTime: 0,
             isActive: false,
             isLoading: false,
             isMouseOver: false,
@@ -56263,29 +56677,37 @@ class Root extends preact_1.Component {
         if (!this.node) {
             return;
         }
-        this.node.appendChild(this.props.game.renderer.domElement);
-        this.props.game.on('loadstart', this.onLoadStart);
-        this.props.game.on('load', this.onLoadEnd);
-        this.props.game.on('modechange', this.onModeChange);
-        this.props.game.on('titlechange', this.onTitleChange);
+        const game = this.props.game;
+        const root = this.props.root;
+        this.node.appendChild(game.renderer.domElement);
+        game.on('loadstart', this.onLoadStart);
+        game.on('load', this.onLoadEnd);
+        game.on('modechange', this.onModeChange);
+        game.on('titlechange', this.onTitleChange);
+        root.addEventListener('click', this.onRootClick);
         window.addEventListener('click', this.onWindowClick);
-        this.props.root.addEventListener('click', this.onRootClick);
         window.addEventListener('keydown', this.onKeyDown);
-        this.props.root.addEventListener('mouseover', this.onMouseEnter);
-        this.props.root.addEventListener('mousemove', this.onMouseMove);
-        this.props.root.addEventListener('mouseout', this.onMouseLeave);
+        document.addEventListener('pointerlockchange', this.onPointerLockChange, false);
+        root.addEventListener('mouseover', this.onMouseEnter);
+        root.addEventListener('mousemove', this.onMouseMove);
+        root.addEventListener('mouseout', this.onMouseLeave);
+        root.addEventListener('contextmenu', this.onContextMenu);
     }
     componentWillUnmount() {
-        this.props.game.off('loadstart', this.onLoadStart);
-        this.props.game.off('load', this.onLoadEnd);
-        this.props.game.off('modechange', this.onModeChange);
-        this.props.game.off('titlechange', this.onTitleChange);
+        const game = this.props.game;
+        const root = this.props.root;
+        game.off('loadstart', this.onLoadStart);
+        game.off('load', this.onLoadEnd);
+        game.off('modechange', this.onModeChange);
+        game.off('titlechange', this.onTitleChange);
+        root.removeEventListener('click', this.onRootClick);
         window.removeEventListener('click', this.onWindowClick);
-        this.props.root.removeEventListener('click', this.onRootClick);
         window.removeEventListener('keydown', this.onKeyDown);
-        this.props.root.removeEventListener('mouseover', this.onMouseEnter);
-        this.props.root.removeEventListener('mousemove', this.onMouseMove);
-        this.props.root.removeEventListener('mouseout', this.onMouseLeave);
+        document.removeEventListener('pointerlockchange', this.onPointerLockChange, false);
+        root.removeEventListener('mouseover', this.onMouseEnter);
+        root.removeEventListener('mousemove', this.onMouseMove);
+        root.removeEventListener('mouseout', this.onMouseLeave);
+        root.removeEventListener('contextmenu', this.onContextMenu);
     }
     render() {
         const game = this.props.game;
@@ -56295,7 +56717,7 @@ class Root extends preact_1.Component {
         return (preact_1.h("div", { class: `hlv${hlvVisCls}` },
             preact_1.h("div", { class: `hlv__title${titleVisCls}` }, this.state.title),
             preact_1.h(Loading_1.Loading, { game: game, visible: this.state.isLoading }),
-            preact_1.h("div", { class: "hlv__screen", ref: node => (this.node = node), onClick: this.onScreenClick }),
+            preact_1.h("div", { class: "hlv__screen", ref: node => (this.node = node), onClick: this.onScreenClick, onDblClick: this.onScreenDblClick }),
             game.mode === Game_1.PlayerMode.FREE ? (preact_1.h(FreeMode_1.FreeMode, { class: `hlv__controls${ctrlVisCls}`, game: game, root: this.props.root, visible: this.state.isMouseOver })) : (preact_1.h(ReplayMode_1.ReplayMode, { class: `hlv__controls${ctrlVisCls}`, game: game, root: this.props.root, visible: this.state.isMouseOver }))));
     }
 }
@@ -56695,42 +57117,42 @@ class Reader {
         this.seek(this.tell() + offset);
     }
     b() {
-        let r = this.data.getInt8(this.offset);
+        const r = this.data.getInt8(this.offset);
         this.skip(1);
         return r;
     }
     ub() {
-        let r = this.data.getUint8(this.offset);
+        const r = this.data.getUint8(this.offset);
         this.skip(1);
         return r;
     }
     s(isLittleEndian = true) {
-        let r = this.data.getInt16(this.offset, isLittleEndian);
+        const r = this.data.getInt16(this.offset, isLittleEndian);
         this.skip(2);
         return r;
     }
     us(isLittleEndian = true) {
-        let r = this.data.getUint16(this.offset, isLittleEndian);
+        const r = this.data.getUint16(this.offset, isLittleEndian);
         this.skip(2);
         return r;
     }
     i(isLittleEndian = true) {
-        let r = this.data.getInt32(this.tell(), isLittleEndian);
+        const r = this.data.getInt32(this.tell(), isLittleEndian);
         this.skip(4);
         return r;
     }
     ui(isLittleEndian = true) {
-        let r = this.data.getUint32(this.tell(), isLittleEndian);
+        const r = this.data.getUint32(this.tell(), isLittleEndian);
         this.skip(4);
         return r;
     }
     f(isLittleEndian = true) {
-        let r = this.data.getFloat32(this.tell(), isLittleEndian);
+        const r = this.data.getFloat32(this.tell(), isLittleEndian);
         this.skip(4);
         return r;
     }
     lf(isLittleEndian = true) {
-        let r = this.data.getFloat64(this.tell(), isLittleEndian);
+        const r = this.data.getFloat64(this.tell(), isLittleEndian);
         this.skip(8);
         return r;
     }
@@ -56750,7 +57172,7 @@ class Reader {
         let r = '';
         while (n > 0) {
             n -= 1;
-            let charCode = this.ub();
+            const charCode = this.ub();
             if (charCode === 0) {
                 break;
             }
@@ -56763,7 +57185,7 @@ class Reader {
     }
     arr(n, f) {
         f.bind(this);
-        let r = [];
+        const r = [];
         while (n-- > 0) {
             r.push(f());
         }
@@ -58949,7 +59371,6 @@ exports.Replay = Replay;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = __webpack_require__(/*! events */ "./node_modules/events/events.js");
-const Array_1 = __webpack_require__(/*! ./Array */ "./src/Array.ts");
 const Replay_1 = __webpack_require__(/*! ./Replay */ "./src/Replay.ts");
 const updateGame = (game, state) => {
     game.camera.position.x = state.cameraPos[0];
@@ -59148,7 +59569,7 @@ class ReplayPlayer {
             }
             else if (frame.type === 8) {
                 let sample = frame.sound.sample;
-                let sound = Array_1.Array.find(sounds, (s) => s.name === sample);
+                let sound = sounds.find(s => s.name === sample);
                 if (sound && sound.name !== 'common/null.wav') {
                     let channel = frame.sound.channel;
                     let volume = frame.sound.volume;
@@ -59188,22 +59609,23 @@ exports.ReplayPlayer = ReplayPlayer;
 Object.defineProperty(exports, "__esModule", { value: true });
 const THREE = __webpack_require__(/*! three */ "./node_modules/three/build/three.module.js");
 const three_1 = __webpack_require__(/*! three */ "./node_modules/three/build/three.module.js");
+const Sprite_1 = __webpack_require__(/*! ./Parsers/Sprite */ "./src/Parsers/Sprite.ts");
 const resizeTexture = (pixels, width, height, newWidth, newHeight) => {
-    let canvas = document.createElement('canvas');
-    let ctx = canvas.getContext('2d');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
     if (!ctx) {
         throw new Error('Runtime error.');
     }
     canvas.width = width;
     canvas.height = height;
-    let nc = document.createElement('canvas');
-    let nctx = nc.getContext('2d');
+    const nc = document.createElement('canvas');
+    const nctx = nc.getContext('2d');
     if (!nctx) {
         throw new Error('Runtime error.');
     }
     nc.width = newWidth;
     nc.height = newHeight;
-    let cid = ctx.createImageData(width, height);
+    const cid = ctx.createImageData(width, height);
     for (let i = 0, size = width * height * 4; i < size; i += 4) {
         cid.data[i] = pixels[i];
         cid.data[i + 1] = pixels[i + 1];
@@ -59222,25 +59644,25 @@ const nextPowerOfTwo = (n) => {
     }
     return n + 1;
 };
-const createTexture = (data, renderer) => {
-    let pixels = data.mipmaps[0];
-    let w = data.width;
-    let h = data.height;
+const createTexture = (params) => {
+    let w = params.width;
+    let h = params.height;
+    let pixels = params.pixels;
     if (!isPowerOfTwo(w) || !isPowerOfTwo(h)) {
-        let nw = nextPowerOfTwo(w);
-        let nh = nextPowerOfTwo(h);
+        const nw = nextPowerOfTwo(w);
+        const nh = nextPowerOfTwo(h);
         pixels = resizeTexture(pixels, w, h, nw, nh);
         w = nw;
         h = nh;
     }
-    let texture = new THREE.DataTexture(pixels, w, h, THREE.RGBAFormat, THREE.UnsignedByteType, THREE.Texture.DEFAULT_MAPPING, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearMipMapLinearFilter);
+    const texture = new THREE.DataTexture(pixels, w, h, THREE.RGBAFormat, THREE.UnsignedByteType, THREE.Texture.DEFAULT_MAPPING, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearMipMapLinearFilter);
     texture.premultiplyAlpha = true;
-    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    texture.anisotropy = params.renderer.capabilities.getMaxAnisotropy();
     texture.generateMipmaps = true;
     return texture;
 };
 const createMissingTexture = () => {
-    let pixels = new Uint8Array([
+    const pixels = new Uint8Array([
         255,
         255,
         255,
@@ -59258,7 +59680,7 @@ const createMissingTexture = () => {
         255,
         255
     ]);
-    let texture = new THREE.DataTexture(pixels, 2, 2, THREE.RGBAFormat, THREE.UnsignedByteType, THREE.Texture.DEFAULT_MAPPING, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestFilter);
+    const texture = new THREE.DataTexture(pixels, 2, 2, THREE.RGBAFormat, THREE.UnsignedByteType, THREE.Texture.DEFAULT_MAPPING, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestFilter);
     return texture;
 };
 const INVISIBLE_TEXTURES = [
@@ -59273,52 +59695,82 @@ const INVISIBLE_TEXTURES = [
     'sky',
     'fog'
 ];
-const createMaterials = (map, renderer) => map.textures.map(data => {
-    let texture;
-    if (data.mipmaps.length > 0) {
-        texture = createTexture(data, renderer);
-    }
-    else {
-        texture = createMissingTexture();
-    }
-    texture.name = data.name;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.y = -1;
-    texture.needsUpdate = true;
-    let visible = true;
-    let lowerName = data.name.toLowerCase();
-    for (let i = 0; i < INVISIBLE_TEXTURES.length; ++i) {
-        if (INVISIBLE_TEXTURES[i] === lowerName) {
-            visible = false;
-            break;
+const createMaterials = (map, renderer) => {
+    const materials = {};
+    map.textures.forEach(data => {
+        let texture;
+        if (data.mipmaps.length > 0) {
+            texture = createTexture({
+                width: data.width,
+                height: data.height,
+                pixels: data.mipmaps[0],
+                renderer
+            });
         }
-    }
-    return new THREE.MeshLambertMaterial({
-        map: texture,
-        transparent: true,
-        alphaTest: 0.5,
-        visible
+        else {
+            texture = createMissingTexture();
+        }
+        texture.name = data.name;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.y = -1;
+        texture.needsUpdate = true;
+        let visible = true;
+        const lowerName = data.name.toLowerCase();
+        for (let i = 0; i < INVISIBLE_TEXTURES.length; ++i) {
+            if (INVISIBLE_TEXTURES[i] === lowerName) {
+                visible = false;
+                break;
+            }
+        }
+        materials[data.name] = new THREE.MeshLambertMaterial({
+            map: texture,
+            transparent: true,
+            alphaTest: 0.5,
+            visible
+        });
     });
-});
+    Object.entries(map.sprites).forEach(([name, sprite]) => {
+        const texture = createTexture({
+            width: sprite.header.width,
+            height: sprite.header.height,
+            pixels: sprite.frames[0].data,
+            renderer
+        });
+        texture.name = name;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.y = -1;
+        texture.needsUpdate = true;
+        materials[name] = new THREE.MeshLambertMaterial({
+            map: texture,
+            transparent: true,
+            alphaTest: 0.5,
+            visible: true
+        });
+    });
+    return materials;
+};
 const createModels = (map, materials) => {
-    return map.models.map(model => {
-        let geometry = new THREE.Geometry();
-        geometry.vertices = model.vertices.map((vertex) => new three_1.Vector3(vertex[0], vertex[1], vertex[2]));
+    const models = {};
+    const orderedMaterials = Object.values(materials);
+    map.models.forEach((model, i) => {
+        const geometry = new THREE.Geometry();
+        geometry.vertices = model.vertices.map(vertex => new three_1.Vector3(vertex[0], vertex[1], vertex[2]));
         geometry.faces = model.faces.map((face, i) => {
-            let f = new three_1.Face3(face[0], face[1], face[2]);
+            const f = new three_1.Face3(face[0], face[1], face[2]);
             f.materialIndex = model.textureIndices[i];
             return f;
         });
-        geometry.faceVertexUvs[0] = model.uv.map((uv) => [
+        geometry.faceVertexUvs[0] = model.uv.map(uv => [
             new three_1.Vector2(uv[0][0], uv[0][1] * -1),
             new three_1.Vector2(uv[1][0], uv[1][1] * -1),
             new three_1.Vector2(uv[2][0], uv[2][1] * -1)
         ]);
-        let nfuv = [];
-        let nf = geometry.faces.filter((face, i) => {
-            let mat = materials[face.materialIndex];
-            let lowerName = mat.map.name.toLowerCase();
+        const nfuv = [];
+        const nf = geometry.faces.filter((face, i) => {
+            const mat = orderedMaterials[face.materialIndex];
+            const lowerName = mat.map.name.toLowerCase();
             for (let j = 0; j < INVISIBLE_TEXTURES.length; ++j) {
                 if (INVISIBLE_TEXTURES[j] === lowerName) {
                     return false;
@@ -59330,12 +59782,22 @@ const createModels = (map, materials) => {
         geometry.faces = nf;
         geometry.faceVertexUvs[0] = nfuv;
         geometry.mergeVertices();
-        return new three_1.Mesh(geometry, materials.map(m => m.clone()));
+        models[`*${i}`] = new ModelBasic(new three_1.Mesh(geometry, orderedMaterials.map(m => m.clone())));
     });
+    return models;
+};
+const createSpriteModels = (map, materials) => {
+    const models = {};
+    for (const [name, sprite] of Object.entries(map.sprites)) {
+        const geometry = new THREE.PlaneGeometry(sprite.header.width, sprite.header.height);
+        const material = materials[name];
+        models[name] = new ModelSprite(new three_1.Mesh(geometry, material), sprite);
+    }
+    return models;
 };
 const createBlankSky = () => {
-    let geometry = new THREE.BoxGeometry(-1000, 1000, 1000);
-    let material = new THREE.MeshBasicMaterial({ color: 0x88aae2 });
+    const geometry = new THREE.BoxGeometry(-1000, 1000, 1000);
+    const material = new THREE.MeshBasicMaterial({ color: 0x88aae2 });
     return new THREE.Mesh(geometry, material);
 };
 const createSky = (skies, renderer) => {
@@ -59344,11 +59806,11 @@ const createSky = (skies, renderer) => {
     if (skies.length !== 6) {
         throw new Error('Invalid number of sky textures given.');
     }
-    let canvas = document.createElement('canvas');
+    const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
-    let ctx = canvas.getContext('2d');
-    let coords = {
+    const ctx = canvas.getContext('2d');
+    const coords = {
         up: [0, 256],
         rt: [0, 512],
         ft: [256, 512],
@@ -59357,25 +59819,26 @@ const createSky = (skies, renderer) => {
         dn: [0, 768]
     };
     skies.forEach((sky) => {
-        let smc = document.createElement('canvas');
-        let smctx = smc.getContext('2d');
+        const smc = document.createElement('canvas');
+        const smctx = smc.getContext('2d');
         if (!smctx) {
             throw new Error('Runtime error.');
         }
         smc.width = sky.width;
         smc.height = sky.height;
-        let imageData = smctx.getImageData(0, 0, smc.width, smc.height);
+        const imageData = smctx.getImageData(0, 0, smc.width, smc.height);
         for (let i = 0; i < sky.data.length; ++i) {
             imageData.data[i] = sky.data[i];
         }
         smctx.putImageData(imageData, 0, 0);
-        let c = coords[sky.name.slice(-2)];
+        const side = sky.name.slice(-2);
+        const c = coords[side] ? coords[side] : [];
         if (!ctx) {
             throw new Error('Runtime error.');
         }
         ctx.drawImage(smc, c[0], c[1]);
     });
-    let texture = new THREE.Texture(canvas);
+    const texture = new THREE.Texture(canvas);
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
     if (renderer) {
@@ -59387,7 +59850,7 @@ const createSky = (skies, renderer) => {
         side: THREE.DoubleSide
     });
     geometry = new THREE.BoxGeometry(4096, 4096, 4096);
-    let uvs = [
+    const uvs = [
         [[0.75, 0.499], [1.0, 0.499], [0.75, 0.251]],
         [[1.0, 0.499], [1.0, 0.251], [0.75, 0.251]],
         [[0.5, 0.251], [0.25, 0.251], [0.5, 0.499]],
@@ -59409,37 +59872,125 @@ const createSky = (skies, renderer) => {
     geometry.rotateZ((90 * Math.PI) / 180);
     return new THREE.Mesh(geometry, material);
 };
+class ModelBasic {
+    constructor(mesh) {
+        this.mesh = mesh;
+    }
+    clone() {
+        return new ModelBasic(this.mesh.clone());
+    }
+    update() { }
+}
+exports.ModelBasic = ModelBasic;
+class ModelSprite {
+    constructor(mesh, sprite) {
+        this.mesh = mesh;
+        this.sprite = sprite;
+        mesh.rotation.x = Math.PI / 2;
+        mesh.rotation.order = 'ZXY';
+        mesh.up.x = 0;
+        mesh.up.y = 0;
+        mesh.up.z = 1;
+        mesh.material.side = THREE.DoubleSide;
+        switch (sprite.header.alphaType) {
+            case Sprite_1.SpriteAlphaType.SPR_ADDITIVE: {
+                const material = mesh.material;
+                material.blending = THREE.AdditiveBlending;
+            }
+        }
+    }
+    clone() {
+        return new ModelSprite(this.mesh.clone(), this.sprite);
+    }
+    update(_dt, entity, game) {
+        const mesh = this.mesh;
+        const origin = entity.meta['origin'];
+        mesh.position.x = origin[0];
+        mesh.position.y = origin[1];
+        mesh.position.z = origin[2];
+        const scale = entity.meta['scale'];
+        mesh.scale.x = scale;
+        mesh.scale.y = scale;
+        mesh.scale.z = scale;
+        switch (this.sprite.header.type) {
+            case Sprite_1.SpriteType.VP_PARALLEL: {
+                mesh.lookAt(game.camera.position);
+                break;
+            }
+            case Sprite_1.SpriteType.VP_PARALLEL_UPRIGHT: {
+                mesh.rotation.x = 1.570796;
+                mesh.rotation.y = game.camera.rotation.z;
+                break;
+            }
+            case Sprite_1.SpriteType.ORIENTED: {
+                const rotation = entity.meta['angles'];
+                mesh.rotation.x = rotation[0] * 0.01745;
+                mesh.rotation.y = rotation[2] * 0.01745;
+                mesh.rotation.z = rotation[1] * 0.01745;
+                break;
+            }
+            case Sprite_1.SpriteType.VP_PARALLEL_ORIENTED: {
+                const rotation = entity.meta['angles'];
+                mesh.rotation.x = 1.570796;
+                mesh.rotation.y = rotation[2] * 0.01745;
+                mesh.rotation.z = rotation[1] * 0.01745;
+                break;
+            }
+            case Sprite_1.SpriteType.FACING_UPRIGHT: {
+                mesh.lookAt(game.camera.position);
+                break;
+            }
+        }
+    }
+}
+exports.ModelSprite = ModelSprite;
 class Resources {
     constructor(game) {
+        this.models = {};
         this.game = game;
-        this.models = [];
         this.sky = createBlankSky();
     }
     clear() {
-        this.models.forEach(model => {
-            model.geometry.dispose();
-            model.material.materials.forEach((material) => {
-                material.map.dispose();
-                material.dispose();
-            });
-        });
+        for (const model of Object.values(this.models)) {
+            const mesh = model.mesh;
+            mesh.geometry.dispose();
+            if (Array.isArray(mesh.material)) {
+                mesh.material.forEach(material => {
+                    if (material instanceof THREE.MeshLambertMaterial) {
+                        material.map.dispose();
+                    }
+                    else {
+                        throw new Error('Material not of type MeshLambertMaterial');
+                    }
+                    material.dispose();
+                });
+            }
+            else {
+                if (mesh.material instanceof THREE.MeshLambertMaterial) {
+                    mesh.material.map.dispose();
+                }
+                else {
+                    throw new Error('Material not of type MeshLambertMaterial');
+                }
+                mesh.material.dispose();
+            }
+        }
         if (this.sky) {
             this.sky.geometry.dispose();
-            if (this.sky.material) {
+            if (this.sky.material instanceof THREE.MeshBasicMaterial) {
                 this.sky.material.dispose();
             }
         }
-        this.models.length = 0;
+        this.models = {};
         this.sky = createBlankSky();
     }
     initialize(map) {
         this.clear();
-        this.sky = createSky(map.skies, this.game.renderer);
-        let materials = createMaterials(map, this.game.renderer);
-        let models = createModels(map, materials);
-        models.forEach(model => {
-            this.models.push(model);
-        });
+        if (map.skies.length === 6) {
+            this.sky = createSky(map.skies, this.game.renderer);
+        }
+        const materials = createMaterials(map, this.game.renderer);
+        this.models = Object.assign({}, createModels(map, materials), createSpriteModels(map, materials));
     }
 }
 exports.Resources = Resources;
@@ -59596,139 +60147,6 @@ class SoundSystem {
     }
 }
 exports.SoundSystem = SoundSystem;
-
-
-/***/ }),
-
-/***/ "./src/Tga.ts":
-/*!********************!*\
-  !*** ./src/Tga.ts ***!
-  \********************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const Path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
-const Reader_1 = __webpack_require__(/*! ./Reader */ "./src/Reader.ts");
-const Xhr_1 = __webpack_require__(/*! ./Xhr */ "./src/Xhr.ts");
-class Tga {
-    constructor(name, width, height, data) {
-        this.name = name;
-        this.width = width;
-        this.height = height;
-        this.data = data;
-    }
-    static parseFromArrayBuffer(buffer, url) {
-        let r = new Reader_1.Reader(buffer);
-        let header = {
-            idLength: r.ub(),
-            colorMapType: r.ub(),
-            imageType: r.ub(),
-            colorMap: {
-                firstEntryIndex: r.us(),
-                length: r.us(),
-                size: r.ub()
-            },
-            image: {
-                xOrigin: r.us(),
-                yOrigin: r.us(),
-                width: r.us(),
-                height: r.us(),
-                depth: r.ub(),
-                descriptor: r.ub()
-            }
-        };
-        if (header.idLength) {
-            r.arrx(header.idLength, Reader_1.Reader.Type.UByte);
-        }
-        if (header.colorMapType) {
-            throw new Error('Not implemented');
-        }
-        let w = header.image.width;
-        let h = header.image.height;
-        let pixelCount = w * h;
-        let imageData;
-        if (header.imageType === 0x02) {
-            let byteCount = (pixelCount * header.image.depth) / 8;
-            imageData = r.arrx(byteCount, Reader_1.Reader.Type.UByte);
-            if (header.image.depth === 24) {
-                let temp = new Uint8Array(pixelCount * 4);
-                for (let i = 0; i < h; ++i) {
-                    for (let j = 0; j < w; ++j) {
-                        let dst = (h - 1 - i) * w + j;
-                        temp[dst * 4] = imageData[(i * w + j) * 3 + 2];
-                        temp[dst * 4 + 1] = imageData[(i * w + j) * 3 + 1];
-                        temp[dst * 4 + 2] = imageData[(i * w + j) * 3];
-                        temp[dst * 4 + 3] = 255;
-                    }
-                }
-                imageData = temp;
-            }
-            else if (header.image.depth === 32) {
-                let temp = new Uint8Array(pixelCount * 4);
-                for (let i = 0; i < h; ++i) {
-                    for (let j = 0; j < w; ++j) {
-                        let dst = (h - 1 - i) * w + j;
-                        temp[dst * 4] = imageData[(i * w + j) * 4 + 2];
-                        temp[dst * 4 + 1] = imageData[(i * w + j) * 4 + 1];
-                        temp[dst * 4 + 2] = imageData[(i * w + j) * 4];
-                        temp[dst * 4 + 3] = 255;
-                    }
-                }
-                imageData = temp;
-            }
-        }
-        else if (header.imageType === 0x0a) {
-            imageData = new Uint8Array(pixelCount * 4);
-            if (header.image.depth === 24) {
-                for (let i = 0; i < h; ++i) {
-                    for (let j = 0; j < w;) {
-                        let repCount = r.ub();
-                        if (repCount & 0x80) {
-                            repCount = (repCount & 0x7f) + 1;
-                            let bl = r.ub();
-                            let gr = r.ub();
-                            let rd = r.ub();
-                            while (j < w && repCount) {
-                                let dst = (h - 1 - i) * w + j;
-                                imageData[dst * 4] = rd;
-                                imageData[dst * 4 + 1] = gr;
-                                imageData[dst * 4 + 2] = bl;
-                                imageData[dst * 4 + 3] = 255;
-                                ++j;
-                                --repCount;
-                            }
-                        }
-                        else {
-                            repCount = (repCount & 0x7f) + 1;
-                            while (j < w && repCount) {
-                                let dst = (h - 1 - i) * w + j;
-                                imageData[dst * 4 + 2] = r.ub();
-                                imageData[dst * 4 + 1] = r.ub();
-                                imageData[dst * 4] = r.ub();
-                                imageData[dst * 4 + 3] = 255;
-                                ++j;
-                                --repCount;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        let name = Path.basename(url, '.tga');
-        return new Tga(name, header.image.width, header.image.height, imageData);
-    }
-    static loadFromUrl(url, progressCallback) {
-        return Xhr_1.xhr(url, {
-            method: 'GET',
-            isBinary: true,
-            progressCallback
-        }).then(response => Tga.parseFromArrayBuffer(response, url));
-    }
-}
-exports.Tga = Tga;
 
 
 /***/ }),
@@ -59891,116 +60309,6 @@ exports.Vector3 = Vector3;
 
 /***/ }),
 
-/***/ "./src/Wad.ts":
-/*!********************!*\
-  !*** ./src/Wad.ts ***!
-  \********************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const Reader_1 = __webpack_require__(/*! ./Reader */ "./src/Reader.ts");
-const Xhr_1 = __webpack_require__(/*! ./Xhr */ "./src/Xhr.ts");
-function parseMipMaps(r, width, height) {
-    const pixelCount = width * height;
-    const mipmaps = [0, 0, 0, 0].map((_1, i) => r.arrx(pixelCount / Math.pow(1 << i, 2), Reader_1.Reader.Type.UByte));
-    r.skip(2);
-    const palette = r.arrx(256 * 3, Reader_1.Reader.Type.UByte);
-    return mipmaps.map(m => {
-        const pixels = new Uint8Array(m.length * 4);
-        for (let i = 0; i < m.length; ++i) {
-            const r = palette[m[i] * 3];
-            const g = palette[m[i] * 3 + 1];
-            const b = palette[m[i] * 3 + 2];
-            if (r === 0 && g === 0 && b === 255) {
-                pixels[4 * i] = 0;
-                pixels[4 * i + 1] = 0;
-                pixels[4 * i + 2] = 0;
-                pixels[4 * i + 3] = 0;
-            }
-            else {
-                pixels[4 * i] = r;
-                pixels[4 * i + 1] = g;
-                pixels[4 * i + 2] = b;
-                pixels[4 * i + 3] = 255;
-            }
-        }
-        return pixels;
-    });
-}
-function parseTexture(r) {
-    const baseOffset = r.tell();
-    r.skip(16);
-    const texture = {
-        width: r.ui(),
-        height: r.ui(),
-        mipmaps: []
-    };
-    const mipmapOffset = r.ui();
-    r.seek(baseOffset + mipmapOffset);
-    texture.mipmaps = parseMipMaps(r, texture.width, texture.height);
-    return { texture };
-}
-function parseEntry(r, entry) {
-    r.seek(entry.offset);
-    switch (entry.type) {
-        case 67: {
-            return parseTexture(r);
-        }
-        default: {
-            return r.arr(entry.length, r.ub.bind(r));
-        }
-    }
-}
-class Wad {
-    constructor(entries) {
-        this.entries = entries;
-    }
-    static parseFromArrayBuffer(buffer) {
-        const r = new Reader_1.Reader(buffer);
-        const magic = r.nstr(4);
-        if (magic !== 'WAD3') {
-            throw new Error('Invalid WAD file format');
-        }
-        const entryCount = r.ui();
-        const directoryOffset = r.ui();
-        r.seek(directoryOffset);
-        const entries = [];
-        for (let i = 0; i < entryCount; ++i) {
-            const entry = {
-                offset: r.ui(),
-                diskLength: r.ui(),
-                length: r.ui(),
-                type: r.b(),
-                isCompressed: r.b()
-            };
-            r.skip(2);
-            entry.name = r.nstr(16);
-            entries.push(entry);
-        }
-        entries.forEach(e => {
-            e.data = parseEntry(r, e);
-        });
-        return new Wad(entries.map(e => ({
-            name: e.name,
-            data: e.data
-        })));
-    }
-    static loadFromUrl(url, progressCallback) {
-        return Xhr_1.xhr(url, {
-            method: 'GET',
-            isBinary: true,
-            progressCallback
-        }).then(response => Wad.parseFromArrayBuffer(response));
-    }
-}
-exports.Wad = Wad;
-
-
-/***/ }),
-
 /***/ "./src/WorldScene.ts":
 /*!***************************!*\
   !*** ./src/WorldScene.ts ***!
@@ -60026,11 +60334,10 @@ class WorldScene {
     }
     initialize(entities) {
         this.clear();
-        entities.list.forEach((e) => {
-            if (!e.model) {
-                return;
+        entities.list.forEach(entity => {
+            if (entity.model) {
+                this.meshes.add(entity.model.mesh);
             }
-            this.meshes.add(e.model);
         });
     }
     getMeshes() {
@@ -60155,7 +60462,7 @@ class HLViewer {
         return this.game.getTitle();
     }
 }
-HLViewer.VERSION = "0.4.1";
+HLViewer.VERSION = "0.5.0";
 let wnd = window;
 wnd.HLViewer = HLViewer;
 

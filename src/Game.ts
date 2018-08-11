@@ -71,9 +71,11 @@ export class Game {
   errorMessage: string
   config: Config
 
-  lastTime: number
-  accumTime: number
-  readonly timeStep: number
+  pauseTime: number = 0
+  isPaused: boolean = false
+  lastTime: number = 0
+  accumTime: number = 0
+  readonly timeStep: number = 1 / 60
 
   title: string
   mode: PlayerMode
@@ -109,10 +111,6 @@ export class Game {
       this.error = false
       this.errorMessage = ''
     }
-
-    this.lastTime = 0
-    this.accumTime = 0
-    this.timeStep = 1 / 60
 
     this.mouse = new Mouse()
     this.keyboard = new Keyboard()
@@ -166,6 +164,7 @@ export class Game {
     document.addEventListener('mousemove', this.mouseMove, false)
     window.addEventListener('keydown', this.keyDown)
     window.addEventListener('keyup', this.keyUp)
+    window.addEventListener('visibilitychange', this.onVisibilityChange)
 
     this.camera = new THREE.PerspectiveCamera(70, 1, 1, 100000)
     this.camera.rotation.order = 'ZXY'
@@ -390,5 +389,23 @@ export class Game {
     }
 
     return true
+  }
+
+  onVisibilityChange = () => {
+    if (document.hidden) {
+      if (this.isPaused) {
+        return
+      }
+
+      this.pauseTime = Time.now() / 1000
+      this.isPaused = true
+    } else {
+      if (!this.isPaused) {
+        return
+      }
+
+      this.lastTime = Time.now() / 1000 - this.pauseTime + this.lastTime
+      this.isPaused = false
+    }
   }
 }

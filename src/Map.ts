@@ -4,6 +4,7 @@ import { vdf } from './Vdf'
 import { ProgressCallback, xhr } from './Xhr'
 import { Sprite } from './Parsers/Sprite'
 import { Tga } from './Parsers/Tga';
+import { paletteWithLastTransToRGBA, paletteToRGBA } from './Parsers/Util';
 
 function parseEntities(r: Reader, lumps: any[]) {
   r.seek(lumps[Map.Lump.Entities].offset)
@@ -70,17 +71,24 @@ interface MapModel {
   textureIndices: number[]
 }
 
+interface MapTexture {
+  name: string
+  width: number
+  height: number
+  data: Uint8Array
+}
+
 class Map {
   name: string
   entities: any[]
-  textures: any[]
+  textures: MapTexture[]
   models: MapModel[]
   skies: Tga[]
   sprites: { [name: string]: Sprite } = {}
 
   constructor(
     entities: any[],
-    textures: any[],
+    textures: MapTexture[],
     models: MapModel[],
     skies = []
   ) {
@@ -94,7 +102,7 @@ class Map {
   hasMissingTextures() {
     for (let i = 0; i < this.textures.length; ++i) {
       const texture = this.textures[i]
-      if (texture.mipmaps.length !== texture.width * texture.height) {
+      if (texture.data.length !== texture.width * texture.height) {
         return true
       }
     }
@@ -119,51 +127,34 @@ class Map {
 
     const parseTextures = (r: Reader) => {
       const parseTexture = (r: Reader) => {
-        const parseMipMaps = (r: Reader, texture: any) => {
-          const isTransparent = texture.name.charAt(0) === '{'
-          const w = texture.width
-          const h = texture.height
+        const name = r.nstr(16)
+        const width = r.ui()
+        const height = r.ui()
 
-          const mipmaps = [r.arrx(w * h, Reader.Type.UByte)]
-          r.skip((21 * w * h) / 64 + 2)
+        r.skip(4 * 4) // skip mipmap offsets
 
-          const palette = r.arrx(256 * 3, Reader.Type.UByte)
+        // read largest mipmap data
+        const pixelCount = width * height
+        const pixels = r.arrx(pixelCount, Reader.Type.UByte)
 
-          return mipmaps.map(m => {
-            const t = new Uint8Array(m.length * 4)
+        // skip other 3 mipmaps
+        r.skip(21 * (pixelCount / 64))
 
-            for (let i = 0; i < m.length; ++i) {
-              if (isTransparent && m[i] === 255) {
-                t[4 * i + 3] = 0
-              } else {
-                t[4 * i] = palette[m[i] * 3]
-                t[4 * i + 1] = palette[m[i] * 3 + 1]
-                t[4 * i + 2] = palette[m[i] * 3 + 2]
-                t[4 * i + 3] = 255
-              }
-            }
+        r.skip(2) // skip padding bytes
 
-            return t
-          })
+        const palette = r.arrx(768, Reader.Type.UByte)
+
+        const data =
+          name[0] === '{'
+            ? paletteWithLastTransToRGBA(pixels, palette)
+            : paletteToRGBA(pixels, palette)
+
+        return {
+          name,
+          width,
+          height,
+          data
         }
-
-        const baseOffset = r.tell()
-
-        const texture = {
-          name: r.nstr(16),
-          width: r.ui(),
-          height: r.ui(),
-          mipmaps: [new Uint8Array(4)]
-        }
-
-        const mipmapOffset = r.ui()
-
-        if (mipmapOffset !== 0) {
-          r.seek(baseOffset + mipmapOffset)
-          texture.mipmaps = parseMipMaps(r, texture)
-        }
-
-        return texture
       }
 
       r.seek(lumps[Map.Lump.Textures].offset)
@@ -174,15 +165,14 @@ class Map {
         offsets.push(r.ui())
       }
 
-      const textures = []
+      const textures: MapTexture[] = []
       for (let i = 0; i < count; ++i) {
         if (offsets[i] === 0xffffffff) {
-          const mipmap = new Uint8Array([0, 255, 0, 255])
           textures.push({
             name: 'ERROR404',
             width: 1,
             height: 1,
-            mipmaps: [mipmap, mipmap, mipmap, mipmap]
+            data: new Uint8Array([0, 255, 0, 255])
           })
         } else {
           r.seek(lumps[Map.Lump.Textures].offset + offsets[i])

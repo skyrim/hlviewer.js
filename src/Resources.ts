@@ -147,27 +147,27 @@ const INVISIBLE_TEXTURES = [
 const createMaterials = (map: Map, renderer: THREE.WebGLRenderer) => {
   const materials: { [name: string]: THREE.MeshLambertMaterial } = {}
 
-  map.textures.forEach(data => {
-    let texture
-    if (data.mipmaps.length > 0) {
-      texture = createTexture({
-        width: data.width,
-        height: data.height,
-        pixels: data.mipmaps[0],
+  map.textures.forEach(texture => {
+    let map
+    if (texture.data.length > 0) {
+      map = createTexture({
+        width: texture.width,
+        height: texture.height,
+        pixels: texture.data,
         renderer
       })
     } else {
-      texture = createMissingTexture()
+      map = createMissingTexture()
     }
 
-    texture.name = data.name
-    texture.wrapS = THREE.RepeatWrapping
-    texture.wrapT = THREE.RepeatWrapping
-    texture.repeat.y = -1
-    texture.needsUpdate = true
+    map.name = texture.name
+    map.wrapS = THREE.RepeatWrapping
+    map.wrapT = THREE.RepeatWrapping
+    map.repeat.y = -1
+    map.needsUpdate = true
 
     let visible = true
-    const lowerName = data.name.toLowerCase()
+    const lowerName = texture.name.toLowerCase()
     for (let i = 0; i < INVISIBLE_TEXTURES.length; ++i) {
       if (INVISIBLE_TEXTURES[i] === lowerName) {
         visible = false
@@ -175,8 +175,8 @@ const createMaterials = (map: Map, renderer: THREE.WebGLRenderer) => {
       }
     }
 
-    materials[data.name] = new THREE.MeshLambertMaterial({
-      map: texture,
+    materials[texture.name] = new THREE.MeshLambertMaterial({
+      map: map,
       transparent: true,
       alphaTest: 0.5,
       visible

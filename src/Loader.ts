@@ -326,10 +326,14 @@ class Loader {
 
     const map = this.map.data
     const cmp = (a: any, b: any) => a.toLowerCase() === b.toLowerCase()
-    wad.entries.forEach((entry: any) => {
-      map.textures.forEach((texture: any) => {
+    wad.entries.forEach(entry => {
+      if (entry.type !== 'texture') {
+        return
+      }
+
+      map.textures.forEach(texture => {
         if (cmp(entry.name, texture.name)) {
-          texture.mipmaps = entry.data.texture.mipmaps
+          texture.data = entry.data
         }
       })
     })

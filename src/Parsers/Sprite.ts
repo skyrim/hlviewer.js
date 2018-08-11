@@ -1,5 +1,6 @@
 import { xhr, ProgressCallback } from '../Xhr'
 import { Reader } from '../Reader'
+import { paletteWithLastTransToRGBA, paletteToRGBA } from './Util';
 
 interface SpriteHeader {
   version: number
@@ -71,7 +72,7 @@ export class Sprite {
     }
 
     const paletteSize = r.s()
-    const palette = r.arr(paletteSize * 3, r.ub.bind(r))
+    const palette = r.arrx(paletteSize * 3, Reader.Type.UByte)
 
     const frames: SpriteFrame[] = []
     for (let i = 0; i < header.frameCount; ++i) {
@@ -83,36 +84,12 @@ export class Sprite {
         data: new Uint8Array(header.width * header.height * 4)
       }
 
-      const pixels = r.arr(header.width * header.height, r.ub.bind(r))
+      const pixels = r.arrx(header.width * header.height, Reader.Type.UByte)
 
       if (header.alphaType === SpriteAlphaType.SPR_ALPHTEST) {
-        const alphaR = palette[palette.length - 3]
-        const alphaG = palette[palette.length - 2]
-        const alphaB = palette[palette.length - 1]
-
-        for (let j = 0; j < pixels.length; ++j) {
-          const r = palette[pixels[j] * 3]
-          const g = palette[pixels[j] * 3 + 1]
-          const b = palette[pixels[j] * 3 + 2]
-          const a = r === alphaR && g === alphaG && b === alphaB ? 0 : 255
-
-          frame.data[4 * j] = r
-          frame.data[4 * j + 1] = g
-          frame.data[4 * j + 2] = b
-          frame.data[4 * j + 3] = a
-        }
+        frame.data = paletteWithLastTransToRGBA(pixels, palette)
       } else {
-        for (let j = 0; j < pixels.length; ++j) {
-          const r = palette[pixels[j] * 3]
-          const g = palette[pixels[j] * 3 + 1]
-          const b = palette[pixels[j] * 3 + 2]
-          const a = 255
-
-          frame.data[4 * j] = r
-          frame.data[4 * j + 1] = g
-          frame.data[4 * j + 2] = b
-          frame.data[4 * j + 3] = a
-        }
+        frame.data = paletteToRGBA(pixels, palette)
       }
 
       frames.push(frame)

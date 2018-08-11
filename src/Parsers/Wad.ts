@@ -1,87 +1,201 @@
 import { Reader } from '../Reader'
 import { ProgressCallback, xhr } from '../Xhr'
+import { paletteToRGBA, paletteWithLastTransToRGBA } from './Util'
 
-function parseMipMaps(r: Reader, width: number, height: number) {
+function parseDecal(r: Reader): WadDecal {
+  const name = r.nstr(16)
+
+  const width = r.ui()
+  const height = r.ui()
+
+  r.skip(4 * 4) // skip mipmap offsets
+
+  // read largest mipmap data
   const pixelCount = width * height
-  const mipmaps = [0, 0, 0, 0].map((_1, i) =>
-    r.arrx(pixelCount / Math.pow(1 << i, 2), Reader.Type.UByte)
-  )
+  const pixels = r.arrx(pixelCount, Reader.Type.UByte)
+
+  // skip other 3 mipmaps
+  r.skip(21 * (pixelCount / 64))
+
+  r.skip(2) // skip padding bytes
+
+  const palette = r.arrx(768, Reader.Type.UByte)
+
+  const data =
+    name[0] === '{'
+      ? paletteWithLastTransToRGBA(pixels, palette)
+      : paletteToRGBA(pixels, palette)
+
+  return {
+    type: 'decal',
+    name,
+    width,
+    height,
+    data
+  }
+}
+
+function parseCache(_r: Reader, metadata: WadEntryMetadata): WadCache {
+  return {
+    type: 'cache',
+    name: metadata.name
+  }
+}
+
+function parseTexture(r: Reader): WadTexture {
+  const name = r.nstr(16)
+
+  const width = r.ui()
+  const height = r.ui()
+
+  r.skip(4 * 4) // skip mipmap offsets
+
+  // read largest mipmap data
+  const pixelCount = width * height
+  const pixels = r.arrx(pixelCount, Reader.Type.UByte)
+
+  // skip other 3 mipmaps
+  r.skip(21 * (pixelCount / 64))
+
+  r.skip(2) // skip padding bytes
+
+  const palette = r.arrx(768, Reader.Type.UByte)
+
+  const data =
+    name[0] === '{'
+      ? paletteWithLastTransToRGBA(pixels, palette)
+      : paletteToRGBA(pixels, palette)
+
+  return {
+    type: 'texture',
+    name,
+    width,
+    height,
+    data
+  }
+}
+
+function parseFont(r: Reader, metadata: WadEntryMetadata): WadFont {
+  const width = r.ui()
+  const height = r.ui()
+  const rowCount = r.ui()
+  const rowHeight = r.ui()
+
+  const glyphs = []
+  // hardcoded 256 number of glyphs
+  for (let i = 0; i < 256; ++i) {
+    glyphs.push({
+      offset: r.us(),
+      width: r.us()
+    })
+  }
+
+  const pixelCount = width * height
+  const pixels = r.arrx(pixelCount, Reader.Type.UByte)
 
   r.skip(2)
 
   const palette = r.arrx(256 * 3, Reader.Type.UByte)
 
-  return mipmaps.map(m => {
-    const pixels = new Uint8Array(m.length * 4)
-
-    for (let i = 0; i < m.length; ++i) {
-      const r = palette[m[i] * 3]
-      const g = palette[m[i] * 3 + 1]
-      const b = palette[m[i] * 3 + 2]
-
-      if (r === 0 && g === 0 && b === 255) {
-        pixels[4 * i] = 0
-        pixels[4 * i + 1] = 0
-        pixels[4 * i + 2] = 0
-        pixels[4 * i + 3] = 0
-      } else {
-        pixels[4 * i] = r
-        pixels[4 * i + 1] = g
-        pixels[4 * i + 2] = b
-        pixels[4 * i + 3] = 255
-      }
-    }
-
-    return pixels
-  })
-}
-
-function parseTexture(r: Reader) {
-  const baseOffset = r.tell()
-
-  r.skip(16) // name
-  const texture: any = {
-    width: r.ui(),
-    height: r.ui(),
-    mipmaps: []
+  return {
+    type: 'font',
+    name: metadata.name,
+    width,
+    height,
+    rowCount,
+    rowHeight,
+    glyphs,
+    data: paletteToRGBA(pixels, palette)
   }
-
-  const mipmapOffset = r.ui()
-  r.seek(baseOffset + mipmapOffset)
-  texture.mipmaps = parseMipMaps(r, texture.width, texture.height)
-
-  return { texture }
 }
 
-function parseEntry(r: Reader, entry: any) {
-  r.seek(entry.offset)
-  switch (entry.type) {
-    case 67: {
+function parseUnknown(r: Reader, metadata: WadEntryMetadata): WadUnknown {
+  return {
+    type: 'unknown',
+    name: metadata.name,
+    data: r.arrx(metadata.length, r.ub.bind(r))
+  }
+}
+
+function parseEntry(r: Reader, metadata: WadEntryMetadata): WadEntry {
+  r.seek(metadata.offset)
+  switch (metadata.type) {
+    case 0x40: {
+      return parseDecal(r)
+    }
+    case 0x42: {
+      return parseCache(r, metadata)
+    }
+    case 0x43: {
       return parseTexture(r)
+    }
+    case 0x46: {
+      return parseFont(r, metadata)
     }
 
     default: {
       // unknown data type; return array of bytes
-      return r.arr(entry.length, r.ub.bind(r))
+      return parseUnknown(r, metadata)
     }
   }
 }
 
-interface WadEntry {
+interface WadTexture {
+  type: 'texture'
   name: string
-  data: {
-    texture: {
-      width: number
-      height: number
-      mipmaps: Uint8Array[]
-    }
-  }
+  width: number
+  height: number
+  data: Uint8Array
 }
 
-class Wad {
+interface WadDecal {
+  type: 'decal'
+  name: string
+  width: number
+  height: number
+  data: Uint8Array
+}
+
+interface WadCache {
+  type: 'cache'
+  name: string
+}
+
+interface WadFont {
+  type: 'font'
+  name: string
+  width: number
+  height: number
+  rowCount: number
+  rowHeight: number
+  glyphs: {
+    offset: number
+    width: number
+  }[]
+  data: Uint8Array
+}
+
+interface WadUnknown {
+  type: 'unknown'
+  name: string
+  data: Uint8Array
+}
+
+type WadEntry = WadTexture | WadDecal | WadCache | WadFont | WadUnknown
+
+interface WadEntryMetadata {
+  offset: number
+  diskLength: number
+  length: number
+  type: number
+  isCompressed: number
+  name: string
+}
+
+export class Wad {
   entries: WadEntry[]
 
-  constructor(entries: any[]) {
+  constructor(entries: WadEntry[]) {
     this.entries = entries
   }
 
@@ -96,30 +210,24 @@ class Wad {
     const entryCount = r.ui()
     const directoryOffset = r.ui()
     r.seek(directoryOffset)
-    const entries = []
+    const entriesMetadata: WadEntryMetadata[] = []
     for (let i = 0; i < entryCount; ++i) {
-      const entry: any = {
+      const entry: WadEntryMetadata = {
         offset: r.ui(),
         diskLength: r.ui(),
         length: r.ui(),
         type: r.b(),
-        isCompressed: r.b()
+        isCompressed: r.b(),
+        name: ''
       }
       r.skip(2)
       entry.name = r.nstr(16)
-      entries.push(entry)
+      entriesMetadata.push(entry)
     }
 
-    entries.forEach(e => {
-      e.data = parseEntry(r, e)
-    })
+    const entries: WadEntry[] = entriesMetadata.map(e => parseEntry(r, e))
 
-    return new Wad(
-      entries.map(e => ({
-        name: e.name,
-        data: e.data
-      }))
-    )
+    return new Wad(entries)
   }
 
   static loadFromUrl(url: string, progressCallback: ProgressCallback) {
@@ -130,5 +238,3 @@ class Wad {
     }).then(response => Wad.parseFromArrayBuffer(response))
   }
 }
-
-export { Wad }

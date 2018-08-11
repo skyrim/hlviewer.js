@@ -36,7 +36,10 @@ namespace Keyboard {
     W = 'W'.charCodeAt(0),
     X = 'X'.charCodeAt(0),
     Y = 'Y'.charCodeAt(0),
-    Z = 'Z'.charCodeAt(0)
+    Z = 'Z'.charCodeAt(0),
+    CTRL = 17,
+    ALT = 18,
+    SPACE = 32
   }
 }
 

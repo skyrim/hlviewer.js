@@ -53,6 +53,11 @@ export class Root extends Component<RootProps, RootState> {
     root.addEventListener('click', this.onRootClick)
     window.addEventListener('click', this.onWindowClick)
     window.addEventListener('keydown', this.onKeyDown)
+    document.addEventListener(
+      'pointerlockchange',
+      this.onPointerLockChange,
+      false
+    )
 
     root.addEventListener('mouseover', this.onMouseEnter)
     root.addEventListener('mousemove', this.onMouseMove)
@@ -72,11 +77,24 @@ export class Root extends Component<RootProps, RootState> {
     root.removeEventListener('click', this.onRootClick)
     window.removeEventListener('click', this.onWindowClick)
     window.removeEventListener('keydown', this.onKeyDown)
+    document.removeEventListener(
+      'pointerlockchange',
+      this.onPointerLockChange,
+      false
+    )
 
     root.removeEventListener('mouseover', this.onMouseEnter)
     root.removeEventListener('mousemove', this.onMouseMove)
     root.removeEventListener('mouseout', this.onMouseLeave)
     root.removeEventListener('contextmenu', this.onContextMenu)
+  }
+
+  onPointerLockChange = () => {
+    if (document.pointerLockElement === this.props.root) {
+      this.props.game.pointerLocked = true
+    } else {
+      this.props.game.pointerLocked = false
+    }
   }
 
   onContextMenu = (e: Event) => {
@@ -214,15 +232,22 @@ export class Root extends Component<RootProps, RootState> {
   }
 
   onScreenClick = () => {
-    if (this.props.game.mode !== PlayerMode.REPLAY) {
-      return
-    }
+    switch (this.props.game.mode) {
+      case PlayerMode.REPLAY: {
+        const player = this.props.game.player
+        if (!player.isPlaying || player.isPaused) {
+          player.play()
+        } else {
+          player.pause()
+        }
+        break
+      }
 
-    const player = this.props.game.player
-    if (!player.isPlaying || player.isPaused) {
-      player.play()
-    } else {
-      player.pause()
+      case PlayerMode.FREE: {
+        this.props.root.requestPointerLock()
+
+        break
+      }
     }
   }
 

@@ -12,7 +12,7 @@ import * as Time from './Time'
 import { WorldScene } from './WorldScene'
 import { Sound } from './Sound'
 import { Map } from './Map'
-import { Replay } from './Replay';
+import { Replay } from './Replay'
 
 export interface Config {
   paths: {
@@ -77,6 +77,7 @@ export class Game {
 
   title: string
   mode: PlayerMode
+  pointerLocked: boolean = false
 
   mouse: Mouse
   keyboard: Keyboard
@@ -162,11 +163,9 @@ export class Game {
       this.events.emit('load', loader)
     })
 
-    window.addEventListener('mousedown', this.mousedown.bind(this))
-    window.addEventListener('mouseup', this.mouseup.bind(this))
-    window.addEventListener('mousemove', this.mousemove.bind(this))
-    window.addEventListener('keydown', this.keydown.bind(this))
-    window.addEventListener('keyup', this.keyup.bind(this))
+    document.addEventListener('mousemove', this.mouseMove, false)
+    window.addEventListener('keydown', this.keyDown)
+    window.addEventListener('keyup', this.keyUp)
 
     this.camera = new THREE.PerspectiveCamera(70, 1, 1, 100000)
     this.camera.rotation.order = 'ZXY'
@@ -299,7 +298,7 @@ export class Game {
     if (this.mode === PlayerMode.REPLAY) {
       this.player.update(dt)
     } else if (this.mode === PlayerMode.FREE) {
-      if (mouse.click) {
+      if (this.pointerLocked) {
         const mX = mouse.delta.y / 100
         const mY = mouse.delta.x / 100
 
@@ -316,8 +315,8 @@ export class Game {
       const KEY_S = Keyboard.KEYS.S
       const KEY_A = Keyboard.KEYS.A
       const KEY_D = Keyboard.KEYS.D
-      const KEY_R = Keyboard.KEYS.R
-      const KEY_F = Keyboard.KEYS.F
+      const downKey = Keyboard.KEYS.CTRL
+      const upKey = Keyboard.KEYS.SPACE
       if (keyboard.keys[KEY_W] !== keyboard.keys[KEY_S]) {
         if (keyboard.keys[KEY_W]) {
           camera.position.y += Math.cos(camera.rotation.z) * ds
@@ -338,36 +337,16 @@ export class Game {
         }
       }
 
-      if (keyboard.keys[KEY_R] !== keyboard.keys[KEY_F]) {
-        if (keyboard.keys[KEY_R]) {
+      if (keyboard.keys[upKey] !== keyboard.keys[downKey]) {
+        if (keyboard.keys[upKey]) {
           camera.position.z += ds
-        } else if (keyboard.keys[KEY_F]) {
+        } else if (keyboard.keys[downKey]) {
           camera.position.z -= ds
         }
       }
     }
 
     this.entities.list.forEach(entity => entity.update(dt, this))
-
-    // for (let i = 0; i < this.entities.list.length; ++i) {
-    //   const entity = this.entities.list[i]
-    //   const model = entity.meta.model
-    //   if (model && model.indexOf('.spr') > -1) {
-    //     // TODO: refactor/optimize
-    //     const mesh = entity.model
-    //     if (mesh) {
-    //       mesh.lookAt(camera.position)
-    //       mesh.rotation.x = Math.PI / 2
-    //       mesh.rotation.order = 'ZXY'
-    //       mesh.up.x = 0
-    //       mesh.up.y = 0
-    //       mesh.up.z = 1
-    //       mesh.scale.x = 0.5
-    //       mesh.scale.y = 0.5
-    //       mesh.scale.z = 0.5
-    //     }
-    //   }
-    // }
 
     mouse.delta.x = 0
     mouse.delta.y = 0
@@ -383,27 +362,33 @@ export class Game {
     this.events.removeListener(eventName, callback)
   }
 
-  mousedown() {
-    this.mouse.click = true
-  }
-
-  mouseup() {
-    this.mouse.click = false
-  }
-
-  mousemove(e: MouseEvent) {
-    this.mouse.delta.x = e.pageX - this.mouse.position.x
-    this.mouse.delta.y = e.pageY - this.mouse.position.y
+  mouseMove = (e: MouseEvent) => {
+    this.mouse.delta.x = e.movementX * 0.5 // mul 0.5 to lower sensitivity
+    this.mouse.delta.y = e.movementY * 0.5 // 
 
     this.mouse.position.x = e.pageX
     this.mouse.position.y = e.pageY
   }
 
-  keydown(e: KeyboardEvent) {
+  keyDown = (e: KeyboardEvent) => {
     this.keyboard.keys[e.which] = 1
+
+    if (this.pointerLocked) {
+      e.preventDefault()
+      return false
+    }
+
+    return true
   }
 
-  keyup(e: KeyboardEvent) {
+  keyUp = (e: KeyboardEvent) => {
     this.keyboard.keys[e.which] = 0
+
+    if (this.pointerLocked) {
+      e.preventDefault()
+      return false
+    }
+
+    return true
   }
 }

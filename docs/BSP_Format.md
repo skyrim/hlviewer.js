@@ -249,11 +249,11 @@ Location @ HEADER.lumps[LUMP TYPES.NODES].offset
 +------------------------------------------------------------------------+
 | NODE                                                                   |
 +------------+----------+------------------------------------------------+
-| planeIndex | uint     | index into planes lump                         |
-| children   | short[2] | if > 0 index into nodes else index into leaves |
+| planeIndex | uint     | index into PLANES lump                         |
+| children   | short[2] | if > 0 index into NODES else index into LEAVES |
 | mins       | short[3] | bounding box min coord                         |
 | maxs       | short[3] | bounding box max coord                         |
-| faceIndex  | ushort   | index into face lump                           |
+| faceIndex  | ushort   | index into FACES lump                          |
 | faceCount  | ushort   |                                                |
 +------------+----------+------------------------------------------------+
 ```
@@ -276,16 +276,22 @@ Location @ HEADER.lumps[LUMP TYPES.TEXINFO].offset
 | texinfos | TEXINFO[sizeof(lump) / sizeof(TEXINFO)]) |
 +----------+------------------------------------------+
 
-+------------------------+
-| TEXINFO                |
-+--------------+---------+
-| s            | vector3 | 
-| sShift       | float   |
-| t            | vector3 |
-| tShift       | float   |
-| textureIndex | uint    |
-| flags        | uint    |
-+--------------+---------+
++------------------------------------------------------------+
+| TEXINFO                                                    |
++--------------+---------+-----------------------------------+
+| s            | vector3 |                                   |
+| sShift       | float   |                                   |
+| t            | vector3 |                                   |
+| tShift       | float   |                                   |
+| textureIndex | uint    | index into TEXTURES lump          |
+| flags        | uint    | 0 = has lightmap, 1 = no lightmap |
++--------------+---------+-----------------------------------+
+```
+
+`s`, `sShift`, `t` and `tShift` are face texture coordinates. To convert them to [UV coordinates](https://en.wikipedia.org/wiki/UV_mapping) use the following formula:
+```
+U[i] = (dotProduct(faceVertex[i], s) + sShift) / faceTextureWidth
+V[i] = (dotProduct(faceVertex[i], t) + tShift) / faceTextureHeight
 ```
 
 ### Faces
@@ -307,7 +313,7 @@ Location @ HEADER.lumps[LUMP TYPES.FACES].offset
 | edgeCount      | ushort   | number of consecutive surfedges      |
 | texinfoIndex   | ushort   | index of the texture info structure  |
 | styles         | ubyte[4] | specify lighting styles              |
-| lightmapOffset | uint     | offsets into the raw lightmap data   |
+| lightmapOffset | uint     | offsets into LIGHTMAP lump           |
 +----------------+----------+--------------------------------------+
 ```
 
@@ -363,7 +369,7 @@ Location @ HEADER.lumps[LUMP TYPES.LEAVES].offset
 | LEAF                                                        |
 +------------------+----------+-------------------------------+
 | content          | int      | one of the CONTENTS_... above |
-| visOffset        | uint     | offset into visibility lump   |
+| visOffset        | uint     | offset into VISIBILITY lump   |
 | mins             | short[3] | bounding box min coord        |
 | maxs             | short[3] | bounding box max coord        |
 | markSurfaceIndex | ushort   | index of the marksurface      |
@@ -454,8 +460,8 @@ Location @ HEADER.lumps[LUMP TYPES.MODELS].offset
 | mins           | vector3 | bounding box min coord     |
 | maxs           | vector3 | bounding box max coord     |
 | origin         | vector3 |                            |
-| headNodesIndex | int[4]  | index into nodes lump      |
-| visIndex       | int     | index into visibility lump |
+| headNodesIndex | int[4]  | index into NODES lump      |
+| visIndex       | int     | index into VISIBILITY lump |
 | faceIndex      | int     | index info face lump       |
 | faceCount      | int     | number of faces            |
 +----------------+---------+----------------------------+

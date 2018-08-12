@@ -3,8 +3,9 @@ import { Reader } from './Reader'
 import { vdf } from './Vdf'
 import { ProgressCallback, xhr } from './Xhr'
 import { Sprite } from './Parsers/Sprite'
-import { Tga } from './Parsers/Tga';
-import { paletteWithLastTransToRGBA, paletteToRGBA } from './Parsers/Util';
+import { Tga } from './Parsers/Tga'
+import { paletteWithLastTransToRGBA, paletteToRGBA } from './Parsers/Util'
+import { MapLightmap } from './Lightmap';
 
 function parseEntities(r: Reader, lumps: any[]) {
   r.seek(lumps[Map.Lump.Entities].offset)
@@ -64,12 +65,26 @@ function parseEntities(r: Reader, lumps: any[]) {
   return entities
 }
 
+
+
 interface MapModel {
   vertices: number[][]
   faces: number[][]
   uv: number[][][]
+  luv: number[][][]
   textureIndices: number[]
 }
+
+interface MapTexInfo {
+  s: number[]
+  sShift: number
+  t: number[]
+  tShift: number
+  textureIndex: number
+  flags: number
+}
+
+interface MapLightmapLump extends Uint8Array {}
 
 interface MapTexture {
   name: string
@@ -83,19 +98,20 @@ class Map {
   entities: any[]
   textures: MapTexture[]
   models: MapModel[]
-  skies: Tga[]
+  lightmap: MapLightmap
+  skies: Tga[] = []
   sprites: { [name: string]: Sprite } = {}
 
   constructor(
     entities: any[],
     textures: MapTexture[],
     models: MapModel[],
-    skies = []
+    lightmap: MapLightmap
   ) {
     this.entities = entities
     this.textures = textures
     this.models = models
-    this.skies = skies
+    this.lightmap = lightmap
   }
 
   // TODO: refactor everything related to this
@@ -249,10 +265,14 @@ class Map {
       return vertices
     }
 
-    const loadTexInfo = (r: Reader, offset: number, length: number) => {
+    const loadTexInfo = (
+      r: Reader,
+      offset: number,
+      length: number
+    ): MapTexInfo[] => {
       r.seek(offset)
 
-      const texinfo = []
+      const texinfo: MapTexInfo[] = []
       for (let i = 0; i < length / 40; ++i) {
         texinfo.push({
           s: [r.f(), r.f(), r.f()],
@@ -264,6 +284,11 @@ class Map {
         })
       }
       return texinfo
+    }
+
+    const loadLightmap = (r: Reader, offset: number, length: number): MapLightmapLump => {
+      r.seek(offset)
+      return r.arrx(length, Reader.Type.UByte)
     }
 
     const entities = parseEntities(r, lumps)
@@ -305,6 +330,14 @@ class Map {
       lumps[Map.Lump.TexInfo].length
     )
 
+    const lightmap = loadLightmap(
+      r,
+      lumps[Map.Lump.Lighting].offset,
+      lumps[Map.Lump.Lighting].length
+    )
+
+    const parsedLightmap = MapLightmap.init(lightmap)
+
     const parsedModels = ((
       models,
       faces,
@@ -312,11 +345,13 @@ class Map {
       surfEdges,
       vertices,
       texinfo,
-      textures
+      textures,
+      lightmap: MapLightmap
     ) =>
       models.map(model => {
         const modelVertices = []
         const modelUVs = []
+        const modelLUVs = []
         const modelTextureIndices = []
         const modelFaces = []
 
@@ -325,6 +360,12 @@ class Map {
           i < model.firstFace + model.faceCount;
           ++i
         ) {
+          const faceVerts: {
+            pos: number[]
+            uv: number[]
+            luv: number[]
+          }[] = []
+
           const faceTexInfo = texinfo[faces[i].textureInfo]
           const faceTexture = textures[faceTexInfo.textureIndex]
           const faceSurfEdges = surfEdges.slice(
@@ -332,12 +373,32 @@ class Map {
             faces[i].firstEdge + faces[i].edgeCount
           )
 
-          const v1 =
+          const v0 =
             vertices[
               edges[Math.abs(faceSurfEdges[0])][faceSurfEdges[0] > 0 ? 0 : 1]
             ]
+          modelVertices.push(v0)
+          const uv0 = [
+            (v0[0] * faceTexInfo.s[0] +
+              v0[1] * faceTexInfo.s[1] +
+              v0[2] * faceTexInfo.s[2] +
+              faceTexInfo.sShift) /
+              faceTexture.width,
+            (v0[0] * faceTexInfo.t[0] +
+              v0[1] * faceTexInfo.t[1] +
+              v0[2] * faceTexInfo.t[2] +
+              faceTexInfo.tShift) /
+              faceTexture.height
+          ]
+          const luv0 = [0, 0.999]
+
+          let v1 =
+            vertices[
+              edges[Math.abs(faceSurfEdges[1])][faceSurfEdges[1] > 0 ? 0 : 1]
+            ]
           modelVertices.push(v1)
-          const uv1 = [
+
+          let uv1 = [
             (v1[0] * faceTexInfo.s[0] +
               v1[1] * faceTexInfo.s[1] +
               v1[2] * faceTexInfo.s[2] +
@@ -349,46 +410,30 @@ class Map {
               faceTexInfo.tShift) /
               faceTexture.height
           ]
-
-          let v2 =
-            vertices[
-              edges[Math.abs(faceSurfEdges[1])][faceSurfEdges[1] > 0 ? 0 : 1]
-            ]
-          modelVertices.push(v2)
-
-          let uv2 = [
-            (v2[0] * faceTexInfo.s[0] +
-              v2[1] * faceTexInfo.s[1] +
-              v2[2] * faceTexInfo.s[2] +
-              faceTexInfo.sShift) /
-              faceTexture.width,
-            (v2[0] * faceTexInfo.t[0] +
-              v2[1] * faceTexInfo.t[1] +
-              v2[2] * faceTexInfo.t[2] +
-              faceTexInfo.tShift) /
-              faceTexture.height
-          ]
+          let luv1 = [0, 0.999]
 
           for (let j = 2; j < faces[i].edgeCount; ++j) {
-            const v3 =
+            const v2 =
               vertices[
                 edges[Math.abs(faceSurfEdges[j])][faceSurfEdges[j] > 0 ? 0 : 1]
               ]
-            const uv3 = [
-              (v3[0] * faceTexInfo.s[0] +
-                v3[1] * faceTexInfo.s[1] +
-                v3[2] * faceTexInfo.s[2] +
+            const uv2 = [
+              (v2[0] * faceTexInfo.s[0] +
+                v2[1] * faceTexInfo.s[1] +
+                v2[2] * faceTexInfo.s[2] +
                 faceTexInfo.sShift) /
                 faceTexture.width,
-              (v3[0] * faceTexInfo.t[0] +
-                v3[1] * faceTexInfo.t[1] +
-                v3[2] * faceTexInfo.t[2] +
+              (v2[0] * faceTexInfo.t[0] +
+                v2[1] * faceTexInfo.t[1] +
+                v2[2] * faceTexInfo.t[2] +
                 faceTexInfo.tShift) /
                 faceTexture.height
             ]
+            const luv2 = [0, 0.999]
 
-            modelVertices.push(v3)
-            modelUVs.push([uv1, uv3, uv2])
+            modelVertices.push(v2)
+            modelUVs.push([uv0, uv2, uv1])
+            modelLUVs.push([luv0, luv2, luv1])
             modelFaces.push([
               modelVertices.length - j - 1,
               modelVertices.length - 1,
@@ -396,8 +441,22 @@ class Map {
             ])
             modelTextureIndices.push(faceTexInfo.textureIndex)
 
-            v2 = v3
-            uv2 = uv3
+            v1 = v2
+            uv1 = uv2
+            luv1 = luv2
+
+            faceVerts.push({ pos: v0, uv: uv0, luv: luv0 })
+            faceVerts.push({ pos: v1, uv: uv1, luv: luv1 })
+            faceVerts.push({ pos: v2, uv: uv2, luv: luv2 })
+          }
+
+          // face has a lightmap if flag is equal to 0
+          if (faceTexInfo.flags === 0) {
+            lightmap.processFace(
+              faceVerts,
+              faceTexInfo,
+              faces[i].lightmapOffset
+            )
           }
         }
 
@@ -405,11 +464,42 @@ class Map {
           vertices: modelVertices,
           faces: modelFaces,
           uv: modelUVs,
+          luv: modelLUVs,
           textureIndices: modelTextureIndices
         }
-      }))(models, faces, edges, surfEdges, vertices, texinfo, textures)
+      }))(
+      models,
+      faces,
+      edges,
+      surfEdges,
+      vertices,
+      texinfo,
+      textures,
+      parsedLightmap
+    )
 
-    return new Map(entities, textures, parsedModels)
+    // ;(function() {
+    //   const node = parsedLightmap.getRoot()
+    //   const texture = parsedLightmap.getTexture()
+    //   const w = node.width
+    //   const h = node.height
+
+    //   const el = document.createElement('canvas')	
+    //   document.body.appendChild(el)	
+    //   const ctx = el.getContext('2d')	
+    //   el.width = w	
+    //   el.height = h	
+    //   el.style.width = `${w}px`	
+    //   el.style.height = `${h}px`	
+    //   if (!ctx) return	
+    //   const img = ctx.createImageData(w, h)	
+    //   for (let i = 0; i < w * h * 4; ++i) {	
+    //     img.data[i] = texture[i]
+    //   }	
+    //   ctx.putImageData(img, 0, 0)
+    // }())
+
+    return new Map(entities, textures, parsedModels, parsedLightmap)
   }
 
   static async loadFromUrl(url: string, progressCallback: ProgressCallback) {

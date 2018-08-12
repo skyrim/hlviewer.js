@@ -147,6 +147,13 @@ const INVISIBLE_TEXTURES = [
 const createMaterials = (map: Map, renderer: THREE.WebGLRenderer) => {
   const materials: { [name: string]: THREE.MeshLambertMaterial } = {}
 
+  const lightmapMaterial = createTexture({
+    width: map.lightmap.getRoot().width,
+    height: map.lightmap.getRoot().height,
+    pixels: map.lightmap.getTexture(),
+    renderer
+  })
+
   map.textures.forEach(texture => {
     let map
     if (texture.data.length > 0) {
@@ -179,7 +186,8 @@ const createMaterials = (map: Map, renderer: THREE.WebGLRenderer) => {
       map: map,
       transparent: true,
       alphaTest: 0.5,
-      visible
+      visible,
+      lightMap: lightmapMaterial
     })
   })
 
@@ -234,6 +242,12 @@ const createModels = (
       new Vec2(uv[2][0], uv[2][1] * -1)
     ])
 
+    geometry.faceVertexUvs[1] = model.luv.map(luv => [
+      new Vec2(luv[0][0], luv[0][1] * -1),
+      new Vec2(luv[1][0], luv[1][1] * -1),
+      new Vec2(luv[2][0], luv[2][1] * -1)
+    ])
+
     const nfuv: THREE.Vector2[][] = []
     const nf = geometry.faces.filter((face, i) => {
       const mat = orderedMaterials[face.materialIndex]
@@ -250,7 +264,7 @@ const createModels = (
     geometry.faces = nf
     geometry.faceVertexUvs[0] = nfuv
 
-    geometry.mergeVertices()
+    // geometry.mergeVertices()
 
     models[`*${i}`] = new ModelBasic(
       new Mesh(geometry, orderedMaterials.map(m => m.clone()))

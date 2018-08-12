@@ -49,7 +49,8 @@ export class MapLightmap {
       uv: number[]
       luv: number[]
     }[],
-    texinfo: { // TODO: MapTexInfo interface
+    texinfo: {
+      // TODO: MapTexInfo interface
       s: number[]
       sShift: number
       t: number[]
@@ -127,7 +128,7 @@ export class MapLightmap {
     }
   }
 
-  readLightmap(
+  private readLightmap(
     offset: number,
     width: number,
     height: number
@@ -143,7 +144,7 @@ export class MapLightmap {
       const pixelCount = width * height
       for (let i = 0; i < pixelCount; ++i) {
         // 512 = total lightmap height
-        const px = i % width + node.x
+        const px = (i % width) + node.x
         const py = Math.floor(i / height) + node.y
         const pos = py * 512 + px
         this.texture[pos + i * 4] = this.lightmap[offset + i * 3]
@@ -156,7 +157,7 @@ export class MapLightmap {
     return node
   }
 
-  allocateLightmapRect(
+  private allocateLightmapRect(
     node: LightmapNode,
     width: number,
     height: number

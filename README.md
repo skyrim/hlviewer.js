@@ -10,7 +10,7 @@ You can check out the live demo [here](http://skyrim.github.io/hlviewer.js)
 
 ### Screenshot ###
 
-![Screenshot](res/screenshot.jpg)
+![Screenshot](res/screenshot.png)
 
 ### Example Usage ###
 

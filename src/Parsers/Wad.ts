@@ -1,5 +1,4 @@
 import { Reader } from '../Reader'
-import { ProgressCallback, xhr } from '../Xhr'
 import { paletteToRGBA, paletteWithLastTransToRGBA } from './Util'
 
 function parseDecal(r: Reader): WadDecal {
@@ -199,7 +198,7 @@ export class Wad {
     this.entries = entries
   }
 
-  static parseFromArrayBuffer(buffer: ArrayBuffer) {
+  static parse(buffer: ArrayBuffer) {
     const r = new Reader(buffer)
 
     const magic = r.nstr(4)
@@ -228,13 +227,5 @@ export class Wad {
     const entries: WadEntry[] = entriesMetadata.map(e => parseEntry(r, e))
 
     return new Wad(entries)
-  }
-
-  static loadFromUrl(url: string, progressCallback: ProgressCallback) {
-    return xhr(url, {
-      method: 'GET',
-      isBinary: true,
-      progressCallback
-    }).then(response => Wad.parseFromArrayBuffer(response))
   }
 }

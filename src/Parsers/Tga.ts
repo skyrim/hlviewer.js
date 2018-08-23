@@ -1,8 +1,7 @@
 import * as Path from 'path'
 import { Reader } from '../Reader'
-import { ProgressCallback, xhr } from '../Xhr'
 
-class Tga {
+export class Tga {
   name: string
   width: number
   height: number
@@ -15,7 +14,7 @@ class Tga {
     this.data = data
   }
 
-  static parseFromArrayBuffer(buffer: ArrayBuffer, url: string) {
+  static parse(buffer: ArrayBuffer, url: string) {
     let r = new Reader(buffer)
 
     let header = {
@@ -120,14 +119,4 @@ class Tga {
     let name = Path.basename(url, '.tga')
     return new Tga(name, header.image.width, header.image.height, imageData)
   }
-
-  static loadFromUrl(url: string, progressCallback: ProgressCallback) {
-    return xhr(url, {
-      method: 'GET',
-      isBinary: true,
-      progressCallback
-    }).then(response => Tga.parseFromArrayBuffer(response, url))
-  }
 }
-
-export { Tga }

@@ -6,7 +6,7 @@ import { Replay } from './Replay'
 import { Sound } from './Sound'
 import { Tga } from './Parsers/Tga'
 import { Wad } from './Parsers/Wad'
-import { ProgressCallback } from './Xhr'
+import { ProgressCallback, xhr } from './Xhr'
 import { Sprite } from './Parsers/Sprite'
 
 enum LoadItemStatus {
@@ -173,7 +173,7 @@ class Loader {
     this.replay = new LoadItemReplay(name)
     this.events.emit('loadstart', this.replay)
 
-    const progressCbk: ProgressCallback = (_1, progress) => {
+    const progressCallback: ProgressCallback = (_1, progress) => {
       if (this.replay) {
         this.replay.progress = progress
       }
@@ -182,21 +182,22 @@ class Loader {
     }
 
     const replayPath = this.game.config.paths.replays
-    const replay = await Replay.loadFromUrl(
-      `${replayPath}/${name}`,
-      progressCbk
-    ).catch((err: any) => {
+    const buffer = await xhr(`${replayPath}/${name}`, {
+      method: 'GET',
+      isBinary: true,
+      progressCallback
+    }).catch((err: any) => {
       if (this.replay) {
         this.replay.error()
       }
-
       this.events.emit('error', err, this.replay)
     })
 
-    if (!this.replay || !replay) {
+    if (this.replay.isError()) {
       return
     }
 
+    const replay = await Replay.parseIntoChunks(buffer)
     this.replay.done(replay)
 
     this.loadMap(replay.maps[0].name + '.bsp')
@@ -216,7 +217,7 @@ class Loader {
     this.map = new LoadItemBsp(name)
     this.events.emit('loadstart', this.map)
 
-    const progressCbk: ProgressCallback = (_1, progress) => {
+    const progressCallback: ProgressCallback = (_1, progress) => {
       if (this.map) {
         this.map.progress = progress
       }
@@ -225,11 +226,11 @@ class Loader {
     }
 
     const mapsPath = this.game.config.paths.maps
-    const map = await BspParser.loadFromUrl(
-      name,
-      `${mapsPath}/${name}`,
-      progressCbk
-    ).catch(err => {
+    const buffer = await xhr(`${mapsPath}/${name}`, {
+      method: 'GET',
+      isBinary: true,
+      progressCallback
+    }).catch(err => {
       if (this.map) {
         this.map.error()
       }
@@ -237,10 +238,11 @@ class Loader {
       this.events.emit('error', err, this.map)
     })
 
-    if (!map) {
+    if (this.map.isError()) {
       return
     }
 
+    const map = await BspParser.parse(name, buffer)
     this.map.done(map)
 
     map.entities
@@ -280,23 +282,26 @@ class Loader {
     this.sprites[name] = item
     this.events.emit('loadstart', item)
 
-    const progressCbk: ProgressCallback = (_1, progress) => {
+    const progressCallback: ProgressCallback = (_1, progress) => {
       item.progress = progress
       this.events.emit('progress', item)
     }
 
-    const sprite = await Sprite.loadFromUrl(
-      `${this.game.config.paths.base}/${name}`,
-      progressCbk
-    ).catch((err: any) => {
+    const buffer = await xhr(`${this.game.config.paths.base}/${name}`, {
+      method: 'GET',
+      isBinary: true,
+      progressCallback
+    }).catch((err: any) => {
       item.error()
       this.events.emit('error', err, item)
       this.checkStatus()
     })
-    if (!sprite) {
+
+    if (item.isError()) {
       return
     }
 
+    const sprite = Sprite.parse(buffer)
     item.done(sprite)
     this.events.emit('load', item)
     this.checkStatus()
@@ -307,25 +312,27 @@ class Loader {
     this.skies.push(item)
     this.events.emit('loadstart', item)
 
-    const progressCbk: ProgressCallback = (_1, progress) => {
+    const progressCallback: ProgressCallback = (_1, progress) => {
       item.progress = progress
       this.events.emit('progress', item)
     }
 
     const skiesPath = this.game.config.paths.skies
-    const skyImage = await Tga.loadFromUrl(
-      `${skiesPath}/${name}`,
-      progressCbk
-    ).catch((err: any) => {
+    const buffer = await xhr(`${skiesPath}/${name}`, {
+      method: 'GET',
+      isBinary: true,
+      progressCallback
+    }).catch((err: any) => {
       item.error()
       this.events.emit('error', err, item)
       this.checkStatus()
     })
 
-    if (!skyImage) {
+    if (item.isError()) {
       return
     }
 
+    const skyImage = Tga.parse(buffer, name)
     item.done(skyImage)
     this.events.emit('load', item)
     this.checkStatus()
@@ -336,24 +343,34 @@ class Loader {
     this.wads.push(wadItem)
     this.events.emit('loadstart', wadItem)
 
-    const progressCbk: ProgressCallback = (_1, progress) => {
+    const progressCallback: ProgressCallback = (_1, progress) => {
       wadItem.progress = progress
       this.events.emit('progress', wadItem)
     }
 
     const wadsPath = this.game.config.paths.wads
-    const wad = await Wad.loadFromUrl(`${wadsPath}/${name}`, progressCbk).catch(
+    const buffer = await xhr(`${wadsPath}/${name}`, {
+      method: 'GET',
+      isBinary: true,
+      progressCallback
+    }).catch(
       (err: any) => {
         wadItem.error()
         this.events.emit('error', err, wadItem)
         this.checkStatus()
       }
     )
-    if (!this.map || !wad || !this.map.data) {
+
+    if (wadItem.isError()) {
       return
     }
 
+    const wad = await Wad.parse(buffer)
     wadItem.done(wad)
+
+    if (!this.map || !this.map.data) {
+      return
+    }
 
     const map = this.map.data
     const cmp = (a: any, b: any) => a.toLowerCase() === b.toLowerCase()
@@ -380,22 +397,34 @@ class Loader {
     this.sounds.push(sound)
     this.events.emit('loadstart', sound)
 
-    const progressCbk: ProgressCallback = (_1, progress) => {
+    const progressCallback: ProgressCallback = (_1, progress) => {
       sound.progress = progress
       this.events.emit('progress', sound)
     }
 
     const soundsPath = this.game.config.paths.sounds
-    const data = await Sound.loadFromUrl(
-      `${soundsPath}/${name}`,
-      progressCbk
-    ).catch((err: any) => {
+    const buffer = await xhr(`${soundsPath}/${name}`, {
+      method: 'GET',
+      isBinary: true,
+      progressCallback
+    }).catch((err: any) => {
       sound.error()
       this.events.emit('error', err, sound)
       this.checkStatus()
     })
 
-    if (!data) {
+    if (sound.isError()) {
+      return
+    }
+
+    const data = await Sound.create(buffer)
+    .catch((err: any) => {
+      sound.error()
+      this.events.emit('error', err, sound)
+      this.checkStatus()
+    })
+
+    if (!data || sound.isError()) {
       return
     }
 

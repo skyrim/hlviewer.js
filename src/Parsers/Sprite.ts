@@ -1,6 +1,5 @@
-import { xhr, ProgressCallback } from '../Xhr'
 import { Reader } from '../Reader'
-import { paletteWithLastTransToRGBA, paletteToRGBA } from './Util';
+import { paletteWithLastTransToRGBA, paletteToRGBA } from './Util'
 
 interface SpriteHeader {
   version: number
@@ -51,7 +50,7 @@ export class Sprite {
     this.frames = frames
   }
 
-  static parseFromArrayBuffer(buffer: ArrayBuffer) {
+  static parse(buffer: ArrayBuffer) {
     const r = new Reader(buffer)
 
     const magic = r.nstr(4)
@@ -96,17 +95,5 @@ export class Sprite {
     }
 
     return new Sprite(header, frames)
-  }
-
-  static async loadFromUrl(url: string, progressCallback: ProgressCallback) {
-    const buffer = await xhr(url, {
-      method: 'GET',
-      isBinary: true,
-      progressCallback
-    })
-
-    const sprite = Sprite.parseFromArrayBuffer(buffer)
-
-    return sprite
   }
 }

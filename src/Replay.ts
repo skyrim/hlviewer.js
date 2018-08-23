@@ -1,7 +1,6 @@
 import * as Path from 'path'
 import { BitStream } from './BitReader'
 import { Reader } from './Reader'
-import { ProgressCallback, xhr } from './Xhr'
 
 const DT_BYTE = 1
 const DT_SHORT = 1 << 1
@@ -2395,16 +2394,6 @@ class Replay {
       deltaDecoders,
       customMessages
     }
-  }
-
-  static loadFromUrl(url: string, progressCallback: ProgressCallback) {
-    return xhr(url, {
-      method: 'GET',
-      isBinary: true,
-      progressCallback
-    }).then(response => {
-      return Replay.parseIntoChunks(response)
-    })
   }
 
   static readHeader(r: Reader) {

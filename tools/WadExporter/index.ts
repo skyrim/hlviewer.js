@@ -30,7 +30,7 @@ export class WadExporter {
     }
 
     const arrayBuffer = toArrayBuffer(buffer)
-    const wad = await Wad.parseFromArrayBuffer(arrayBuffer)
+    const wad = await Wad.parse(arrayBuffer)
 
     for (let i = 0; i < wad.entries.length; ++i) {
       const entry = wad.entries[i]

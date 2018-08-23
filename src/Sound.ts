@@ -1,7 +1,6 @@
 import { SoundSystem } from './SoundSystem'
-import { ProgressCallback, xhr } from './Xhr'
 
-class Sound {
+export class Sound {
   index: number
   name: string
   buffer: AudioBuffer
@@ -12,26 +11,17 @@ class Sound {
     this.buffer = buffer
   }
 
-  static loadFromUrl(url: string, progressCallback: ProgressCallback) {
-    return xhr(url, {
-      method: 'GET',
-      isBinary: true,
-      progressCallback
-    }).then(
-      response =>
-        new Promise<Sound>((resolve, reject) => {
-          SoundSystem.getContext().decodeAudioData(
-            response,
-            (buffer: AudioBuffer) => {
-              resolve(new Sound(buffer))
-            },
-            (err: any) => {
-              reject(err)
-            }
-          )
-        })
-    )
+  static create(buffer: ArrayBuffer): Promise<Sound> {
+    return new Promise<Sound>((resolve, reject) => {
+      SoundSystem.getContext().decodeAudioData(
+        buffer,
+        (buffer: AudioBuffer) => {
+          resolve(new Sound(buffer))
+        },
+        (err: any) => {
+          reject(err)
+        }
+      )
+    })
   }
 }
-
-export { Sound }

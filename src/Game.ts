@@ -331,9 +331,6 @@ export class Game {
     if (this.mode === PlayerMode.REPLAY) {
       this.player.update(dt)
     } else if (this.mode === PlayerMode.FREE && this.pointerLocked) {
-      // TODO: queue events so that they wont be applied multiple times
-      //       when update catchup happens
-
       camera.rotation[0] = clamp(
         camera.rotation[0] + mouse.delta.y / 100,
         -Math.PI / 2,

@@ -204,7 +204,7 @@ export class Root extends Component<RootProps, RootState> {
   }
 
   onMouseMove = () => {
-    if (this.state.isMouseOver) {
+    if (this.state.isMouseOver && !Fullscreen.isInFullscreen()) {
       this.fadeReset()
     }
   }

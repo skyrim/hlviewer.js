@@ -101,8 +101,7 @@ export class WorldScene {
       'skip',
       'trigger',
       'sky',
-      'fog',
-      'black'
+      'fog'
     ]
 
     // get total buffer size

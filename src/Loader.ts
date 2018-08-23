@@ -9,68 +9,92 @@ import { Wad } from './Parsers/Wad'
 import { ProgressCallback } from './Xhr'
 import { Sprite } from './Parsers/Sprite'
 
-class LoadItem<T> {
+enum LoadItemStatus {
+  Loading = 1,
+  Skipped = 2,
+  Error = 3,
+  Done = 4
+}
+
+class LoadItemBase<T> {
   name: string
   progress: number
-  status: LoadItem.Status
+  status: LoadItemStatus
   data: T | null
 
   constructor(name: string) {
     this.name = name
     this.progress = 0
-    this.status = LoadItem.Status.Loading
+    this.status = LoadItemStatus.Loading
     this.data = null
   }
 
   isLoading() {
-    return this.status === LoadItem.Status.Loading
+    return this.status === LoadItemStatus.Loading
   }
 
   skip() {
-    this.status = LoadItem.Status.Skipped
+    this.status = LoadItemStatus.Skipped
   }
 
   isSkipped() {
-    return this.status === LoadItem.Status.Skipped
+    return this.status === LoadItemStatus.Skipped
   }
 
   // TODO: Add error reason
   error() {
-    this.status = LoadItem.Status.Error
+    this.status = LoadItemStatus.Error
   }
 
   isError() {
-    return this.status === LoadItem.Status.Error
+    return this.status === LoadItemStatus.Error
   }
 
   done(data: T) {
-    this.status = LoadItem.Status.Done
+    this.status = LoadItemStatus.Done
     this.data = data
   }
 
   isDone() {
-    return this.status === LoadItem.Status.Done
+    return this.status === LoadItemStatus.Done
   }
 }
 
-namespace LoadItem {
-  export enum Status {
-    Loading = 1,
-    Skipped = 2,
-    Error = 3,
-    Done = 4
-  }
+class LoadItemReplay extends LoadItemBase<any> {
+  type: 'replay' = 'replay'
 }
+
+class LoadItemBsp extends LoadItemBase<Bsp> {
+  type: 'bsp' = 'bsp'
+}
+
+class LoadItemSky extends LoadItemBase<Tga> {
+  type: 'sky' = 'sky'
+}
+
+class LoadItemWad extends LoadItemBase<Wad> {
+  type: 'wad' = 'wad'
+}
+
+class LoadItemSound extends LoadItemBase<Sound> {
+  type: 'sound' = 'sound'
+}
+
+class LoadItemSprite extends LoadItemBase<Sprite> {
+  type: 'sprite' = 'sprite'
+}
+
+export type LoadItem = LoadItemReplay | LoadItemBsp | LoadItemSky | LoadItemWad | LoadItemSound | LoadItemSprite
 
 class Loader {
   game: Game
 
-  replay?: LoadItem<any>
-  map?: LoadItem<Bsp>
-  skies: LoadItem<Tga>[]
-  wads: LoadItem<any>[]
-  sounds: LoadItem<Sound>[]
-  sprites: { [name: string]: LoadItem<Sprite> } = {}
+  replay?: LoadItemReplay
+  map?: LoadItemBsp
+  skies: LoadItemSky[]
+  wads: LoadItemWad[]
+  sounds: LoadItemSound[]
+  sprites: { [name: string]: LoadItemSprite } = {}
   events: EventEmitter
 
   constructor(game: Game) {
@@ -146,7 +170,7 @@ class Loader {
   }
 
   async loadReplay(name: string) {
-    this.replay = new LoadItem(name)
+    this.replay = new LoadItemReplay(name)
     this.events.emit('loadstart', this.replay)
 
     const progressCbk: ProgressCallback = (_1, progress) => {
@@ -189,7 +213,7 @@ class Loader {
   }
 
   async loadMap(name: string) {
-    this.map = new LoadItem<Bsp>(name)
+    this.map = new LoadItemBsp(name)
     this.events.emit('loadstart', this.map)
 
     const progressCbk: ProgressCallback = (_1, progress) => {
@@ -252,7 +276,7 @@ class Loader {
   }
 
   async loadSprite(name: string) {
-    const item = new LoadItem<Sprite>(name)
+    const item = new LoadItemSprite(name)
     this.sprites[name] = item
     this.events.emit('loadstart', item)
 
@@ -279,7 +303,7 @@ class Loader {
   }
 
   async loadSky(name: string) {
-    const item = new LoadItem<Tga>(name)
+    const item = new LoadItemSky(name)
     this.skies.push(item)
     this.events.emit('loadstart', item)
 
@@ -308,7 +332,7 @@ class Loader {
   }
 
   async loadWad(name: string) {
-    const wadItem = new LoadItem<any>(name)
+    const wadItem = new LoadItemWad(name)
     this.wads.push(wadItem)
     this.events.emit('loadstart', wadItem)
 
@@ -325,11 +349,11 @@ class Loader {
         this.checkStatus()
       }
     )
-    wadItem.done(wad)
-
     if (!this.map || !wad || !this.map.data) {
       return
     }
+
+    wadItem.done(wad)
 
     const map = this.map.data
     const cmp = (a: any, b: any) => a.toLowerCase() === b.toLowerCase()
@@ -352,7 +376,7 @@ class Loader {
   }
 
   async loadSound(name: string, index: number) {
-    const sound = new LoadItem<Sound>(name)
+    const sound = new LoadItemSound(name)
     this.sounds.push(sound)
     this.events.emit('loadstart', sound)
 
@@ -380,6 +404,22 @@ class Loader {
     sound.done(data)
     this.events.emit('load', sound)
     this.checkStatus()
+  }
+
+  addLoadStartListener(listener: (item: LoadItem) => void) {
+    this.events.addListener('loadstart', listener)
+  }
+
+  removeLoadStartListener(listener: (item: LoadItem) => void) {
+    this.events.removeListener('loadstart', listener)
+  }
+
+  addProgressListener(listener: (item: LoadItem) => void) {
+    this.events.addListener('progress', listener)
+  }
+
+  removeProgressListener(listener: (item: LoadItem) => void) {
+    this.events.removeListener('progress', listener)
   }
 }
 

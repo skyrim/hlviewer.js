@@ -1,4 +1,4 @@
-export function vdf(input: string): any[] {
+export function vdf(input: string): {[name: string]: any}[] {
   let state = 0
   let key: string = ''
   let val: string = ''

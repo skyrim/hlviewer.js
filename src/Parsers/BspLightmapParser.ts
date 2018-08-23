@@ -1,5 +1,5 @@
-export interface LightmapNode {
-  children: LightmapNode[]
+export interface BspLightmapNode {
+  children: BspLightmapNode[]
   isFilled: boolean
   x: number
   y: number
@@ -7,19 +7,23 @@ export interface LightmapNode {
   height: number
 }
 
-export class MapLightmap {
+export class BspLightmapParser {
+  static TEXTURE_SIZE = 1024
+
   static init(lightmap: Uint8Array) {
-    return new MapLightmap(lightmap)
+    return new BspLightmapParser(lightmap)
   }
 
   private lightmap: Uint8Array // entire lightmap of the bsp map
   private texture: Uint8Array
-  private root: LightmapNode
+  private root: BspLightmapNode
 
   private constructor(lightmap: Uint8Array) {
     this.lightmap = lightmap
 
-    this.texture = new Uint8Array(512 * 512 * 4)
+    this.texture = new Uint8Array(
+      BspLightmapParser.TEXTURE_SIZE * BspLightmapParser.TEXTURE_SIZE * 4
+    )
     this.texture[this.texture.length - 4] = 255
     this.texture[this.texture.length - 3] = 255
     this.texture[this.texture.length - 2] = 255
@@ -30,8 +34,8 @@ export class MapLightmap {
       isFilled: false,
       x: 0,
       y: 0,
-      width: 512,
-      height: 512
+      width: BspLightmapParser.TEXTURE_SIZE,
+      height: BspLightmapParser.TEXTURE_SIZE
     }
   }
 
@@ -45,9 +49,9 @@ export class MapLightmap {
 
   processFace(
     faceVerts: {
-      pos: number[]
-      uv: number[]
-      luv: number[]
+      pos: Float32Array
+      uv: Float32Array
+      luv: Float32Array
     }[],
     texinfo: {
       // TODO: MapTexInfo interface
@@ -73,7 +77,7 @@ export class MapLightmap {
           texinfo.sShift -
           size.minU
         lu += rect.x * 16 + 8
-        lu /= 512 * 16 // 512 = lightmap size
+        lu /= BspLightmapParser.TEXTURE_SIZE * 16
 
         let lv =
           faceVert.pos[0] * texinfo.t[0] +
@@ -82,18 +86,19 @@ export class MapLightmap {
           texinfo.tShift -
           size.minV
         lv += rect.y * 16 + 8
-        lv /= 512 * 16 // 512 = ligthmap size
+        lv /= BspLightmapParser.TEXTURE_SIZE * 16
 
-        faceVert.luv = [lu, lv]
+        faceVert.luv[0] = lu
+        faceVert.luv[1] = lv
       }
     }
   }
 
   private getDimensions(
     verts: {
-      pos: number[]
-      uv: number[]
-      luv: number[]
+      pos: Float32Array
+      uv: Float32Array
+      luv: Float32Array
     }[]
   ) {
     // find the min and max UV's for a face
@@ -132,25 +137,30 @@ export class MapLightmap {
     offset: number,
     width: number,
     height: number
-  ): LightmapNode | null {
+  ): BspLightmapNode | null {
     if (height <= 0 || width <= 0) {
       return null
     }
 
-    // navigate lightmap BSP to find correctly sized space
     const node = this.allocateLightmapRect(this.root, width, height)
 
     if (node) {
-      const pixelCount = width * height
-      for (let i = 0; i < pixelCount; ++i) {
-        // 512 = total lightmap height
-        const px = (i % width) + node.x
-        const py = Math.floor(i / height) + node.y
-        const pos = py * 512 + px
-        this.texture[pos + i * 4] = this.lightmap[offset + i * 3]
-        this.texture[pos + i * 4 + 1] = this.lightmap[offset + i * 3 + 1]
-        this.texture[pos + i * 4 + 2] = this.lightmap[offset + i * 3 + 2]
-        this.texture[pos + i * 4 + 3] = 255
+      const o = [node.x, node.y]
+      const s = [width, height]
+      const d = [BspLightmapParser.TEXTURE_SIZE, BspLightmapParser.TEXTURE_SIZE]
+      const count = width * height
+      for (let i = 0; i < count; ++i) {
+        const p = o[1] * d[0] + o[0] + d[0] * Math.floor(i / s[0]) + (i % s[0])
+        this.texture[p * 4] = Math.min(255, this.lightmap[offset + i * 3] * 2)
+        this.texture[p * 4 + 1] = Math.min(
+          255,
+          this.lightmap[offset + i * 3 + 1] * 2
+        )
+        this.texture[p * 4 + 2] = Math.min(
+          255,
+          this.lightmap[offset + i * 3 + 2] * 2
+        )
+        this.texture[p * 4 + 3] = 255
       }
     }
 
@@ -158,10 +168,10 @@ export class MapLightmap {
   }
 
   private allocateLightmapRect(
-    node: LightmapNode,
+    node: BspLightmapNode,
     width: number,
     height: number
-  ): LightmapNode | null {
+  ): BspLightmapNode | null {
     if (node.children.length) {
       const retNode = this.allocateLightmapRect(node.children[0], width, height)
       if (retNode) {

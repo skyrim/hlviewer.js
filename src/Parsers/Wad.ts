@@ -140,7 +140,7 @@ function parseEntry(r: Reader, metadata: WadEntryMetadata): WadEntry {
   }
 }
 
-interface WadTexture {
+export interface WadTexture {
   type: 'texture'
   name: string
   width: number
@@ -148,7 +148,7 @@ interface WadTexture {
   data: Uint8Array
 }
 
-interface WadDecal {
+export interface WadDecal {
   type: 'decal'
   name: string
   width: number
@@ -156,12 +156,12 @@ interface WadDecal {
   data: Uint8Array
 }
 
-interface WadCache {
+export interface WadCache {
   type: 'cache'
   name: string
 }
 
-interface WadFont {
+export interface WadFont {
   type: 'font'
   name: string
   width: number
@@ -175,13 +175,13 @@ interface WadFont {
   data: Uint8Array
 }
 
-interface WadUnknown {
+export interface WadUnknown {
   type: 'unknown'
   name: string
   data: Uint8Array
 }
 
-type WadEntry = WadTexture | WadDecal | WadCache | WadFont | WadUnknown
+export type WadEntry = WadTexture | WadDecal | WadCache | WadFont | WadUnknown
 
 interface WadEntryMetadata {
   offset: number

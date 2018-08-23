@@ -1,18 +1,19 @@
 import { EventEmitter } from 'events'
-import * as THREE from 'three'
-import { Entities } from './Entities'
+import * as Time from './Time'
 import { Keyboard } from './Keyboard'
 import { Loader } from './Loader'
 import { Mouse } from './Mouse'
-import { ReplayPlayer } from './ReplayPlayer'
-import { Resources } from './Resources'
-import { SkyScene } from './SkyScene'
-import { SoundSystem } from './SoundSystem'
-import * as Time from './Time'
-import { WorldScene } from './WorldScene'
 import { Sound } from './Sound'
-import { Map } from './Map'
+import { SoundSystem } from './SoundSystem'
 import { Replay } from './Replay'
+import { ReplayPlayer } from './ReplayPlayer'
+import { Camera } from './Graphics/Camera'
+import { Context } from './Graphics/Context'
+import { Renderer } from './Graphics/Renderer'
+import { WorldScene } from './Graphics/WorldScene'
+import { Bsp } from './Parsers/BspParser'
+import { clamp } from 'lodash-es'
+import { SkyScene } from './Graphics/SkyScene'
 
 export interface Config {
   paths: {
@@ -85,18 +86,19 @@ export class Game {
   keyboard: Keyboard
 
   loader: Loader
-  resources: Resources
-  entities: Entities
+  entities: any[] = []
   soundSystem: SoundSystem
   sounds: Sound[]
   events: EventEmitter
   player: ReplayPlayer
 
+  canvas: HTMLCanvasElement
   width: number
   height: number
   mapName: string
-  camera: THREE.PerspectiveCamera
-  renderer: THREE.WebGLRenderer
+  context: Context
+  camera: Camera
+  renderer: Renderer
   worldScene: WorldScene
   skyScene: SkyScene
 
@@ -114,9 +116,6 @@ export class Game {
 
     this.mouse = new Mouse()
     this.keyboard = new Keyboard()
-
-    this.resources = new Resources(this)
-    this.entities = new Entities()
     this.soundSystem = new SoundSystem()
     this.sounds = []
 
@@ -156,7 +155,7 @@ export class Game {
         })
       }
 
-      this.changeMap(map, map.name)
+      this.changeMap(map)
 
       this.events.emit('load', loader)
     })
@@ -166,27 +165,33 @@ export class Game {
     window.addEventListener('keyup', this.keyUp)
     window.addEventListener('visibilitychange', this.onVisibilityChange)
 
-    this.camera = new THREE.PerspectiveCamera(70, 1, 1, 100000)
-    this.camera.rotation.order = 'ZXY'
-    this.camera.rotation.x = 1.57
-    this.camera.position.y = 0
+    const canvas = this.getCanvas()
 
-    const log = console.log
-    console.log = () => null
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: false,
-      stencil: false
-    })
-    console.log = log
+    this.camera = Camera.init(canvas.width / canvas.height)
 
-    this.renderer.autoClear = false
-    this.renderer.setPixelRatio(window.devicePixelRatio)
-    this.renderer.setSize(this.width, this.height)
+    const context = Context.init(canvas)
+    if (!context) {
+      throw new Error(`contextn\'t`)
+    }
+    this.context = context
 
-    this.worldScene = new WorldScene(this.renderer)
-    this.skyScene = new SkyScene(this.renderer)
-    this.skyScene.initialize(this.resources.sky)
+    const renderer = Renderer.init(context)
+    if (!renderer) {
+      throw new Error("renderern't")
+    }
+    this.renderer = renderer
+
+    const worldScene = WorldScene.init(context)
+    if (!worldScene) {
+      throw new Error("worldScenen't")
+    }
+    this.worldScene = worldScene
+
+    const skyScene = SkyScene.init(context)
+    if (!skyScene) {
+      throw new Error("skyScenen't")
+    }
+    this.skyScene = skyScene
 
     this.mode = PlayerMode.FREE
 
@@ -194,12 +199,14 @@ export class Game {
     this.events = new EventEmitter()
 
     this.mapName = ''
-
-    this.draw.bind(this)()
   }
 
   getCanvas() {
-    return this.renderer.domElement
+    if (!this.canvas) {
+      this.canvas = document.createElement('canvas')
+    }
+
+    return this.canvas
   }
 
   load(name: string) {
@@ -207,32 +214,33 @@ export class Game {
     this.loader.load(name)
   }
 
-  changeMap(map: Map, mapName: string) {
-    if (this.mapName.toLowerCase() === mapName.toLowerCase()) {
+  changeMap(map: Bsp) {
+    if (this.mapName.toLowerCase() === map.name.toLowerCase()) {
       return
     }
 
-    this.mapName = mapName
+    this.mapName = map.name
 
-    this.resources.initialize(map)
-    this.entities.initialize(map.entities, this.resources)
-    this.worldScene.initialize(this.entities)
-    this.skyScene.initialize(this.resources.sky)
+    this.worldScene.changeMap(map)
+    this.skyScene.changeMap(map)
 
-    const spawnEntity = this.entities.list.find(
-      e => e.meta.classname === 'info_player_start'
-    )
+    this.entities = map.entities
 
-    if (spawnEntity) {
-      this.camera.position.x = spawnEntity.meta.origin[0]
-      this.camera.position.y = spawnEntity.meta.origin[1]
-      this.camera.position.z = spawnEntity.meta.origin[2]
+    const spawn = map.entities.find(e => e['classname'] === 'info_player_start')
+
+    if (spawn) {
+      this.camera.position[0] = spawn.origin[0]
+      this.camera.position[1] = spawn.origin[1]
+      this.camera.position[2] = spawn.origin[2]
+    } else {
+      this.camera.position[0] = 0
+      this.camera.position[1] = 0
+      this.camera.position[2] = 0
     }
 
-    this.camera.rotation.x = Math.PI / 2
-    this.camera.rotation.z = 0
-
-    this.events.emit('mapchange', this, map, mapName)
+    this.camera.rotation[0] = 0 // Math.PI / 2
+    this.camera.rotation[1] = 0
+    this.camera.rotation[2] = 0
   }
 
   changeReplay(replay: Replay) {
@@ -260,15 +268,38 @@ export class Game {
   draw = () => {
     requestAnimationFrame(this.draw)
 
-    const canvas = this.renderer.domElement
+    const canvas = this.canvas
     const parent = canvas.parentElement
     if (parent) {
       const pw = parent.clientWidth
       const ph = parent.clientHeight
       if (canvas.width !== pw || canvas.height !== ph) {
-        this.camera.aspect = pw / ph
+        canvas.width = pw
+        canvas.height = ph
+        this.camera.aspect = canvas.clientWidth / canvas.clientHeight
         this.camera.updateProjectionMatrix()
-        this.renderer.setSize(pw, ph)
+        this.context.gl.viewport(
+          0,
+          0,
+          this.context.gl.drawingBufferWidth,
+          this.context.gl.drawingBufferHeight
+        )
+      }
+
+      if (
+        canvas.clientWidth !== canvas.width ||
+        canvas.clientHeight !== canvas.height
+      ) {
+        canvas.width = canvas.clientWidth
+        canvas.height = canvas.clientHeight
+        this.camera.aspect = canvas.clientWidth / canvas.clientHeight
+        this.camera.updateProjectionMatrix()
+        this.context.gl.viewport(
+          0,
+          0,
+          this.context.gl.drawingBufferWidth,
+          this.context.gl.drawingBufferHeight
+        )
       }
     }
 
@@ -281,8 +312,11 @@ export class Game {
       this.accumTime -= this.timeStep
     }
 
-    this.skyScene.draw(this.camera)
-    this.worldScene.draw(this.camera)
+    this.renderer.draw()
+    if (this.mapName !== '') {
+      this.skyScene.draw(this.camera)
+      this.worldScene.draw(this.camera, this.entities)
+    }
 
     this.lastTime = currTime
   }
@@ -296,17 +330,16 @@ export class Game {
 
     if (this.mode === PlayerMode.REPLAY) {
       this.player.update(dt)
-    } else if (this.mode === PlayerMode.FREE) {
-      if (this.pointerLocked) {
-        const mX = mouse.delta.y / 100
-        const mY = mouse.delta.x / 100
+    } else if (this.mode === PlayerMode.FREE && this.pointerLocked) {
+      // TODO: queue events so that they wont be applied multiple times
+      //       when update catchup happens
 
-        const x = Math.max(0.05, Math.min(3.09, camera.rotation.x - mX))
-        const y = camera.rotation.z - mY
-
-        camera.rotation.x = x
-        camera.rotation.z = y
-      }
+      camera.rotation[0] = clamp(
+        camera.rotation[0] + mouse.delta.y / 100,
+        -Math.PI / 2,
+        Math.PI / 2
+      )
+      camera.rotation[1] -= mouse.delta.x / 100
 
       const speed = 500
       const ds = speed * dt
@@ -314,38 +347,36 @@ export class Game {
       const KEY_S = Keyboard.KEYS.S
       const KEY_A = Keyboard.KEYS.A
       const KEY_D = Keyboard.KEYS.D
-      const downKey = Keyboard.KEYS.CTRL
+      const downKey = Keyboard.KEYS.C
       const upKey = Keyboard.KEYS.SPACE
       if (keyboard.keys[KEY_W] !== keyboard.keys[KEY_S]) {
         if (keyboard.keys[KEY_W]) {
-          camera.position.y += Math.cos(camera.rotation.z) * ds
-          camera.position.x -= Math.sin(camera.rotation.z) * ds
+          camera.position[1] -= Math.cos(camera.rotation[1] + Math.PI / 2) * ds
+          camera.position[0] += Math.sin(camera.rotation[1] + Math.PI / 2) * ds
         } else if (keyboard.keys[KEY_S]) {
-          camera.position.y += Math.cos(camera.rotation.z - 3.14) * ds
-          camera.position.x -= Math.sin(camera.rotation.z - 3.14) * ds
+          camera.position[1] -= Math.cos(camera.rotation[1] - Math.PI / 2) * ds
+          camera.position[0] += Math.sin(camera.rotation[1] - Math.PI / 2) * ds
         }
       }
 
       if (keyboard.keys[KEY_A] !== keyboard.keys[KEY_D]) {
         if (keyboard.keys[KEY_A]) {
-          camera.position.y += Math.cos(camera.rotation.z + 1.57) * ds
-          camera.position.x -= Math.sin(camera.rotation.z + 1.57) * ds
+          camera.position[1] += Math.cos(camera.rotation[1]) * ds
+          camera.position[0] -= Math.sin(camera.rotation[1]) * ds
         } else if (keyboard.keys[KEY_D]) {
-          camera.position.y += Math.cos(camera.rotation.z - 1.57) * ds
-          camera.position.x -= Math.sin(camera.rotation.z - 1.57) * ds
+          camera.position[1] -= Math.cos(camera.rotation[1]) * ds
+          camera.position[0] += Math.sin(camera.rotation[1]) * ds
         }
       }
 
       if (keyboard.keys[upKey] !== keyboard.keys[downKey]) {
         if (keyboard.keys[upKey]) {
-          camera.position.z += ds
+          camera.position[2] += ds
         } else if (keyboard.keys[downKey]) {
-          camera.position.z -= ds
+          camera.position[2] -= ds
         }
       }
     }
-
-    this.entities.list.forEach(entity => entity.update(dt, this))
 
     mouse.delta.x = 0
     mouse.delta.y = 0
@@ -363,7 +394,7 @@ export class Game {
 
   mouseMove = (e: MouseEvent) => {
     this.mouse.delta.x = e.movementX * 0.5 // mul 0.5 to lower sensitivity
-    this.mouse.delta.y = e.movementY * 0.5 // 
+    this.mouse.delta.y = e.movementY * 0.5 //
 
     this.mouse.position.x = e.pageX
     this.mouse.position.y = e.pageY

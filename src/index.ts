@@ -29,6 +29,7 @@ class HLViewer {
     this.game = new Game(config)
     this.interface = new PlayerInterface(this.game)
     this.interface.draw(rootSelector)
+    this.game.draw()
   }
 
   load(name: string) {

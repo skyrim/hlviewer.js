@@ -110,7 +110,7 @@ Location @ HEADER.lumps[LUMP TYPES.PLANES].offset
 +----------+---------+--------------------------------+
 | normal   | vector3 |                                |
 | distance | float   |                                |
-| type     | uint    | one from the PLANE TYPES above |
+| type     | uint    | one from the PLANE TYPES below |
 +----------+---------+--------------------------------+
 
 Plane types:
@@ -368,7 +368,7 @@ Location @ HEADER.lumps[LUMP TYPES.LEAVES].offset
 +-------------------------------------------------------------+
 | LEAF                                                        |
 +------------------+----------+-------------------------------+
-| content          | int      | one of the CONTENTS_... above |
+| content          | int      | one of the CONTENTS_... below |
 | visOffset        | uint     | offset into VISIBILITY lump   |
 | mins             | short[3] | bounding box min coord        |
 | maxs             | short[3] | bounding box max coord        |

@@ -1,7 +1,7 @@
 import { readFile, createWriteStream, existsSync, mkdir } from 'fs'
 import { promisify } from 'util'
 import { PNG } from 'pngjs'
-import { Wad } from '../../src/Wad'
+import { Wad } from '../../src/Parsers/Wad'
 import { resolve } from 'path'
 
 const mkdirP = promisify(mkdir)
@@ -34,16 +34,19 @@ export class WadExporter {
 
     for (let i = 0; i < wad.entries.length; ++i) {
       const entry = wad.entries[i]
+      if (entry.type !== 'texture') {
+        continue
+      }
 
       const msg = `Exporting: ${entry.name}`
       process.stdout.write(msg)
 
       const png = new PNG({
-        width: entry.data.texture.width,
-        height: entry.data.texture.height
+        width: entry.width,
+        height: entry.height
       })
 
-      const mipmap = entry.data.texture.mipmaps[0]
+      const mipmap = entry.data
       for (let i = 0; i < mipmap.length; ++i) {
         png.data[i] = mipmap[i]
       }

@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import * as Path from 'path'
 import { Game } from './Game'
-import { Map } from './Map'
+import { Bsp, BspParser } from './Parsers/BspParser'
 import { Replay } from './Replay'
 import { Sound } from './Sound'
 import { Tga } from './Parsers/Tga'
@@ -66,7 +66,7 @@ class Loader {
   game: Game
 
   replay?: LoadItem<any>
-  map?: LoadItem<Map>
+  map?: LoadItem<Bsp>
   skies: LoadItem<Tga>[]
   wads: LoadItem<any>[]
   sounds: LoadItem<Sound>[]
@@ -189,7 +189,7 @@ class Loader {
   }
 
   async loadMap(name: string) {
-    this.map = new LoadItem<Map>(name)
+    this.map = new LoadItem<Bsp>(name)
     this.events.emit('loadstart', this.map)
 
     const progressCbk: ProgressCallback = (_1, progress) => {
@@ -201,31 +201,36 @@ class Loader {
     }
 
     const mapsPath = this.game.config.paths.maps
-    const map = await Map.loadFromUrl(`${mapsPath}/${name}`, progressCbk).catch(
-      err => {
-        if (this.map) {
-          this.map.error()
-        }
-
-        this.events.emit('error', err, this.map)
+    const map = await BspParser.loadFromUrl(
+      name,
+      `${mapsPath}/${name}`,
+      progressCbk
+    ).catch(err => {
+      if (this.map) {
+        this.map.error()
       }
-    )
+
+      this.events.emit('error', err, this.map)
+    })
 
     if (!map) {
       return
     }
 
-    map.name = this.map.name
     this.map.done(map)
 
     map.entities
       .map((e: any) => {
         if (typeof e.model === 'string' && e.model.indexOf('.spr') > -1) {
-          return e.model
+          return e.model as string
         }
+        return undefined
       })
-      .filter((a, pos, arr) => a && arr.indexOf(a) === pos)
-      .forEach(a => this.loadSprite(a))
+      .filter(
+        (a: string | undefined, pos: number, arr: (string | undefined)[]) =>
+          a && arr.indexOf(a) === pos
+      )
+      .forEach((a: string) => this.loadSprite(a))
 
     const skyname = map.entities[0].skyname
     if (skyname) {
@@ -234,7 +239,9 @@ class Loader {
         .forEach(a => this.loadSky(a))
     }
 
-    if (map.hasMissingTextures()) {
+    // check if there is at least one missing texture
+    // if yes then load wad files (textures should be there)
+    if (map.textures.find(a => a.isExternal)) {
       const wads = map.entities[0].wad
       const wadPromises = wads.map((w: string) => this.loadWad(w))
       await Promise.all(wadPromises)
@@ -333,6 +340,8 @@ class Loader {
 
       map.textures.forEach(texture => {
         if (cmp(entry.name, texture.name)) {
+          texture.width = entry.width
+          texture.height = entry.height
           texture.data = entry.data
         }
       })

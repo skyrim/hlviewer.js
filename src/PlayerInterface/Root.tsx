@@ -43,7 +43,7 @@ export class Root extends Component<RootProps, RootState> {
     const game = this.props.game
     const root = this.props.root
 
-    this.node.appendChild(game.renderer.domElement)
+    this.node.appendChild(game.getCanvas())
 
     game.on('loadstart', this.onLoadStart)
     game.on('load', this.onLoadEnd)

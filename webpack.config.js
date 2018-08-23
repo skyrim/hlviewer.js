@@ -17,6 +17,15 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /\.glsl$/,
+        include: [path.resolve(__dirname, './src')],
+        use: [
+          {
+            loader: 'raw-loader'
+          }
+        ]
+      },
+      {
         test: /\.tsx?$/,
         include: [path.resolve(__dirname, './src')],
         exclude: [],

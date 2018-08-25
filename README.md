@@ -4,6 +4,8 @@
 HLViewer is a simple to use javascript library for viewing maps  
 and playing replays of GoldSrc engine based games entirely in browser.
 
+[![Support via PayPal](https://cdn.rawgit.com/twolfson/paypal-github-button/1.0.0/dist/button.svg)](https://www.paypal.me/imquaker/5)
+
 ### Demo ###
 
 You can check out the live demo [here](http://skyrim.github.io/hlviewer.js)

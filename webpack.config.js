@@ -13,27 +13,18 @@ module.exports = {
     filename: '[name].js',
     path: path.resolve(__dirname, './dist')
   },
-  devtool: 'source-map',
+  devtool: 'eval',
   module: {
     rules: [
       {
         test: /\.glsl$/,
         include: [path.resolve(__dirname, './src')],
-        use: [
-          {
-            loader: 'raw-loader'
-          }
-        ]
+        use: { loader: 'raw-loader' }
       },
       {
         test: /\.tsx?$/,
         include: [path.resolve(__dirname, './src')],
-        exclude: [],
-        use: [
-          {
-            loader: 'awesome-typescript-loader'
-          }
-        ]
+        use: { loader: 'awesome-typescript-loader' }
       },
       {
         test: /\.scss$/,

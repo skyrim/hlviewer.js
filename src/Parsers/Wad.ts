@@ -1,4 +1,4 @@
-import { Reader } from '../Reader'
+import { Reader, ReaderDataType } from '../Reader'
 import { paletteToRGBA, paletteWithLastTransToRGBA } from './Util'
 
 function parseDecal(r: Reader): WadDecal {
@@ -11,14 +11,14 @@ function parseDecal(r: Reader): WadDecal {
 
   // read largest mipmap data
   const pixelCount = width * height
-  const pixels = r.arrx(pixelCount, Reader.Type.UByte)
+  const pixels = r.arrx(pixelCount, ReaderDataType.UByte)
 
   // skip other 3 mipmaps
   r.skip(21 * (pixelCount / 64))
 
   r.skip(2) // skip padding bytes
 
-  const palette = r.arrx(768, Reader.Type.UByte)
+  const palette = r.arrx(768, ReaderDataType.UByte)
 
   const data =
     name[0] === '{'
@@ -51,14 +51,14 @@ function parseTexture(r: Reader): WadTexture {
 
   // read largest mipmap data
   const pixelCount = width * height
-  const pixels = r.arrx(pixelCount, Reader.Type.UByte)
+  const pixels = r.arrx(pixelCount, ReaderDataType.UByte)
 
   // skip other 3 mipmaps
   r.skip(21 * (pixelCount / 64))
 
   r.skip(2) // skip padding bytes
 
-  const palette = r.arrx(768, Reader.Type.UByte)
+  const palette = r.arrx(768, ReaderDataType.UByte)
 
   const data =
     name[0] === '{'
@@ -90,11 +90,11 @@ function parseFont(r: Reader, metadata: WadEntryMetadata): WadFont {
   }
 
   const pixelCount = width * height
-  const pixels = r.arrx(pixelCount, Reader.Type.UByte)
+  const pixels = r.arrx(pixelCount, ReaderDataType.UByte)
 
   r.skip(2)
 
-  const palette = r.arrx(256 * 3, Reader.Type.UByte)
+  const palette = r.arrx(256 * 3, ReaderDataType.UByte)
 
   return {
     type: 'font',

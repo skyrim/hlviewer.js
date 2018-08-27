@@ -1,12 +1,186 @@
 import * as Path from 'path'
-import { Reader } from '../Reader'
 import { vdf } from '../Parsers/Vdf'
-import { ProgressCallback, xhr } from '../Xhr'
-import { Sprite } from './Sprite'
-import { Tga } from './Tga'
-import { paletteWithLastTransToRGBA, paletteToRGBA } from './Util'
+import { Reader, ReaderDataType } from '../Reader'
 import { BspLightmapParser } from '../Parsers/BspLightmapParser'
-import { vec3 } from 'gl-matrix'
+import { paletteWithLastTransToRGBA, paletteToRGBA } from './Util'
+import { BspTexture, Bsp } from '../Bsp'
+
+export function parseModels(
+  models: BspLumpModel[],
+  faces: BspLumpFace[],
+  edges: BspLumpEdge[],
+  surfEdges: BspLumpSurfedge[],
+  vertices: BspLumpVertex[],
+  texinfo: BspLumpTexInfo[],
+  textures: BspTexture[],
+  lightmap: BspLightmapParser
+) {
+  const parsedModels = []
+
+  for (let i = 0; i < models.length; ++i) {
+    const model = models[i]
+
+    const _faces: {
+      buffer: Float32Array
+      textureIndex: number
+    }[] = []
+
+    const v0 = new Float32Array(3)
+    const v1 = new Float32Array(3)
+    const v2 = new Float32Array(3)
+    const uv0 = new Float32Array(2)
+    const uv1 = new Float32Array(2)
+    const uv2 = new Float32Array(2)
+    const luv0 = new Float32Array(2)
+    const luv1 = new Float32Array(2)
+    const luv2 = new Float32Array(2)
+
+    let origin =
+      i === 0
+        ? [0, 0, 0]
+        : [0, 0, 0].map(
+            (_, i) => (model.maxs[i] - model.mins[i]) / 2 + model.mins[i]
+          )
+
+    for (let i = model.firstFace; i < model.firstFace + model.faceCount; ++i) {
+      const faceData = {
+        // 3 floats vertices | 2 floats uvs | 2 floats luvs
+        buffer: new Float32Array((faces[i].edgeCount - 2) * 21),
+        textureIndex: -1
+      }
+
+      const faceTexInfo = texinfo[faces[i].textureInfo]
+      const faceTexture = textures[faceTexInfo.textureIndex]
+      const faceSurfEdges = surfEdges.slice(
+        faces[i].firstEdge,
+        faces[i].firstEdge + faces[i].edgeCount
+      )
+
+      const v0idx =
+        edges[Math.abs(faceSurfEdges[0])][faceSurfEdges[0] > 0 ? 0 : 1]
+      v0[0] = vertices[v0idx][0]
+      v0[1] = vertices[v0idx][1]
+      v0[2] = vertices[v0idx][2]
+
+      uv0[0] =
+        v0[0] * faceTexInfo.s[0] +
+        v0[1] * faceTexInfo.s[1] +
+        v0[2] * faceTexInfo.s[2] +
+        faceTexInfo.sShift
+      uv0[1] =
+        v0[0] * faceTexInfo.t[0] +
+        v0[1] * faceTexInfo.t[1] +
+        v0[2] * faceTexInfo.t[2] +
+        faceTexInfo.tShift
+
+      luv0[0] = 0
+      luv0[1] = 0
+
+      const v1idx =
+        edges[Math.abs(faceSurfEdges[1])][faceSurfEdges[1] > 0 ? 0 : 1]
+      v1[0] = vertices[v1idx][0]
+      v1[1] = vertices[v1idx][1]
+      v1[2] = vertices[v1idx][2]
+
+      uv1[0] =
+        v1[0] * faceTexInfo.s[0] +
+        v1[1] * faceTexInfo.s[1] +
+        v1[2] * faceTexInfo.s[2] +
+        faceTexInfo.sShift
+      uv1[1] =
+        v1[0] * faceTexInfo.t[0] +
+        v1[1] * faceTexInfo.t[1] +
+        v1[2] * faceTexInfo.t[2] +
+        faceTexInfo.tShift
+      luv1[0] = 0
+      luv1[1] = 0.999
+
+      let compIndex = 0
+      for (let j = 2; j < faces[i].edgeCount; ++j) {
+        const v2idx =
+          edges[Math.abs(faceSurfEdges[j])][faceSurfEdges[j] > 0 ? 0 : 1]
+        v2[0] = vertices[v2idx][0]
+        v2[1] = vertices[v2idx][1]
+        v2[2] = vertices[v2idx][2]
+        uv2[0] =
+          v2[0] * faceTexInfo.s[0] +
+          v2[1] * faceTexInfo.s[1] +
+          v2[2] * faceTexInfo.s[2] +
+          faceTexInfo.sShift
+        uv2[1] =
+          v2[0] * faceTexInfo.t[0] +
+          v2[1] * faceTexInfo.t[1] +
+          v2[2] * faceTexInfo.t[2] +
+          faceTexInfo.tShift
+        luv2[0] = 0.999
+        luv2[1] = 0.999
+
+        // vert1: coord, uv and luv
+        faceData.buffer[compIndex++] = v0[0]
+        faceData.buffer[compIndex++] = v0[1]
+        faceData.buffer[compIndex++] = v0[2]
+        faceData.buffer[compIndex++] = uv0[0]
+        faceData.buffer[compIndex++] = uv0[1]
+        faceData.buffer[compIndex++] = luv0[0]
+        faceData.buffer[compIndex++] = luv0[1]
+
+        // vert2
+        faceData.buffer[compIndex++] = v1[0]
+        faceData.buffer[compIndex++] = v1[1]
+        faceData.buffer[compIndex++] = v1[2]
+        faceData.buffer[compIndex++] = uv1[0]
+        faceData.buffer[compIndex++] = uv1[1]
+        faceData.buffer[compIndex++] = luv1[0]
+        faceData.buffer[compIndex++] = luv1[1]
+
+        // vert2
+        faceData.buffer[compIndex++] = v2[0]
+        faceData.buffer[compIndex++] = v2[1]
+        faceData.buffer[compIndex++] = v2[2]
+        faceData.buffer[compIndex++] = uv2[0]
+        faceData.buffer[compIndex++] = uv2[1]
+        faceData.buffer[compIndex++] = luv2[0]
+        faceData.buffer[compIndex++] = luv2[1]
+
+        v1[0] = v2[0]
+        v1[1] = v2[1]
+        v1[2] = v2[2]
+        uv1[0] = uv2[0]
+        uv1[1] = uv2[1]
+        luv1[0] = luv2[0]
+        luv1[1] = luv2[1]
+      }
+
+      // face has a lightmap if flag is equal to 0
+      if (faceTexInfo.flags === 0 || faceTexInfo.flags === -65536) {
+        lightmap.processFace(
+          faceData.buffer,
+          faceTexInfo,
+          faces[i].lightmapOffset
+        )
+      }
+
+      faceData.textureIndex = faceTexInfo.textureIndex
+
+      for (let j = 0; j < faceData.buffer.length / 7; ++j) {
+        faceData.buffer[j * 7] -= origin[0]
+        faceData.buffer[j * 7 + 1] -= origin[1]
+        faceData.buffer[j * 7 + 2] -= origin[2]
+        faceData.buffer[j * 7 + 3] /= faceTexture.width
+        faceData.buffer[j * 7 + 4] /= faceTexture.height
+      }
+
+      _faces.push(faceData)
+    }
+
+    parsedModels.push({
+      origin,
+      faces: _faces
+    })
+  }
+
+  return parsedModels
+}
 
 export enum BspLumpIndex {
   Entities = 0,
@@ -31,7 +205,7 @@ interface BspLump {
   length: number
 }
 
-interface BspLumpFace {
+export interface BspLumpFace {
   plane: number
   planeSide: number
   firstEdge: number
@@ -41,7 +215,7 @@ interface BspLumpFace {
   lightmapOffset: number
 }
 
-interface BspLumpModel {
+export interface BspLumpModel {
   mins: number[]
   maxs: number[]
   origin: number[]
@@ -51,13 +225,13 @@ interface BspLumpModel {
   faceCount: number
 }
 
-type BspLumpEdge = number[]
+export type BspLumpEdge = number[]
 
-type BspLumpSurfedge = number
+export type BspLumpSurfedge = number
 
-type BspLumpVertex = number[]
+export type BspLumpVertex = number[]
 
-interface BspLumpTexInfo {
+export interface BspLumpTexInfo {
   s: number[]
   sShift: number
   t: number[]
@@ -66,7 +240,7 @@ interface BspLumpTexInfo {
   flags: number
 }
 
-type BspLumpLightmap = Uint8Array
+export type BspLumpLightmap = Uint8Array
 
 export class BspParser {
   static parse(name: string, buffer: ArrayBuffer): Bsp {
@@ -136,7 +310,7 @@ export class BspParser {
 
     const parsedLightmap = BspLightmapParser.init(lightmap)
 
-    const parsedModels = this.parseModels(
+    const parsedModels = parseModels(
       models,
       faces,
       edges,
@@ -147,7 +321,11 @@ export class BspParser {
       parsedLightmap
     )
 
-    return new Bsp(name, entities, textures, parsedModels, parsedLightmap)
+    return new Bsp(name, entities, textures, parsedModels, {
+      width: BspLightmapParser.TEXTURE_SIZE,
+      height: BspLightmapParser.TEXTURE_SIZE,
+      data: parsedLightmap.getTexture()
+    })
   }
 
   private static loadFaces(
@@ -263,7 +441,7 @@ export class BspParser {
     length: number
   ): BspLumpLightmap {
     r.seek(offset)
-    return r.arrx(length, Reader.Type.UByte)
+    return r.arrx(length, ReaderDataType.UByte)
   }
 
   private static loadTextureData(r: Reader) {
@@ -282,14 +460,14 @@ export class BspParser {
 
       // read largest mipmap data
       const pixelCount = width * height
-      const pixels = r.arrx(pixelCount, Reader.Type.UByte)
+      const pixels = r.arrx(pixelCount, ReaderDataType.UByte)
 
       // skip other 3 mipmaps
       r.skip(21 * (pixelCount / 64))
 
       r.skip(2) // skip padding bytes
 
-      const palette = r.arrx(768, Reader.Type.UByte)
+      const palette = r.arrx(768, ReaderDataType.UByte)
 
       const data =
         name[0] === '{'
@@ -386,247 +564,5 @@ export class BspParser {
     })
 
     return entities
-  }
-
-  static parseModels(
-    models: BspLumpModel[],
-    faces: BspLumpFace[],
-    edges: BspLumpEdge[],
-    surfEdges: BspLumpSurfedge[],
-    vertices: BspLumpVertex[],
-    texinfo: BspLumpTexInfo[],
-    textures: BspTexture[],
-    lightmap: BspLightmapParser
-  ) {
-    return models.map((model, i) => {
-      const _faces: {
-        buffer: Float32Array
-        textureIndex: number
-      }[] = []
-
-      const v0 = new Float32Array(3)
-      const v1 = new Float32Array(3)
-      const v2 = new Float32Array(3)
-      const uv0 = new Float32Array(2)
-      const uv1 = new Float32Array(2)
-      const uv2 = new Float32Array(2)
-      const luv0 = new Float32Array(2)
-      const luv1 = new Float32Array(2)
-      const luv2 = new Float32Array(2)
-
-      const origin = vec3.create()
-      if (i !== 0) {
-        vec3.sub(origin, model.maxs, model.mins)
-        vec3.div(origin, origin, [2, 2, 2])
-        vec3.add(origin, origin, model.mins)
-      }
-
-      for (
-        let i = model.firstFace;
-        i < model.firstFace + model.faceCount;
-        ++i
-      ) {
-        const faceData = {
-          // 3 floats vertices | 2 floats uvs | 2 floats luvs
-          buffer: new Float32Array((faces[i].edgeCount - 2) * 21),
-          textureIndex: -1
-        }
-        _faces.push(faceData)
-
-        const faceVerts: {
-          pos: Float32Array
-          uv: Float32Array
-          luv: Float32Array
-        }[] = []
-
-        const faceTexInfo = texinfo[faces[i].textureInfo]
-        const faceTexture = textures[faceTexInfo.textureIndex]
-        const faceSurfEdges = surfEdges.slice(
-          faces[i].firstEdge,
-          faces[i].firstEdge + faces[i].edgeCount
-        )
-
-        const v0idx =
-          edges[Math.abs(faceSurfEdges[0])][faceSurfEdges[0] > 0 ? 0 : 1]
-        v0[0] = vertices[v0idx][0]
-        v0[1] = vertices[v0idx][1]
-        v0[2] = vertices[v0idx][2]
-
-        uv0[0] =
-          v0[0] * faceTexInfo.s[0] +
-          v0[1] * faceTexInfo.s[1] +
-          v0[2] * faceTexInfo.s[2] +
-          faceTexInfo.sShift
-        uv0[1] =
-          v0[0] * faceTexInfo.t[0] +
-          v0[1] * faceTexInfo.t[1] +
-          v0[2] * faceTexInfo.t[2] +
-          faceTexInfo.tShift
-
-        luv0[0] = 0
-        luv0[1] = 0
-
-        const v1idx =
-          edges[Math.abs(faceSurfEdges[1])][faceSurfEdges[1] > 0 ? 0 : 1]
-        v1[0] = vertices[v1idx][0]
-        v1[1] = vertices[v1idx][1]
-        v1[2] = vertices[v1idx][2]
-
-        uv1[0] =
-          v1[0] * faceTexInfo.s[0] +
-          v1[1] * faceTexInfo.s[1] +
-          v1[2] * faceTexInfo.s[2] +
-          faceTexInfo.sShift
-        uv1[1] =
-          v1[0] * faceTexInfo.t[0] +
-          v1[1] * faceTexInfo.t[1] +
-          v1[2] * faceTexInfo.t[2] +
-          faceTexInfo.tShift
-        luv1[0] = 0
-        luv1[1] = 0.999
-
-        for (let j = 2; j < faces[i].edgeCount; ++j) {
-          const v2idx =
-            edges[Math.abs(faceSurfEdges[j])][faceSurfEdges[j] > 0 ? 0 : 1]
-          v2[0] = vertices[v2idx][0]
-          v2[1] = vertices[v2idx][1]
-          v2[2] = vertices[v2idx][2]
-          uv2[0] =
-            v2[0] * faceTexInfo.s[0] +
-            v2[1] * faceTexInfo.s[1] +
-            v2[2] * faceTexInfo.s[2] +
-            faceTexInfo.sShift
-          uv2[1] =
-            v2[0] * faceTexInfo.t[0] +
-            v2[1] * faceTexInfo.t[1] +
-            v2[2] * faceTexInfo.t[2] +
-            faceTexInfo.tShift
-          luv2[0] = 0.999
-          luv2[1] = 0.999
-
-          faceVerts.push({
-            pos: new Float32Array(v0),
-            uv: new Float32Array(uv0),
-            luv: new Float32Array(luv0)
-          })
-          faceVerts.push({
-            pos: new Float32Array(v1),
-            uv: new Float32Array(uv1),
-            luv: new Float32Array(luv1)
-          })
-          faceVerts.push({
-            pos: new Float32Array(v2),
-            uv: new Float32Array(uv2),
-            luv: new Float32Array(luv2)
-          })
-
-          // vert1: coord, uv and luv
-          faceData.buffer[(j - 2) * 21 + 0] = v0[0] - origin[0]
-          faceData.buffer[(j - 2) * 21 + 1] = v0[1] - origin[1]
-          faceData.buffer[(j - 2) * 21 + 2] = v0[2] - origin[2]
-          faceData.buffer[(j - 2) * 21 + 3] = uv0[0] / faceTexture.width
-          faceData.buffer[(j - 2) * 21 + 4] = uv0[1] / faceTexture.height
-          faceData.buffer[(j - 2) * 21 + 5] = luv0[0]
-          faceData.buffer[(j - 2) * 21 + 6] = luv0[1]
-
-          // vert2
-          faceData.buffer[(j - 2) * 21 + 7] = v1[0] - origin[0]
-          faceData.buffer[(j - 2) * 21 + 8] = v1[1] - origin[1]
-          faceData.buffer[(j - 2) * 21 + 9] = v1[2] - origin[2]
-          faceData.buffer[(j - 2) * 21 + 10] = uv1[0] / faceTexture.width
-          faceData.buffer[(j - 2) * 21 + 11] = uv1[1] / faceTexture.height
-          faceData.buffer[(j - 2) * 21 + 12] = luv1[0]
-          faceData.buffer[(j - 2) * 21 + 13] = luv1[1]
-
-          // vert2
-          faceData.buffer[(j - 2) * 21 + 14] = v2[0] - origin[0]
-          faceData.buffer[(j - 2) * 21 + 15] = v2[1] - origin[1]
-          faceData.buffer[(j - 2) * 21 + 16] = v2[2] - origin[2]
-          faceData.buffer[(j - 2) * 21 + 17] = uv2[0] / faceTexture.width
-          faceData.buffer[(j - 2) * 21 + 18] = uv2[1] / faceTexture.height
-          faceData.buffer[(j - 2) * 21 + 19] = luv2[0]
-          faceData.buffer[(j - 2) * 21 + 20] = luv2[1]
-
-          v1[0] = v2[0]
-          v1[1] = v2[1]
-          v1[2] = v2[2]
-          uv1[0] = uv2[0]
-          uv1[1] = uv2[1]
-          luv1[0] = luv2[0]
-          luv1[1] = luv2[1]
-        }
-
-        // face has a lightmap if flag is equal to 0
-        if (faceTexInfo.flags === 0 || faceTexInfo.flags === -65536) {
-          lightmap.processFace(faceVerts, faceTexInfo, faces[i].lightmapOffset)
-        }
-
-        faceData.textureIndex = faceTexInfo.textureIndex
-
-        for (let j = 0; j < faceVerts.length; ++j) {
-          faceData.buffer[j * 7 + 5] = faceVerts[j].luv[0]
-          faceData.buffer[j * 7 + 6] = faceVerts[j].luv[1]
-        }
-      }
-
-      return {
-        origin,
-        faces: _faces
-      }
-    })
-  }
-
-  static async loadFromUrl(
-    name: string,
-    url: string,
-    progressCallback: ProgressCallback
-  ) {
-    const data = await xhr(url, {
-      method: 'GET',
-      isBinary: true,
-      progressCallback
-    })
-
-    return BspParser.parse(name, data)
-  }
-}
-
-interface BspTexture {
-  name: string
-  width: number
-  height: number
-  data: Uint8Array
-  isExternal: boolean
-}
-
-interface BspModel {
-  origin: vec3
-  faces: {
-    buffer: Float32Array
-    textureIndex: number
-  }[]
-}
-
-export class Bsp {
-  name: string
-  entities: any[]
-  textures: BspTexture[]
-  models: BspModel[]
-  lightmap: BspLightmapParser
-  skies: Tga[] = []
-  sprites: { [name: string]: Sprite } = {}
-
-  constructor(
-    name: string,
-    entities: any[],
-    textures: BspTexture[],
-    models: BspModel[],
-    lightmap: BspLightmapParser
-  ) {
-    this.name = name
-    this.entities = entities
-    this.textures = textures
-    this.models = models
-    this.lightmap = lightmap
   }
 }

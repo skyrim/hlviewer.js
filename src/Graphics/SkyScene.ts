@@ -1,8 +1,8 @@
-import { SkyShader } from './SkyShader/SkyShader'
-import { Context } from './Context'
-import { Camera } from './Camera'
-import { Bsp } from '../Parsers/BspParser'
+import { Bsp } from '../Bsp'
 import { Tga } from '../Parsers/Tga'
+import { Camera } from './Camera'
+import { Context } from './Context'
+import { SkyShader } from './SkyShader/SkyShader'
 
 export class SkyScene {
   static init(context: Context): SkyScene | null {

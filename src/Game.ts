@@ -11,7 +11,7 @@ import { Camera } from './Graphics/Camera'
 import { Context } from './Graphics/Context'
 import { Renderer } from './Graphics/Renderer'
 import { WorldScene } from './Graphics/WorldScene'
-import { Bsp } from './Parsers/BspParser'
+import { Bsp } from './Bsp'
 import { clamp } from 'lodash-es'
 import { SkyScene } from './Graphics/SkyScene'
 

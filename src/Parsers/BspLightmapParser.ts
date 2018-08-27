@@ -16,7 +16,7 @@ export class BspLightmapParser {
 
   private lightmap: Uint8Array // entire lightmap of the bsp map
   private texture: Uint8Array
-  private root: BspLightmapNode
+  private block = new Uint16Array(BspLightmapParser.TEXTURE_SIZE)
 
   private constructor(lightmap: Uint8Array) {
     this.lightmap = lightmap
@@ -28,19 +28,6 @@ export class BspLightmapParser {
     this.texture[this.texture.length - 3] = 255
     this.texture[this.texture.length - 2] = 255
     this.texture[this.texture.length - 1] = 255
-
-    this.root = {
-      children: [],
-      isFilled: false,
-      x: 0,
-      y: 0,
-      width: BspLightmapParser.TEXTURE_SIZE,
-      height: BspLightmapParser.TEXTURE_SIZE
-    }
-  }
-
-  getRoot() {
-    return this.root
   }
 
   getTexture() {
@@ -48,11 +35,7 @@ export class BspLightmapParser {
   }
 
   processFace(
-    faceVerts: {
-      pos: Float32Array
-      uv: Float32Array
-      luv: Float32Array
-    }[],
+    faceData: Float32Array,
     texinfo: {
       // TODO: MapTexInfo interface
       s: number[]
@@ -64,63 +47,54 @@ export class BspLightmapParser {
     },
     offset: number
   ) {
-    const size = this.getDimensions(faceVerts)
+    const size = this.getDimensions(faceData)
     const rect = this.readLightmap(offset, size.width, size.height)
     if (rect) {
       // Determine the correct TexCoords for the lightmap (I think this bit is bugged too)
-      for (let i = 0; i < faceVerts.length; ++i) {
-        const faceVert = faceVerts[i]
+      for (let i = 0; i < faceData.length / 7; ++i) {
         let lu =
-          faceVert.pos[0] * texinfo.s[0] +
-          faceVert.pos[1] * texinfo.s[1] +
-          faceVert.pos[2] * texinfo.s[2] +
+          faceData[i * 7] * texinfo.s[0] +
+          faceData[i * 7 + 1] * texinfo.s[1] +
+          faceData[i * 7 + 2] * texinfo.s[2] +
           texinfo.sShift -
           size.minU
         lu += rect.x * 16 + 8
         lu /= BspLightmapParser.TEXTURE_SIZE * 16
 
         let lv =
-          faceVert.pos[0] * texinfo.t[0] +
-          faceVert.pos[1] * texinfo.t[1] +
-          faceVert.pos[2] * texinfo.t[2] +
+          faceData[i * 7] * texinfo.t[0] +
+          faceData[i * 7 + 1] * texinfo.t[1] +
+          faceData[i * 7 + 2] * texinfo.t[2] +
           texinfo.tShift -
           size.minV
         lv += rect.y * 16 + 8
         lv /= BspLightmapParser.TEXTURE_SIZE * 16
 
-        faceVert.luv[0] = lu
-        faceVert.luv[1] = lv
+        faceData[i * 7 + 5] = lu
+        faceData[i * 7 + 6] = lv
       }
     }
   }
 
-  private getDimensions(
-    verts: {
-      pos: Float32Array
-      uv: Float32Array
-      luv: Float32Array
-    }[]
-  ) {
+  private getDimensions(faceData: Float32Array) {
     // find the min and max UV's for a face
-    let minU = Math.floor(verts[0].uv[0])
-    let minV = Math.floor(verts[0].uv[1])
-    let maxU = Math.floor(verts[0].uv[0])
-    let maxV = Math.floor(verts[0].uv[1])
+    let minU = Math.floor(faceData[3])
+    let minV = Math.floor(faceData[4])
+    let maxU = Math.floor(faceData[3])
+    let maxV = Math.floor(faceData[4])
 
-    for (let i = 1; i < verts.length; ++i) {
-      const faceVert = verts[i]
-
-      if (Math.floor(faceVert.uv[0]) < minU) {
-        minU = Math.floor(faceVert.uv[0])
+    for (let i = 1; i < faceData.length / 7; ++i) {
+      if (Math.floor(faceData[i * 7 + 3]) < minU) {
+        minU = Math.floor(faceData[i * 7 + 3])
       }
-      if (Math.floor(faceVert.uv[1]) < minV) {
-        minV = Math.floor(faceVert.uv[1])
+      if (Math.floor(faceData[i * 7 + 4]) < minV) {
+        minV = Math.floor(faceData[i * 7 + 4])
       }
-      if (Math.floor(faceVert.uv[0]) > maxU) {
-        maxU = Math.floor(faceVert.uv[0])
+      if (Math.floor(faceData[i * 7 + 3]) > maxU) {
+        maxU = Math.floor(faceData[i * 7 + 3])
       }
-      if (Math.floor(faceVert.uv[1]) > maxV) {
-        maxV = Math.floor(faceVert.uv[1])
+      if (Math.floor(faceData[i * 7 + 4]) > maxV) {
+        maxV = Math.floor(faceData[i * 7 + 4])
       }
     }
 
@@ -137,15 +111,15 @@ export class BspLightmapParser {
     offset: number,
     width: number,
     height: number
-  ): BspLightmapNode | null {
+  ): {x: number, y: number} | null {
     if (height <= 0 || width <= 0) {
       return null
     }
 
-    const node = this.allocateLightmapRect(this.root, width, height)
+    const block = this.findFreeSpace(width, height)
 
-    if (node) {
-      const o = [node.x, node.y]
+    if (block) {
+      const o = [block.x, block.y]
       const s = [width, height]
       const d = [BspLightmapParser.TEXTURE_SIZE, BspLightmapParser.TEXTURE_SIZE]
       const count = width * height
@@ -164,82 +138,41 @@ export class BspLightmapParser {
       }
     }
 
-    return node
+    return block
   }
 
-  private allocateLightmapRect(
-    node: BspLightmapNode,
-    width: number,
-    height: number
-  ): BspLightmapNode | null {
-    if (node.children.length) {
-      const retNode = this.allocateLightmapRect(node.children[0], width, height)
-      if (retNode) {
-        return retNode
+  private findFreeSpace(w: number, h: number): { x: number; y: number } | null {
+    let x = 0
+    let y = 0
+
+    let bestHeight = BspLightmapParser.TEXTURE_SIZE
+    for (let i = 0; i < this.block.length - w; ++i) {
+      let tentativeHeight = 0
+
+      let j
+      for (j = 0; j < w; ++j) {
+        if (this.block[i + j] >= bestHeight) {
+          break
+        }
+        if (this.block[i + j] > tentativeHeight) {
+          tentativeHeight = this.block[i + j]
+        }
       }
-      return this.allocateLightmapRect(node.children[1], width, height)
+
+      if (j === w) {
+        x = i
+        y = bestHeight = tentativeHeight
+      }
     }
 
-    if (node.isFilled) {
+    if (bestHeight + h > BspLightmapParser.TEXTURE_SIZE) {
       return null
     }
 
-    // too small
-    if (node.width < width || node.height < height) {
-      return null
+    for (let i = 0; i < w; ++i) {
+      this.block[x + i] = bestHeight + h
     }
 
-    // perfect fit, allocate without splitting
-    if (node.width == width && node.height == height) {
-      node.isFilled = true
-      return node
-    }
-
-    // we need to split if we've reached here
-    let nodes
-
-    // which way do we split?
-    if (node.width - width > node.height - height) {
-      nodes = [
-        {
-          children: [],
-          isFilled: false,
-          x: node.x,
-          y: node.y,
-          width: width,
-          height: node.height
-        },
-        {
-          children: [],
-          isFilled: false,
-          x: node.x + width,
-          y: node.y,
-          width: node.width - width,
-          height: node.height
-        }
-      ]
-    } else {
-      nodes = [
-        {
-          children: [],
-          isFilled: false,
-          x: node.x,
-          y: node.y,
-          width: node.width,
-          height: height
-        },
-        {
-          children: [],
-          isFilled: false,
-          x: node.x,
-          y: node.y + height,
-          width: node.width,
-          height: node.height - height
-        }
-      ]
-    }
-    node.children = nodes
-
-    return this.allocateLightmapRect(node.children[0], width, height)
+    return { x, y }
   }
 }

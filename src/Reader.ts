@@ -1,4 +1,17 @@
-class Reader {
+export enum ReaderDataType {
+  UByte = 0,
+  Byte = 1,
+  UShort = 2,
+  Short = 3,
+  UInt = 4,
+  Int = 5,
+  Float = 6,
+  Double = 7,
+  NString = 8,
+  String = 9
+}
+
+export class Reader {
   data: DataView
   offset: number
 
@@ -119,60 +132,60 @@ class Reader {
     return r
   }
 
-  arrx(n: number, type: Reader.Type, nstrlen = 0) {
+  arrx(n: number, type: ReaderDataType, nstrlen = 0) {
     let r: any
 
     switch (type) {
-      case Reader.Type.UByte: {
+      case ReaderDataType.UByte: {
         r = new Uint8Array(this.data.buffer, this.tell(), n)
         this.skip(n)
         break
       }
 
-      case Reader.Type.Byte: {
+      case ReaderDataType.Byte: {
         r = new Int8Array(this.data.buffer, this.tell(), n)
         this.skip(n)
         break
       }
 
-      case Reader.Type.UShort:
+      case ReaderDataType.UShort:
         r = new Uint16Array(this.data.buffer, this.tell(), n)
         this.skip(n * 2)
         break
 
-      case Reader.Type.Short:
+      case ReaderDataType.Short:
         r = new Int16Array(this.data.buffer, this.tell(), n)
         this.skip(n * 2)
         break
 
-      case Reader.Type.UInt:
+      case ReaderDataType.UInt:
         r = new Uint32Array(this.data.buffer, this.tell(), n)
         this.skip(n * 4)
         break
 
-      case Reader.Type.Int:
+      case ReaderDataType.Int:
         r = new Int32Array(this.data.buffer, this.tell(), n)
         this.skip(n * 4)
         break
 
-      case Reader.Type.Float:
+      case ReaderDataType.Float:
         r = new Float32Array(this.data.buffer, this.tell(), n)
         this.skip(n * 4)
         break
 
-      case Reader.Type.Double:
+      case ReaderDataType.Double:
         r = new Float64Array(this.data.buffer, this.tell(), n)
         this.skip(n * 8)
         break
 
-      case Reader.Type.NString:
+      case ReaderDataType.NString:
         r = []
         while (n-- > 0) {
           r.push(r.nstr(nstrlen))
         }
         break
 
-      case Reader.Type.String:
+      case ReaderDataType.String:
         r = []
         while (n-- > 0) {
           r.push(r.str())
@@ -183,20 +196,3 @@ class Reader {
     return r
   }
 }
-
-namespace Reader {
-  export enum Type {
-    UByte = 0,
-    Byte = 1,
-    UShort = 2,
-    Short = 3,
-    UInt = 4,
-    Int = 5,
-    Float = 6,
-    Double = 7,
-    NString = 8,
-    String = 9
-  }
-}
-
-export { Reader }

@@ -1,4 +1,4 @@
-import { Reader } from '../Reader'
+import { Reader, ReaderDataType } from '../Reader'
 import { paletteWithLastTransToRGBA, paletteToRGBA } from './Util'
 
 interface SpriteHeader {
@@ -71,7 +71,7 @@ export class Sprite {
     }
 
     const paletteSize = r.s()
-    const palette = r.arrx(paletteSize * 3, Reader.Type.UByte)
+    const palette = r.arrx(paletteSize * 3, ReaderDataType.UByte)
 
     const frames: SpriteFrame[] = []
     for (let i = 0; i < header.frameCount; ++i) {
@@ -83,7 +83,7 @@ export class Sprite {
         data: new Uint8Array(header.width * header.height * 4)
       }
 
-      const pixels = r.arrx(header.width * header.height, Reader.Type.UByte)
+      const pixels = r.arrx(header.width * header.height, ReaderDataType.UByte)
 
       if (header.alphaType === SpriteAlphaType.SPR_ALPHTEST) {
         frame.data = paletteWithLastTransToRGBA(pixels, palette)

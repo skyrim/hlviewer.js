@@ -1,6 +1,6 @@
 import * as Path from 'path'
 import { BitStream } from './BitReader'
-import { Reader } from './Reader'
+import { Reader, ReaderDataType } from './Reader'
 
 const DT_BYTE = 1
 const DT_SHORT = 1 << 1
@@ -293,7 +293,7 @@ class FrameDataReader {
       protocol: r.i(),
       spawnCount: r.i(), // map change count
       mapCrc: r.i(),
-      clientDllHash: r.arrx(16, Reader.Type.UByte),
+      clientDllHash: r.arrx(16, ReaderDataType.UByte),
       maxPlayers: r.ub(),
       playerIndex: r.ub(),
       isDeathmatch: r.ub(),
@@ -319,7 +319,7 @@ class FrameDataReader {
       clientIndex: r.ub(),
       clientUserId: r.ui(),
       clientUserInfo: r.str(),
-      clientCdKeyHash: r.arrx(16, Reader.Type.UByte)
+      clientCdKeyHash: r.arrx(16, ReaderDataType.UByte)
     }
   }
 
@@ -1270,7 +1270,7 @@ class FrameDataReader {
   static voiceData(r: Reader) {
     let playerIndex = r.ub()
     let size = r.us()
-    let data = r.arrx(size, Reader.Type.UByte)
+    let data = r.arrx(size, ReaderDataType.UByte)
     return { playerIndex, data }
   }
 
@@ -2282,7 +2282,7 @@ class Replay {
         currentChunk.timeLength = timeLength
         let lastFrameLength = offset - lastFrameOffset
         r.seek(lastFrameOffset)
-        currentChunk.setData(r.arrx(lastFrameLength, Reader.Type.UByte))
+        currentChunk.setData(r.arrx(lastFrameLength, ReaderDataType.UByte))
         r.seek(offset)
 
         break
@@ -2311,7 +2311,7 @@ class Replay {
           let lastFrameLength = offset - lastFrameOffset
           let tempOffset = r.tell()
           r.seek(lastFrameOffset)
-          currentChunk.setData(r.arrx(lastFrameLength, Reader.Type.UByte))
+          currentChunk.setData(r.arrx(lastFrameLength, ReaderDataType.UByte))
           r.seek(tempOffset)
 
           // create new chunk
@@ -2378,7 +2378,7 @@ class Replay {
         let lastFrameLength = offset - lastFrameOffset
         let tempOffset = r.tell()
         r.seek(lastFrameOffset)
-        currentChunk.setData(r.arrx(lastFrameLength, Reader.Type.UByte))
+        currentChunk.setData(r.arrx(lastFrameLength, ReaderDataType.UByte))
         r.seek(tempOffset)
 
         // create new chunk

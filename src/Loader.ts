@@ -1,7 +1,8 @@
 import { EventEmitter } from 'events'
 import * as Path from 'path'
 import { Game } from './Game'
-import { Bsp, BspParser } from './Parsers/BspParser'
+import { Bsp } from './Bsp'
+import { BspParser } from './Parsers/BspParser'
 import { Replay } from './Replay'
 import { Sound } from './Sound'
 import { Tga } from './Parsers/Tga'
@@ -84,7 +85,13 @@ class LoadItemSprite extends LoadItemBase<Sprite> {
   type: 'sprite' = 'sprite'
 }
 
-export type LoadItem = LoadItemReplay | LoadItemBsp | LoadItemSky | LoadItemWad | LoadItemSound | LoadItemSprite
+export type LoadItem =
+  | LoadItemReplay
+  | LoadItemBsp
+  | LoadItemSky
+  | LoadItemWad
+  | LoadItemSound
+  | LoadItemSprite
 
 class Loader {
   game: Game
@@ -260,8 +267,9 @@ class Loader {
 
     const skyname = map.entities[0].skyname
     if (skyname) {
-      ;['bk', 'dn', 'ft', 'lf', 'rt', 'up']
-        .map(a => `${skyname}${a}.tga`)
+      const sides =  ['bk', 'dn', 'ft', 'lf', 'rt', 'up']
+      sides
+        .map(a => `${skyname}${a}`)
         .forEach(a => this.loadSky(a))
     }
 
@@ -318,7 +326,7 @@ class Loader {
     }
 
     const skiesPath = this.game.config.paths.skies
-    const buffer = await xhr(`${skiesPath}/${name}`, {
+    const buffer = await xhr(`${skiesPath}/${name}.tga`, {
       method: 'GET',
       isBinary: true,
       progressCallback
@@ -353,13 +361,11 @@ class Loader {
       method: 'GET',
       isBinary: true,
       progressCallback
-    }).catch(
-      (err: any) => {
-        wadItem.error()
-        this.events.emit('error', err, wadItem)
-        this.checkStatus()
-      }
-    )
+    }).catch((err: any) => {
+      wadItem.error()
+      this.events.emit('error', err, wadItem)
+      this.checkStatus()
+    })
 
     if (wadItem.isError()) {
       return
@@ -417,8 +423,7 @@ class Loader {
       return
     }
 
-    const data = await Sound.create(buffer)
-    .catch((err: any) => {
+    const data = await Sound.create(buffer).catch((err: any) => {
       sound.error()
       this.events.emit('error', err, sound)
       this.checkStatus()

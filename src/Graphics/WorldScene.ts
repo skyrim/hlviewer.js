@@ -1,13 +1,12 @@
-import { Context } from './Context'
-import { Bsp } from '../Parsers/BspParser'
-import { Camera } from './Camera'
-import { MainShader } from './WorldShader/WorldShader'
-import { isPowerOfTwo, nextPowerOfTwo, resizeTexture } from './Util'
 import { mat4, vec3 } from 'gl-matrix'
 import { cloneDeep } from 'lodash-es'
+import { Bsp } from '../Bsp'
+import { Camera } from './Camera'
+import { Context } from './Context'
+import { MainShader } from './WorldShader/WorldShader'
 import { RenderMode } from '../Parsers/BspEntityParser'
 import { Sprite, SpriteType } from '../Parsers/Sprite'
-import { BspLightmapParser } from '../Parsers/BspLightmapParser';
+import { isPowerOfTwo, nextPowerOfTwo, resizeTexture } from './Util'
 
 type FaceInfo = {
   offset: number
@@ -15,7 +14,7 @@ type FaceInfo = {
   textureIndex: number
 }
 type ModelInfo = {
-  origin: vec3
+  origin: number[]
   offset: number
   length: number
   isTransparent: boolean
@@ -174,7 +173,7 @@ export class WorldScene {
 
     // set data of the last quad used for rendering sprites
     sceneInfo.models.push({
-      origin: vec3.create(),
+      origin: [0, 0, 0],
       offset: currentVertex,
       length: 4,
       isTransparent: false, // unused
@@ -421,12 +420,12 @@ export class WorldScene {
       gl.TEXTURE_2D,
       0,
       gl.RGBA,
-      BspLightmapParser.TEXTURE_SIZE,
-      BspLightmapParser.TEXTURE_SIZE,
+      bsp.lightmap.width,
+      bsp.lightmap.height,
       0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
-      bsp.lightmap.getTexture()
+      bsp.lightmap.data
     )
     gl.generateMipmap(gl.TEXTURE_2D)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
@@ -437,7 +436,7 @@ export class WorldScene {
     )
 
     this.lightmap = {
-      data: bsp.lightmap.getTexture(),
+      data: bsp.lightmap.data,
       handle: glLightmap
     }
   }

@@ -1,5 +1,4 @@
-import * as Path from 'path'
-import { Reader } from '../Reader'
+import { Reader, ReaderDataType } from '../Reader'
 
 export class Tga {
   name: string
@@ -14,7 +13,7 @@ export class Tga {
     this.data = data
   }
 
-  static parse(buffer: ArrayBuffer, url: string) {
+  static parse(buffer: ArrayBuffer, name: string) {
     let r = new Reader(buffer)
 
     let header = {
@@ -39,7 +38,7 @@ export class Tga {
     // let imageId
     if (header.idLength) {
       // imageId = r.arrx(header.idLength, Reader.Type.UByte)
-      r.arrx(header.idLength, Reader.Type.UByte)
+      r.arrx(header.idLength, ReaderDataType.UByte)
     }
 
     if (header.colorMapType) {
@@ -53,7 +52,7 @@ export class Tga {
 
     if (header.imageType === 0x02) {
       let byteCount = (pixelCount * header.image.depth) / 8
-      imageData = r.arrx(byteCount, Reader.Type.UByte)
+      imageData = r.arrx(byteCount, ReaderDataType.UByte)
       if (header.image.depth === 24) {
         let temp = new Uint8Array(pixelCount * 4)
         for (let i = 0; i < h; ++i) {
@@ -116,7 +115,6 @@ export class Tga {
       }
     }
 
-    let name = Path.basename(url, '.tga')
     return new Tga(name, header.image.width, header.image.height, imageData)
   }
 }

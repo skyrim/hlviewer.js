@@ -1,7 +1,7 @@
 /*!
  * The MIT License (MIT)
  * 
- * Copyright (c) 2017 Stefan Stojković
+ * Copyright (c) 2018 Stefan Stojković
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -109,6 +109,199 @@
 /************************************************************************/
 /******/ ({
 
+/***/ "./src/Parsers/Util.ts":
+/*!*****************************!*\
+  !*** ./src/Parsers/Util.ts ***!
+  \*****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function paletteToRGBA(pixels, palette) {
+    const rgba = new Uint8Array(pixels.length * 4);
+    const len = pixels.length;
+    for (let i = 0; i < len; ++i) {
+        rgba[i * 4] = palette[pixels[i] * 3];
+        rgba[i * 4 + 1] = palette[pixels[i] * 3 + 1];
+        rgba[i * 4 + 2] = palette[pixels[i] * 3 + 2];
+        rgba[i * 4 + 3] = 255;
+    }
+    return rgba;
+}
+exports.paletteToRGBA = paletteToRGBA;
+function paletteWithLastTransToRGBA(pixels, palette) {
+    const rgba = new Uint8Array(pixels.length * 4);
+    const len = pixels.length;
+    for (let i = 0; i < len; ++i) {
+        if (pixels[i] === 255) {
+            rgba[i * 4 + 3] = 0;
+        }
+        else {
+            rgba[i * 4] = palette[pixels[i] * 3];
+            rgba[i * 4 + 1] = palette[pixels[i] * 3 + 1];
+            rgba[i * 4 + 2] = palette[pixels[i] * 3 + 2];
+            rgba[i * 4 + 3] = 255;
+        }
+    }
+    return rgba;
+}
+exports.paletteWithLastTransToRGBA = paletteWithLastTransToRGBA;
+
+
+/***/ }),
+
+/***/ "./src/Parsers/Wad.ts":
+/*!****************************!*\
+  !*** ./src/Parsers/Wad.ts ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Reader_1 = __webpack_require__(/*! ../Reader */ "./src/Reader.ts");
+const Util_1 = __webpack_require__(/*! ./Util */ "./src/Parsers/Util.ts");
+function parseDecal(r) {
+    const name = r.nstr(16);
+    const width = r.ui();
+    const height = r.ui();
+    r.skip(4 * 4);
+    const pixelCount = width * height;
+    const pixels = r.arrx(pixelCount, Reader_1.ReaderDataType.UByte);
+    r.skip(21 * (pixelCount / 64));
+    r.skip(2);
+    const palette = r.arrx(768, Reader_1.ReaderDataType.UByte);
+    const data = name[0] === '{'
+        ? Util_1.paletteWithLastTransToRGBA(pixels, palette)
+        : Util_1.paletteToRGBA(pixels, palette);
+    return {
+        type: 'decal',
+        name,
+        width,
+        height,
+        data
+    };
+}
+function parseCache(_r, metadata) {
+    return {
+        type: 'cache',
+        name: metadata.name
+    };
+}
+function parseTexture(r) {
+    const name = r.nstr(16);
+    const width = r.ui();
+    const height = r.ui();
+    r.skip(4 * 4);
+    const pixelCount = width * height;
+    const pixels = r.arrx(pixelCount, Reader_1.ReaderDataType.UByte);
+    r.skip(21 * (pixelCount / 64));
+    r.skip(2);
+    const palette = r.arrx(768, Reader_1.ReaderDataType.UByte);
+    const data = name[0] === '{'
+        ? Util_1.paletteWithLastTransToRGBA(pixels, palette)
+        : Util_1.paletteToRGBA(pixels, palette);
+    return {
+        type: 'texture',
+        name,
+        width,
+        height,
+        data
+    };
+}
+function parseFont(r, metadata) {
+    const width = r.ui();
+    const height = r.ui();
+    const rowCount = r.ui();
+    const rowHeight = r.ui();
+    const glyphs = [];
+    for (let i = 0; i < 256; ++i) {
+        glyphs.push({
+            offset: r.us(),
+            width: r.us()
+        });
+    }
+    const pixelCount = width * height;
+    const pixels = r.arrx(pixelCount, Reader_1.ReaderDataType.UByte);
+    r.skip(2);
+    const palette = r.arrx(256 * 3, Reader_1.ReaderDataType.UByte);
+    return {
+        type: 'font',
+        name: metadata.name,
+        width,
+        height,
+        rowCount,
+        rowHeight,
+        glyphs,
+        data: Util_1.paletteToRGBA(pixels, palette)
+    };
+}
+function parseUnknown(r, metadata) {
+    return {
+        type: 'unknown',
+        name: metadata.name,
+        data: r.arrx(metadata.length, r.ub.bind(r))
+    };
+}
+function parseEntry(r, metadata) {
+    r.seek(metadata.offset);
+    switch (metadata.type) {
+        case 0x40: {
+            return parseDecal(r);
+        }
+        case 0x42: {
+            return parseCache(r, metadata);
+        }
+        case 0x43: {
+            return parseTexture(r);
+        }
+        case 0x46: {
+            return parseFont(r, metadata);
+        }
+        default: {
+            return parseUnknown(r, metadata);
+        }
+    }
+}
+class Wad {
+    constructor(entries) {
+        this.entries = entries;
+    }
+    static parse(buffer) {
+        const r = new Reader_1.Reader(buffer);
+        const magic = r.nstr(4);
+        if (magic !== 'WAD3') {
+            throw new Error('Invalid WAD file format');
+        }
+        const entryCount = r.ui();
+        const directoryOffset = r.ui();
+        r.seek(directoryOffset);
+        const entriesMetadata = [];
+        for (let i = 0; i < entryCount; ++i) {
+            const entry = {
+                offset: r.ui(),
+                diskLength: r.ui(),
+                length: r.ui(),
+                type: r.b(),
+                isCompressed: r.b(),
+                name: ''
+            };
+            r.skip(2);
+            entry.name = r.nstr(16);
+            entriesMetadata.push(entry);
+        }
+        const entries = entriesMetadata.map(e => parseEntry(r, e));
+        return new Wad(entries);
+    }
+}
+exports.Wad = Wad;
+
+
+/***/ }),
+
 /***/ "./src/Reader.ts":
 /*!***********************!*\
   !*** ./src/Reader.ts ***!
@@ -119,6 +312,19 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var ReaderDataType;
+(function (ReaderDataType) {
+    ReaderDataType[ReaderDataType["UByte"] = 0] = "UByte";
+    ReaderDataType[ReaderDataType["Byte"] = 1] = "Byte";
+    ReaderDataType[ReaderDataType["UShort"] = 2] = "UShort";
+    ReaderDataType[ReaderDataType["Short"] = 3] = "Short";
+    ReaderDataType[ReaderDataType["UInt"] = 4] = "UInt";
+    ReaderDataType[ReaderDataType["Int"] = 5] = "Int";
+    ReaderDataType[ReaderDataType["Float"] = 6] = "Float";
+    ReaderDataType[ReaderDataType["Double"] = 7] = "Double";
+    ReaderDataType[ReaderDataType["NString"] = 8] = "NString";
+    ReaderDataType[ReaderDataType["String"] = 9] = "String";
+})(ReaderDataType = exports.ReaderDataType || (exports.ReaderDataType = {}));
 class Reader {
     constructor(data) {
         if (data.byteLength === 0) {
@@ -140,42 +346,42 @@ class Reader {
         this.seek(this.tell() + offset);
     }
     b() {
-        let r = this.data.getInt8(this.offset);
+        const r = this.data.getInt8(this.offset);
         this.skip(1);
         return r;
     }
     ub() {
-        let r = this.data.getUint8(this.offset);
+        const r = this.data.getUint8(this.offset);
         this.skip(1);
         return r;
     }
     s(isLittleEndian = true) {
-        let r = this.data.getInt16(this.offset, isLittleEndian);
+        const r = this.data.getInt16(this.offset, isLittleEndian);
         this.skip(2);
         return r;
     }
     us(isLittleEndian = true) {
-        let r = this.data.getUint16(this.offset, isLittleEndian);
+        const r = this.data.getUint16(this.offset, isLittleEndian);
         this.skip(2);
         return r;
     }
     i(isLittleEndian = true) {
-        let r = this.data.getInt32(this.tell(), isLittleEndian);
+        const r = this.data.getInt32(this.tell(), isLittleEndian);
         this.skip(4);
         return r;
     }
     ui(isLittleEndian = true) {
-        let r = this.data.getUint32(this.tell(), isLittleEndian);
+        const r = this.data.getUint32(this.tell(), isLittleEndian);
         this.skip(4);
         return r;
     }
     f(isLittleEndian = true) {
-        let r = this.data.getFloat32(this.tell(), isLittleEndian);
+        const r = this.data.getFloat32(this.tell(), isLittleEndian);
         this.skip(4);
         return r;
     }
     lf(isLittleEndian = true) {
-        let r = this.data.getFloat64(this.tell(), isLittleEndian);
+        const r = this.data.getFloat64(this.tell(), isLittleEndian);
         this.skip(8);
         return r;
     }
@@ -195,7 +401,7 @@ class Reader {
         let r = '';
         while (n > 0) {
             n -= 1;
-            let charCode = this.ub();
+            const charCode = this.ub();
             if (charCode === 0) {
                 break;
             }
@@ -208,7 +414,7 @@ class Reader {
     }
     arr(n, f) {
         f.bind(this);
-        let r = [];
+        const r = [];
         while (n-- > 0) {
             r.push(f());
         }
@@ -217,47 +423,47 @@ class Reader {
     arrx(n, type, nstrlen = 0) {
         let r;
         switch (type) {
-            case Reader.Type.UByte: {
+            case ReaderDataType.UByte: {
                 r = new Uint8Array(this.data.buffer, this.tell(), n);
                 this.skip(n);
                 break;
             }
-            case Reader.Type.Byte: {
+            case ReaderDataType.Byte: {
                 r = new Int8Array(this.data.buffer, this.tell(), n);
                 this.skip(n);
                 break;
             }
-            case Reader.Type.UShort:
+            case ReaderDataType.UShort:
                 r = new Uint16Array(this.data.buffer, this.tell(), n);
                 this.skip(n * 2);
                 break;
-            case Reader.Type.Short:
+            case ReaderDataType.Short:
                 r = new Int16Array(this.data.buffer, this.tell(), n);
                 this.skip(n * 2);
                 break;
-            case Reader.Type.UInt:
+            case ReaderDataType.UInt:
                 r = new Uint32Array(this.data.buffer, this.tell(), n);
                 this.skip(n * 4);
                 break;
-            case Reader.Type.Int:
+            case ReaderDataType.Int:
                 r = new Int32Array(this.data.buffer, this.tell(), n);
                 this.skip(n * 4);
                 break;
-            case Reader.Type.Float:
+            case ReaderDataType.Float:
                 r = new Float32Array(this.data.buffer, this.tell(), n);
                 this.skip(n * 4);
                 break;
-            case Reader.Type.Double:
+            case ReaderDataType.Double:
                 r = new Float64Array(this.data.buffer, this.tell(), n);
                 this.skip(n * 8);
                 break;
-            case Reader.Type.NString:
+            case ReaderDataType.NString:
                 r = [];
                 while (n-- > 0) {
                     r.push(r.nstr(nstrlen));
                 }
                 break;
-            case Reader.Type.String:
+            case ReaderDataType.String:
                 r = [];
                 while (n-- > 0) {
                     r.push(r.str());
@@ -268,202 +474,6 @@ class Reader {
     }
 }
 exports.Reader = Reader;
-(function (Reader) {
-    let Type;
-    (function (Type) {
-        Type[Type["UByte"] = 0] = "UByte";
-        Type[Type["Byte"] = 1] = "Byte";
-        Type[Type["UShort"] = 2] = "UShort";
-        Type[Type["Short"] = 3] = "Short";
-        Type[Type["UInt"] = 4] = "UInt";
-        Type[Type["Int"] = 5] = "Int";
-        Type[Type["Float"] = 6] = "Float";
-        Type[Type["Double"] = 7] = "Double";
-        Type[Type["NString"] = 8] = "NString";
-        Type[Type["String"] = 9] = "String";
-    })(Type = Reader.Type || (Reader.Type = {}));
-})(Reader || (Reader = {}));
-exports.Reader = Reader;
-
-
-/***/ }),
-
-/***/ "./src/Wad.ts":
-/*!********************!*\
-  !*** ./src/Wad.ts ***!
-  \********************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const Reader_1 = __webpack_require__(/*! ./Reader */ "./src/Reader.ts");
-const Xhr_1 = __webpack_require__(/*! ./Xhr */ "./src/Xhr.ts");
-function parseMipMaps(r, width, height) {
-    const pixelCount = width * height;
-    const mipmaps = [0, 0, 0, 0].map((_1, i) => r.arrx(pixelCount / Math.pow(1 << i, 2), Reader_1.Reader.Type.UByte));
-    r.skip(2);
-    const palette = r.arrx(256 * 3, Reader_1.Reader.Type.UByte);
-    return mipmaps.map(m => {
-        const pixels = new Uint8Array(m.length * 4);
-        for (let i = 0; i < m.length; ++i) {
-            const r = palette[m[i] * 3];
-            const g = palette[m[i] * 3 + 1];
-            const b = palette[m[i] * 3 + 2];
-            if (r === 0 && g === 0 && b === 255) {
-                pixels[4 * i] = 0;
-                pixels[4 * i + 1] = 0;
-                pixels[4 * i + 2] = 0;
-                pixels[4 * i + 3] = 0;
-            }
-            else {
-                pixels[4 * i] = r;
-                pixels[4 * i + 1] = g;
-                pixels[4 * i + 2] = b;
-                pixels[4 * i + 3] = 255;
-            }
-        }
-        return pixels;
-    });
-}
-function parseTexture(r) {
-    const baseOffset = r.tell();
-    r.skip(16);
-    const texture = {
-        width: r.ui(),
-        height: r.ui(),
-        mipmaps: []
-    };
-    const mipmapOffset = r.ui();
-    r.seek(baseOffset + mipmapOffset);
-    texture.mipmaps = parseMipMaps(r, texture.width, texture.height);
-    return { texture };
-}
-function parseEntry(r, entry) {
-    r.seek(entry.offset);
-    switch (entry.type) {
-        case 67: {
-            return parseTexture(r);
-        }
-        default: {
-            return r.arr(entry.length, r.ub.bind(r));
-        }
-    }
-}
-class Wad {
-    constructor(entries) {
-        this.entries = entries;
-    }
-    static parseFromArrayBuffer(buffer) {
-        const r = new Reader_1.Reader(buffer);
-        const magic = r.nstr(4);
-        if (magic !== 'WAD3') {
-            throw new Error('Invalid WAD file format');
-        }
-        const entryCount = r.ui();
-        const directoryOffset = r.ui();
-        r.seek(directoryOffset);
-        const entries = [];
-        for (let i = 0; i < entryCount; ++i) {
-            const entry = {
-                offset: r.ui(),
-                diskLength: r.ui(),
-                length: r.ui(),
-                type: r.b(),
-                isCompressed: r.b()
-            };
-            r.skip(2);
-            entry.name = r.nstr(16);
-            entries.push(entry);
-        }
-        entries.forEach(e => {
-            e.data = parseEntry(r, e);
-        });
-        return new Wad(entries.map(e => ({
-            name: e.name,
-            data: e.data
-        })));
-    }
-    static loadFromUrl(url, progressCallback) {
-        return Xhr_1.xhr(url, {
-            method: 'GET',
-            isBinary: true,
-            progressCallback
-        }).then(response => Wad.parseFromArrayBuffer(response));
-    }
-}
-exports.Wad = Wad;
-
-
-/***/ }),
-
-/***/ "./src/Xhr.ts":
-/*!********************!*\
-  !*** ./src/Xhr.ts ***!
-  \********************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-function xhr(url, params) {
-    let method = params.method || 'GET';
-    let isBinary = params.isBinary;
-    let progressCallback = params.progressCallback;
-    if (!url) {
-        throw new Error('Url parameter missing');
-    }
-    return new Promise((resolve, reject) => {
-        let request = new XMLHttpRequest();
-        if (isBinary) {
-            request.responseType = 'arraybuffer';
-        }
-        if (isBinary && progressCallback) {
-            request.addEventListener('progress', event => {
-                if (event.lengthComputable) {
-                    progressCallback(request, event.loaded / event.total);
-                }
-                else {
-                    let totalStr = request.getResponseHeader('content-length');
-                    let total = 0;
-                    if (totalStr) {
-                        total = parseFloat(totalStr);
-                    }
-                    let encoding = request.getResponseHeader('content-encoding');
-                    if (total && encoding && encoding.indexOf('gzip') > -1) {
-                        total *= 4;
-                        let loadedPercent = Math.min(0.99, event.loaded / total);
-                        progressCallback(request, loadedPercent);
-                    }
-                    else {
-                        progressCallback(request, 0);
-                    }
-                }
-            });
-        }
-        request.addEventListener('readystatechange', (event) => {
-            if (event.target.readyState !== 4) {
-                return;
-            }
-            if (event.target.status === 200) {
-                if (progressCallback) {
-                    progressCallback(request, 1);
-                }
-                resolve(event.target.response);
-            }
-            else {
-                reject({
-                    status: event.target.status
-                });
-            }
-        });
-        request.open(method, url, true);
-        request.send();
-    });
-}
-exports.xhr = xhr;
 
 
 /***/ }),
@@ -489,7 +499,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __webpack_require__(/*! fs */ "fs");
 const util_1 = __webpack_require__(/*! util */ "util");
 const pngjs_1 = __webpack_require__(/*! pngjs */ "pngjs");
-const Wad_1 = __webpack_require__(/*! ../../src/Wad */ "./src/Wad.ts");
+const Wad_1 = __webpack_require__(/*! ../../src/Parsers/Wad */ "./src/Parsers/Wad.ts");
 const path_1 = __webpack_require__(/*! path */ "path");
 const mkdirP = util_1.promisify(fs_1.mkdir);
 const readFileP = util_1.promisify(fs_1.readFile);
@@ -514,16 +524,19 @@ class WadExporter {
                 yield mkdirP(out);
             }
             const arrayBuffer = toArrayBuffer(buffer);
-            const wad = yield Wad_1.Wad.parseFromArrayBuffer(arrayBuffer);
+            const wad = yield Wad_1.Wad.parse(arrayBuffer);
             for (let i = 0; i < wad.entries.length; ++i) {
                 const entry = wad.entries[i];
+                if (entry.type !== 'texture') {
+                    continue;
+                }
                 const msg = `Exporting: ${entry.name}`;
                 process.stdout.write(msg);
                 const png = new pngjs_1.PNG({
-                    width: entry.data.texture.width,
-                    height: entry.data.texture.height
+                    width: entry.width,
+                    height: entry.height
                 });
-                const mipmap = entry.data.texture.mipmaps[0];
+                const mipmap = entry.data;
                 for (let i = 0; i < mipmap.length; ++i) {
                     png.data[i] = mipmap[i];
                 }

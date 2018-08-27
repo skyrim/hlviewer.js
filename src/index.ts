@@ -13,6 +13,7 @@ class HLViewer {
   constructor(rootSelector: string, params: Config | string) {
     const basePath = typeof params === 'string' ? params : ''
     const config = defaultsDeep(
+      params,
       {
         paths: {
           base: `${basePath}`,
@@ -22,8 +23,7 @@ class HLViewer {
           skies: `${basePath}/skies`,
           sounds: `${basePath}/sounds`
         }
-      },
-      params
+      }
     )
 
     this.game = new Game(config)

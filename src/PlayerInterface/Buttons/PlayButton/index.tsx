@@ -1,21 +1,16 @@
-import { h, Component } from 'preact'
+import { h } from 'preact'
+import { ControlsStyle as cs } from '../../Controls.style'
 
-interface PlayButtonProps {
-  onClick?: (e: any) => void
-}
-
-export class PlayButton extends Component<PlayButtonProps> {
-  render() {
-    return (
-      <div class="hlv__button button__play" onClick={this.props.onClick}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 64 64"
-          fill="currentcolor"
-        >
-          <path d="M0 0 L0 64 L64 32 Z" />
-        </svg>
-      </div>
-    )
-  }
+export function PlayButton(props: { onClick?: (e: any) => void }) {
+  return (
+    <div class={cs.button} onClick={props.onClick}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 64 64"
+        fill="currentcolor"
+      >
+        <path d="M0 0 L0 64 L64 32 Z" />
+      </svg>
+    </div>
+  )
 }

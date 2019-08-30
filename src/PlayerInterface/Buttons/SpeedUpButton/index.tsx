@@ -1,21 +1,16 @@
-import { h, Component } from 'preact'
+import { h } from 'preact'
+import { ControlsStyle as cs } from '../../Controls.style'
 
-interface SpeedUpButtonProps {
-  onClick?: (e: any) => void
-}
-
-export class SpeedUpButton extends Component<SpeedUpButtonProps> {
-  render() {
-    return (
-      <div class="hlv__button button__speedup" onClick={this.props.onClick}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 64 64"
-          fill="currentcolor"
-        >
-          <path d="M0 0 L0 64 L32 32 L32 64 L64 32 L32 0 L32 32 Z" />
-        </svg>
-      </div>
-    )
-  }
+export function SpeedUpButton(props: { onClick?: (e: any) => void }) {
+  return (
+    <div class={cs.button} onClick={props.onClick}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 64 64"
+        fill="currentcolor"
+      >
+        <path d="M0 0 L0 64 L32 32 L32 64 L64 32 L32 0 L32 32 Z" />
+      </svg>
+    </div>
+  )
 }

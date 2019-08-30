@@ -4,7 +4,7 @@ import { Game, Config } from './Game'
 
 declare var VERSION: string
 
-class HLViewer {
+export class HLViewer {
   static readonly VERSION = VERSION
 
   game: Game

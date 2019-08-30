@@ -1,6 +1,6 @@
 import { h, Component } from 'preact'
 import { Game } from '../../Game'
-import './style.scss'
+import { VolumeControl as s } from './style'
 
 interface VolumeControlProps {
   game: Game
@@ -81,19 +81,16 @@ export class VolumeControl extends Component<
 
     return (
       <div
-        class="volumecontrol"
+        class={s.control}
         onClick={this.onClick}
         onMouseEnter={this.onMouseEnter}
         onMouseMove={this.onMouseMove}
         onMouseLeave={this.onMouseLeave}
       >
-        <div class="volumecontrol__ghostline" />
-        <div class="volumecontrol__line" style={{ right: lineOff }} />
-        <div class="volumecontrol__knob" style={{ left: knobOff }} />
-        <div
-          class="volumecontrol__ghostknob"
-          style={{ left: this.state.ghostKnobPos }}
-        />
+        <div class={s.ghostLine} />
+        <div class={s.line} style={{ right: lineOff }} />
+        <div class={s.knob} style={{ left: knobOff }} />
+        <div class={s.ghostKnob} style={{ left: this.state.ghostKnobPos }} />
       </div>
     )
   }

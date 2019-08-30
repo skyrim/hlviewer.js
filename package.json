@@ -1,6 +1,6 @@
 {
   "name": "hlviewer.js",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "View GoldSrc maps and replays in browser",
   "keywords": [
     "hlviewer",
@@ -9,16 +9,16 @@
     "goldsrc",
     "kreedz"
   ],
-  "main": "dist/hlviewer.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "webpack --config webpack.config.min.js",
-    "build-dev": "webpack --config webpack.config.js"
+    "build": "cross-env NODE_ENV=production webpack",
+    "build:dev": "webpack -w"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/skyrim/hlviewer.js.git"
   },
-  "author": "Stefan Stojkovic",
+  "author": "Stefan Stojkovic <skyrim@live.com> (https://stefan100.com)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/skyrim/hlviewer.js/issues"
@@ -32,20 +32,19 @@
     "awesome-typescript-loader": "^5.2.0",
     "babel-minify-webpack-plugin": "^0.3.1",
     "chai": "3.5.0",
-    "css-loader": "^1.0.0",
+    "cross-env": "^5.2.0",
     "gl-matrix": "^2.7.1",
     "lodash-es": "^4.17.10",
     "mocha": "^5.2.0",
-    "node-sass": "^4.9.2",
-    "optimize-css-assets-webpack-plugin": "^5.0.0",
     "pngjs": "^3.3.3",
-    "preact": "^8.2.9",
-    "raw-loader": "^0.5.1",
-    "sass-loader": "^7.0.3",
-    "style-loader": "^0.21.0",
+    "preact": "^8.5.2",
     "typescript": "^2.9.2",
+    "typestyle": "^2.0.4",
     "webpack": "^4.16.3",
     "webpack-cli": "^3.1.0",
     "webpack-node-externals": "^1.7.2"
-  }
+  },
+  "files": [
+    "dist/hlviewer.js"
+  ]
 }

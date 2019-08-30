@@ -1,21 +1,48 @@
-import { Context, Program } from '../Context'
 import { mat4 } from 'gl-matrix'
+import { Context, Program } from '../Context'
+
+const fragmentSrc = `#ifdef GL_ES
+precision highp float;
+#endif
+
+uniform sampler2D diffuse;
+
+varying vec2 vTexCoord;
+
+void main(void) {
+  vec4 diffuseColor = texture2D(diffuse, vTexCoord);
+  gl_FragColor = vec4(diffuseColor.rgb, 1.0);
+}`
+
+const vertexSrc = `#ifdef GL_ES
+precision highp float;
+#endif
+
+attribute vec3 position;
+attribute vec2 texCoord;
+
+varying vec2 vTexCoord;
+
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+
+void main(void) {
+  vTexCoord = texCoord;
+  gl_Position = projectionMatrix * viewMatrix * vec4(position, 1);
+}`
 
 export class SkyShader {
   static init(context: Context): SkyShader | null {
-    const vertexShaderSrc = require('./shader-vertex.glsl')
-    const fragmentShaderSrc = require('./shader-fragment.glsl')
-
     const attributeNames = ['position', 'texCoord']
     const uniformNames: string[] = ['viewMatrix', 'projectionMatrix', 'diffuse']
     const program = context.createProgram({
-      vertexShaderSrc,
-      fragmentShaderSrc,
+      vertexShaderSrc: vertexSrc,
+      fragmentShaderSrc: fragmentSrc,
       attributeNames,
       uniformNames
     })
     if (!program) {
-      console.log(`programn't`)
+      console.error(`Failed to create sky shader program`)
       return null
     }
 

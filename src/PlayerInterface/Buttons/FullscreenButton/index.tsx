@@ -1,6 +1,8 @@
 import { h, Component } from 'preact'
+import { classes } from 'typestyle'
 import { Fullscreen } from '../../../Fullscreen'
-import './style.scss'
+import { FullscreenButtonStyle as s } from './style'
+import { ControlsStyle as cs } from '../../Controls.style'
 
 interface FullscreenButtonProps {
   active: boolean
@@ -43,7 +45,7 @@ export class FullscreenButton extends Component<
 
   render() {
     return (
-      <div class="hlv__button fullscreen__button controls__button" onClick={this.onClick}>
+      <div class={classes(cs.button, s.button)} onClick={this.onClick}>
         {this.state.isInFullscreen ? (
           <svg
             xmlns="http://www.w3.org/2000/svg"

@@ -128,7 +128,7 @@ class FrameDataReader {
     throw new Error('Invalid message type')
   }
 
-  static nop() {
+  static nop(): null {
     return null
   }
 
@@ -414,7 +414,7 @@ class FrameDataReader {
     }
   }
 
-  static damage() {
+  static damage(): null {
     // unused
     return null
   }
@@ -921,12 +921,12 @@ class FrameDataReader {
     }
   }
 
-  static killedMonster() {
+  static killedMonster(): null {
     // unused
     return null
   }
 
-  static foundSecret() {
+  static foundSecret(): null {
     // unused
     return null
   }
@@ -943,7 +943,7 @@ class FrameDataReader {
     }
   }
 
-  static intermission() {
+  static intermission(): null {
     // has no arguments
     return null
   }
@@ -1114,7 +1114,7 @@ class FrameDataReader {
     return { entityStates }
   }
 
-  static choke() {
+  static choke(): null {
     // no arguments
     return null
   }
@@ -2143,86 +2143,6 @@ class Replay {
     let header = readHeader(r)
     let directories = readDirectories(r, header.dirOffset)
 
-    class ReplayChunk {
-      state: ReplayState
-      startTime: number
-      timeLength: number
-      data: Uint8Array | null
-      reader: Reader | null
-
-      constructor(initialState: ReplayState, startTime: number) {
-        this.state = initialState.clone()
-        this.startTime = startTime
-        this.timeLength = 10
-        this.data = null
-        this.reader = null
-      }
-
-      setData(data: Uint8Array) {
-        this.data = new Uint8Array(data.length)
-        for (let i = 0; i < data.length; ++i) {
-          this.data[i] = data[i]
-        }
-
-        this.reader = new Reader(this.data.buffer as ArrayBuffer)
-      }
-    }
-
-    class ReplayMap {
-      name: string
-      chunks: ReplayChunk[]
-      resources: any
-
-      constructor(mapFilePath: string) {
-        this.name = Path.basename(mapFilePath, '.bsp')
-        this.chunks = []
-        this.resources = {
-          sounds: [],
-          skins: [],
-          models: [],
-          decals: [],
-          custom: [],
-          events: []
-        }
-      }
-
-      setResources(resources: any[]) {
-        resources.forEach(res => {
-          switch (res.type) {
-            case 0: {
-              res.used = false
-              this.resources.sounds.push(res)
-              break
-            }
-            case 1: {
-              this.resources.skins.push(res)
-              break
-            }
-            case 2: {
-              this.resources.models.push(res)
-              break
-            }
-            case 3: {
-              this.resources.decals.push(res)
-              break
-            }
-            case 4: {
-              this.resources.custom.push(res)
-              break
-            }
-            case 5: {
-              this.resources.events.push(res)
-              break
-            }
-          }
-        })
-      }
-
-      addChunk(chunk: ReplayChunk) {
-        this.chunks.push(chunk)
-      }
-    }
-
     let currentMap: ReplayMap | undefined
     let currentChunk
     let lastFrame
@@ -2410,6 +2330,86 @@ class Replay {
 
   static readFrameData(r: Reader, deltaDecoders: any, customMessages: any) {
     return readFrame(r, deltaDecoders, customMessages)
+  }
+}
+
+export class ReplayChunk {
+  state: ReplayState
+  startTime: number
+  timeLength: number
+  data: Uint8Array | null
+  reader: Reader | null
+
+  constructor(initialState: ReplayState, startTime: number) {
+    this.state = initialState.clone()
+    this.startTime = startTime
+    this.timeLength = 10
+    this.data = null
+    this.reader = null
+  }
+
+  setData(data: Uint8Array) {
+    this.data = new Uint8Array(data.length)
+    for (let i = 0; i < data.length; ++i) {
+      this.data[i] = data[i]
+    }
+
+    this.reader = new Reader(this.data.buffer as ArrayBuffer)
+  }
+}
+
+export class ReplayMap {
+  name: string
+  chunks: ReplayChunk[]
+  resources: any
+
+  constructor(mapFilePath: string) {
+    this.name = Path.basename(mapFilePath, '.bsp')
+    this.chunks = []
+    this.resources = {
+      sounds: [],
+      skins: [],
+      models: [],
+      decals: [],
+      custom: [],
+      events: []
+    }
+  }
+
+  setResources(resources: any[]) {
+    resources.forEach(res => {
+      switch (res.type) {
+        case 0: {
+          res.used = false
+          this.resources.sounds.push(res)
+          break
+        }
+        case 1: {
+          this.resources.skins.push(res)
+          break
+        }
+        case 2: {
+          this.resources.models.push(res)
+          break
+        }
+        case 3: {
+          this.resources.decals.push(res)
+          break
+        }
+        case 4: {
+          this.resources.custom.push(res)
+          break
+        }
+        case 5: {
+          this.resources.events.push(res)
+          break
+        }
+      }
+    })
+  }
+
+  addChunk(chunk: ReplayChunk) {
+    this.chunks.push(chunk)
   }
 }
 

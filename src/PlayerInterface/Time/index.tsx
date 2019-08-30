@@ -1,7 +1,7 @@
 import { h, Component } from 'preact'
-import { ReplayPlayer } from '../../ReplayPlayer'
 import { formatTime } from '../../Time'
-import './style.scss'
+import { ReplayPlayer } from '../../ReplayPlayer'
+import { Time as s } from './style'
 
 interface TimeProps {
   player: ReplayPlayer
@@ -53,7 +53,7 @@ export class Time extends Component<TimeProps, TimeState> {
     const total = formatTime(this.props.player.replay.length)
 
     return (
-      <div class="time">
+      <div class={s.time}>
         {current} / {total}
       </div>
     )

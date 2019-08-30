@@ -44,10 +44,18 @@ export class Context {
       source: params.vertexShaderSrc,
       type: ShaderType.VERTEX
     })
+    if (!vertexShader) {
+      console.error('Failed to compile vertex shader')
+      return null
+    }
     const fragmentShader = this.createShader({
       source: params.fragmentShaderSrc,
       type: ShaderType.FRAGMENT
     })
+    if (!fragmentShader) {
+      console.error('Failed to compile fragment shader')
+      return null
+    }
 
     gl.attachShader(program, vertexShader)
     gl.attachShader(program, fragmentShader)
@@ -113,6 +121,10 @@ export class Context {
       params.type === ShaderType.VERTEX
         ? gl.createShader(gl.VERTEX_SHADER)
         : gl.createShader(gl.FRAGMENT_SHADER)
+    if (!shader) {
+      console.error('Failed to create shader program')
+      return null
+    }
     gl.shaderSource(shader, params.source)
     gl.compileShader(shader)
 

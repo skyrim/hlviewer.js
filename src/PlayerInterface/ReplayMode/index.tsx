@@ -10,7 +10,7 @@ import { SpeedUpButton } from '../Buttons/SpeedUpButton'
 import { SpeedDownButton } from '../Buttons/SpeedDownButton'
 import { SettingsButton } from '../Buttons/SettingsButton'
 import { FullscreenButton } from '../Buttons/FullscreenButton'
-import './style.scss'
+import { ControlsStyle as cs } from '../Controls.style'
 
 interface ReplayModeProps {
   class: string
@@ -63,11 +63,11 @@ export class ReplayMode extends Component<ReplayModeProps> {
     const paused = player.isPaused
 
     return (
-      <div class={`replaymode__controls ${this.props.class}`}>
+      <div class={this.props.class}>
         <TimeLine game={game} />
 
-        <div class="replaymode__buttons controls__buttons">
-          <div class="replaymode__left controls__left">
+        <div class={cs.buttons}>
+          <div class={cs.left}>
             <SpeedDownButton onClick={this.onSpeedDown} />
             {paused || !playing ? (
               <PlayButton onClick={this.onPlayClick} />
@@ -80,8 +80,8 @@ export class ReplayMode extends Component<ReplayModeProps> {
             <Time player={player} />
           </div>
 
-          <div class="replaymode__right controls__right">
-            <SettingsButton class="replaymode__settings" game={game} />
+          <div class={cs.right}>
+            <SettingsButton game={game} />
             <FullscreenButton active={true} root={this.props.root} />
           </div>
         </div>

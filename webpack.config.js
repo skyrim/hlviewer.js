@@ -1,58 +1,50 @@
-var fs = require('fs')
-var webpack = require('webpack')
-var path = require('path')
-var CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin
-var license = fs.readFileSync('LICENSE', 'utf8')
+const fs = require('fs')
+const path = require('path')
+const webpack = require('webpack')
+const MinifyPlugin = require('babel-minify-webpack-plugin')
+const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin
+
+const license = fs.readFileSync('LICENSE', 'utf8')
+
+const isProduction = process.env.NODE_ENV === 'production'
+
+const plugins = []
+if (isProduction) {
+  plugins.push(new MinifyPlugin())
+}
+plugins.push(
+  new CheckerPlugin(),
+  new webpack.BannerPlugin({
+    banner: license
+  }),
+  new webpack.DefinePlugin({
+    VERSION: JSON.stringify(require('./package.json').version)
+  })
+)
 
 module.exports = {
-  mode: 'development',
-  entry: {
-    hlviewer: './src/index.ts'
-  },
+  mode: isProduction ? 'production' : 'development',
+  entry: './src/index.ts',
   output: {
-    filename: '[name].js',
-    path: path.resolve(__dirname, './dist')
+    filename: isProduction ? 'hlviewer.min.js' : 'hlviewer.js',
+    path: path.resolve(__dirname, './dist'),
+    library: 'HLViewer',
+    libraryTarget: 'umd'
   },
-  devtool: 'eval',
+  devtool: isProduction ? 'source-map' : 'none',
   module: {
     rules: [
-      {
-        test: /\.glsl$/,
-        include: [path.resolve(__dirname, './src')],
-        use: { loader: 'raw-loader' }
-      },
       {
         test: /\.tsx?$/,
         include: [path.resolve(__dirname, './src')],
         use: { loader: 'awesome-typescript-loader' }
-      },
-      {
-        test: /\.scss$/,
-        use: [
-          'style-loader', // creates style nodes from JS strings
-          {
-            loader: 'css-loader', // translates CSS into CommonJS
-            options: {
-              url: false
-            }
-          },
-          'sass-loader' // compiles Sass to CSS
-        ]
       }
     ]
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx', '.jsx']
   },
-  plugins: [
-    new CheckerPlugin(),
-    new webpack.BannerPlugin({
-      banner: license
-    }),
-    new webpack.DefinePlugin({
-      VERSION: JSON.stringify(require('./package.json').version)
-    })
-  ],
+  plugins,
   node: {
     fs: 'empty'
   }

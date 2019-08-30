@@ -1,10 +1,10 @@
 import { h, Component } from 'preact'
-import { Game, PlayerMode } from '../Game'
 import { Loading } from './Loading'
 import { FreeMode } from './FreeMode'
 import { ReplayMode } from './ReplayMode'
-import './style.scss'
 import { Fullscreen } from '../Fullscreen'
+import { Game, PlayerMode } from '../Game'
+import { RootStyle as s } from './Root.style'
 
 interface RootProps {
   game: Game
@@ -261,19 +261,18 @@ export class Root extends Component<RootProps, RootState> {
 
   render() {
     const game = this.props.game
-
-    const hlvVisCls = this.state.isVisible ? ' hlv--visible' : ''
-    const titleVisCls = this.state.isVisible ? ' hlv__title--visible' : ''
-    const ctrlVisCls = this.state.isVisible ? ' hlv__controls--visible' : ''
+    const isVisible = this.state.isVisible
 
     return (
-      <div class={`hlv${hlvVisCls}`}>
-        <div class={`hlv__title${titleVisCls}`}>{this.state.title}</div>
+      <div class={isVisible ? s.rootVisible : s.root}>
+        <div class={isVisible ? s.titleVisible : s.title}>
+          {this.state.title}
+        </div>
 
         <Loading game={game} visible={this.state.isLoading} />
 
         <div
-          class="hlv__screen"
+          class={s.screen}
           ref={node => (this.node = node)}
           onClick={this.onScreenClick}
           onDblClick={this.onScreenDblClick}
@@ -281,14 +280,13 @@ export class Root extends Component<RootProps, RootState> {
 
         {game.mode === PlayerMode.FREE ? (
           <FreeMode
-            class={`hlv__controls${ctrlVisCls}`}
+            class={isVisible ? s.controlsVisible : s.controls}
             game={game}
             root={this.props.root}
-            visible={this.state.isMouseOver}
           />
         ) : (
           <ReplayMode
-            class={`hlv__controls${ctrlVisCls}`}
+            class={isVisible ? s.controlsVisible : s.controls}
             game={game}
             root={this.props.root}
             visible={this.state.isMouseOver}

@@ -1,7 +1,7 @@
 import { h, Component } from 'preact'
 import { Game } from '../../Game'
 import { LoadItem } from '../../Loader'
-import './style.scss'
+import { LoadingStyle as s } from './style'
 
 interface LoadingProps {
   game: Game
@@ -17,13 +17,13 @@ interface LoadingState {
   }
 }
 
-const itemTypeGroupName: {[name: string]: string} = {
-  'replay': 'Replay',
-  'bsp': 'Map',
-  'sound': 'Sounds',
-  'sky': 'Skybox',
-  'sprite': 'Sprites',
-  'wad': 'Wads'
+const itemTypeGroupName: { [name: string]: string } = {
+  replay: 'Replay',
+  bsp: 'Map',
+  sound: 'Sounds',
+  sky: 'Skybox',
+  sprite: 'Sprites',
+  wad: 'Wads'
 }
 
 export class Loading extends Component<LoadingProps, LoadingState> {
@@ -97,11 +97,9 @@ export class Loading extends Component<LoadingProps, LoadingState> {
   }
 
   render() {
-    const className = `loading${this.props.visible ? '' : ' loading--hidden'}`
-
     return (
-      <div class={className}>
-        <div class="spinner">
+      <div class={this.props.visible ? s.loading : s.loadingHidden}>
+        <div class={s.spinner}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             x="0px"
@@ -119,9 +117,9 @@ export class Loading extends Component<LoadingProps, LoadingState> {
           </svg>
         </div>
 
-        <ul class="log">
+        <ul class={s.log}>
           {Object.entries(this.state.items).map(([name, items]) => (
-            <li key={name}>
+            <li key={name} class={s.logItem}>
               {this.formatItem(
                 name,
                 items.reduce((prev, cur) => prev + cur.progress, 0) /

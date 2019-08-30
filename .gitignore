@@ -1,5 +1,7 @@
-node_modules
-res
 .vscode/
 .awcache/
+node_modules/
+lib/
+res/
+package-lock.json
 TODO

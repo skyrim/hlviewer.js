@@ -1,9 +1,10 @@
 import { h, Component } from 'preact'
+import { classes } from 'typestyle'
 import { Game, PlayerMode } from '../../../Game'
-import './style.scss'
+import { SettingsButtonStyle as s } from './style'
+import { ControlsStyle as cs } from '../../Controls.style'
 
 interface SettingsButtonProps {
-  class: string
   game: Game
 }
 
@@ -37,17 +38,11 @@ export class SettingsButton extends Component<
   }
 
   render() {
-    const clsOpen = this.state.isOpen ? 'settings--open' : ''
-    const cls = `settings ${clsOpen} ${this.props.class}`
-
     const hasReplay = !!this.props.game.player.replay
 
     return (
-      <div class={cls}>
-        <div
-          class="hlv__button settings__button controls__button"
-          onClick={this.toggleMenu}
-        >
+      <div class={s.settings}>
+        <div class={classes(cs.button, s.button)} onClick={this.toggleMenu}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path
               fill-rule="evenodd"
@@ -58,28 +53,28 @@ export class SettingsButton extends Component<
           </svg>
         </div>
 
-        <div class="settings__menu">
-          <span class="settings__menuitemh">Mode</span>
-          {
-            hasReplay ?
+        <div class={this.state.isOpen ? s.menuOpen : s.menu}>
+          <span class={s.menuItemTitle}>Mode</span>
+          {hasReplay ? (
             <span
-              class={`settings__menuitem ${
+              class={
                 this.props.game.mode === PlayerMode.REPLAY
-                  ? 'settings__menuitem--selected'
-                  : ''
-              }`}
+                  ? s.menuItemSelected
+                  : s.menuItem
+              }
               onClick={this.onReplayModeClick}
             >
               Replay
             </span>
-            : <span />
-          }
+          ) : (
+            <span />
+          )}
           <span
-            class={`settings__menuitem ${
+            class={
               this.props.game.mode === PlayerMode.FREE
-                ? 'settings__menuitem--selected'
-                : ''
-            }`}
+                ? s.menuItemSelected
+                : s.menuItem
+            }
             onClick={this.onFreeModeClick}
           >
             Free

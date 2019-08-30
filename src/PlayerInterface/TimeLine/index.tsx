@@ -1,6 +1,6 @@
 import { h, Component } from 'preact'
 import { Game } from '../../Game'
-import './style.scss'
+import { TimeLine as s } from './style'
 
 interface TimeLineProps {
   game: Game
@@ -58,7 +58,7 @@ export class TimeLine extends Component<TimeLineProps, TimeLineState> {
 
     const rects = e.currentTarget.getClientRects()[0]
     const progressPos = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
-    const pos = (progressPos * 100) + '%'
+    const pos = progressPos * 100 + '%'
     this.setState({
       ghostKnobPos: pos
     })
@@ -73,23 +73,20 @@ export class TimeLine extends Component<TimeLineProps, TimeLineState> {
   render() {
     const timePos = this.state.progress * 100
     const knobOff = timePos + '%'
-    const lineOff = (100 - timePos) + '%'
+    const lineOff = 100 - timePos + '%'
 
     return (
       <div
-        class="timeline"
+        class={s.timeline}
         onClick={this.onClick}
         onMouseEnter={this.onMouseEnter}
         onMouseMove={this.onMouseMove}
         onMouseLeave={this.onMouseLeave}
       >
-        <div class="timeline__ghostline" />
-        <div class="timeline__line" style={{ right: lineOff }} />
-        <div class="timeline__knob" style={{ left: knobOff }} />
-        <div
-          class="timeline__ghostknob"
-          style={{ left: this.state.ghostKnobPos }}
-        />
+        <div class={s.ghostLine} />
+        <div class={s.line} style={{ right: lineOff }} />
+        <div class={s.knob} style={{ left: knobOff }} />
+        <div class={s.ghostKnob} style={{ left: this.state.ghostKnobPos }} />
       </div>
     )
   }

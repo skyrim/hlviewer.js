@@ -18,13 +18,13 @@ class ReplayPlayer {
   replay: any
   events: EventEmitter
 
-  currentMap: number
-  currentChunk: number
-  currentTime: number
-  currentTick: number
-  isPlaying: boolean
-  isPaused: boolean
-  speed: number
+  currentMap: number = 0
+  currentChunk: number = 0
+  currentTime: number = 0
+  currentTick: number = 0
+  isPlaying: boolean = false
+  isPaused: boolean = false
+  speed: number = 1
 
   constructor(game: Game) {
     this.reset()

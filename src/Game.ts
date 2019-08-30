@@ -1,19 +1,19 @@
+import { clamp } from 'lodash-es'
 import { EventEmitter } from 'events'
+import { Bsp } from './Bsp'
 import * as Time from './Time'
-import { Keyboard } from './Keyboard'
-import { Loader } from './Loader'
 import { Mouse } from './Mouse'
 import { Sound } from './Sound'
-import { SoundSystem } from './SoundSystem'
+import { Loader } from './Loader'
 import { Replay } from './Replay'
+import { Keyboard } from './Keyboard'
+import { SoundSystem } from './SoundSystem'
 import { ReplayPlayer } from './ReplayPlayer'
 import { Camera } from './Graphics/Camera'
 import { Context } from './Graphics/Context'
 import { Renderer } from './Graphics/Renderer'
-import { WorldScene } from './Graphics/WorldScene'
-import { Bsp } from './Bsp'
-import { clamp } from 'lodash-es'
 import { SkyScene } from './Graphics/SkyScene'
+import { WorldScene } from './Graphics/WorldScene'
 
 export interface Config {
   paths: {
@@ -177,19 +177,19 @@ export class Game {
 
     const renderer = Renderer.init(context)
     if (!renderer) {
-      throw new Error("renderern't")
+      throw new Error('Failed to initialize renderer')
     }
     this.renderer = renderer
 
     const worldScene = WorldScene.init(context)
     if (!worldScene) {
-      throw new Error("worldScenen't")
+      throw new Error('Failed to initialize world scene')
     }
     this.worldScene = worldScene
 
     const skyScene = SkyScene.init(context)
     if (!skyScene) {
-      throw new Error("skyScenen't")
+      throw new Error('Failed to initialize sky scene')
     }
     this.skyScene = skyScene
 

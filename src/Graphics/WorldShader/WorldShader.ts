@@ -1,16 +1,49 @@
-import { Context, Program } from '../Context'
 import { mat4 } from 'gl-matrix'
+import { Context, Program } from '../Context'
+
+const fragmentSrc = `#ifdef GL_ES
+precision highp float;
+#endif
+
+uniform sampler2D diffuse;
+uniform sampler2D lightmap;
+uniform float opacity;
+
+varying vec2 vTexCoord;
+varying vec2 vLightmapCoord;
+
+void main(void) {
+  vec4 diffuseColor = texture2D(diffuse, vTexCoord);
+  vec4 lightColor = texture2D(lightmap, vLightmapCoord);
+
+  gl_FragColor = vec4(diffuseColor.rgb * lightColor.rgb, diffuseColor.a * opacity);
+}`
+
+const vertexSrc = `#ifdef GL_ES
+precision highp float;
+#endif
+
+attribute vec3 position;
+attribute vec2 texCoord;
+attribute vec2 texCoord2;
+
+varying vec2 vTexCoord;
+varying vec2 vLightmapCoord;
+
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+
+void main(void) {
+  vTexCoord = texCoord;
+  vLightmapCoord = texCoord2;
+
+  gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1);
+}`
 
 export class MainShader {
   static init(context: Context): MainShader | null {
-    const vertexShaderSrc = require('./shader-vertex.glsl')
-    const fragmentShaderSrc = require('./shader-fragment.glsl')
-
-    const attributeNames = [
-      'position',
-      'texCoord',
-      'texCoord2'
-    ]
+    const attributeNames = ['position', 'texCoord', 'texCoord2']
     const uniformNames: string[] = [
       'modelMatrix',
       'viewMatrix',
@@ -20,8 +53,8 @@ export class MainShader {
       'opacity'
     ]
     const program = context.createProgram({
-      vertexShaderSrc,
-      fragmentShaderSrc,
+      vertexShaderSrc: vertexSrc,
+      fragmentShaderSrc: fragmentSrc,
       attributeNames,
       uniformNames
     })

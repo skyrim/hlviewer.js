@@ -1,6 +1,6 @@
 {
   "name": "hlviewer.js",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "View GoldSrc maps and replays in browser",
   "keywords": [
     "hlviewer",
@@ -26,7 +26,6 @@
   "homepage": "https://skyrim.github.io/hlviewer.js",
   "devDependencies": {
     "@types/gl-matrix": "^2.4.1",
-    "@types/lodash-es": "^4.17.1",
     "@types/node": "^10.5.4",
     "@types/pngjs": "^3.3.2",
     "awesome-typescript-loader": "^5.2.0",
@@ -34,7 +33,6 @@
     "chai": "3.5.0",
     "cross-env": "^5.2.0",
     "gl-matrix": "^2.7.1",
-    "lodash-es": "^4.17.10",
     "mocha": "^5.2.0",
     "pngjs": "^3.3.3",
     "preact": "^8.5.2",

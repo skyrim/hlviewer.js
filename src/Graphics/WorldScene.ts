@@ -1,4 +1,3 @@
-import { cloneDeep } from 'lodash-es'
 import { mat4, vec3 } from 'gl-matrix'
 import { Bsp } from '../Bsp'
 import { Camera } from './Camera'
@@ -236,7 +235,21 @@ export class WorldScene {
     // sort each model's face in scene info structure by texture index
     // and merge faces with same texture to lower draw calls
     currentVertex = 0
-    const sortedSceneInfo = cloneDeep(sceneInfo)
+    const sortedSceneInfo: SceneInfo = {
+      data: new Float32Array(sceneInfo.data),
+      length: sceneInfo.length,
+      models: sceneInfo.models.map(model => ({
+        origin: [...model.origin],
+        offset: model.offset,
+        length: model.length,
+        isTransparent: model.isTransparent,
+        faces: model.faces.map(face => ({
+          offset: face.offset,
+          length: face.length,
+          textureIndex: face.textureIndex
+        }))
+      }))
+    }
     for (let i = 0; i < sortedSceneInfo.models.length; ++i) {
       const model = sortedSceneInfo.models[i]
       model.faces.sort((a, b) => a.textureIndex - b.textureIndex)

@@ -1,9 +1,9 @@
-import * as Path from 'path'
+import { basename } from '../Util'
 import { vdf } from '../Parsers/Vdf'
+import { BspTexture, Bsp } from '../Bsp'
 import { Reader, ReaderDataType } from '../Reader'
 import { BspLightmapParser } from '../Parsers/BspLightmapParser'
 import { paletteWithLastTransToRGBA, paletteToRGBA } from './Util'
-import { BspTexture, Bsp } from '../Bsp'
 
 export function parseModels(
   models: BspLumpModel[],
@@ -528,7 +528,7 @@ export class BspParser {
         .split(';')
         .filter((w: string) => w.length)
         .map((w: string) => w.replace(/\\/g, '/'))
-        .map((w: string) => Path.basename(w))
+        .map((w: string) => basename(w))
     }
 
     entities.forEach(e => {

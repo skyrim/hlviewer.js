@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events'
-import * as Path from 'path'
 import { Game } from './Game'
 import { Bsp } from './Bsp'
 import { BspParser } from './Parsers/BspParser'
@@ -9,6 +8,7 @@ import { Tga } from './Parsers/Tga'
 import { Wad } from './Parsers/Wad'
 import { ProgressCallback, xhr } from './Xhr'
 import { Sprite } from './Parsers/Sprite'
+import { extname } from './Util';
 
 enum LoadItemStatus {
   Loading = 1,
@@ -166,7 +166,7 @@ class Loader {
   }
 
   load(name: string) {
-    const extension = Path.extname(name)
+    const extension = extname(name)
     if (extension === '.dem') {
       this.loadReplay(name)
     } else if (extension === '.bsp') {

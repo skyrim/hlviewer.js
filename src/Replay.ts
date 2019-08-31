@@ -1,4 +1,4 @@
-import * as Path from 'path'
+import { basename } from './Util'
 import { BitStream } from './BitReader'
 import { Reader, ReaderDataType } from './Reader'
 
@@ -2364,7 +2364,8 @@ export class ReplayMap {
   resources: any
 
   constructor(mapFilePath: string) {
-    this.name = Path.basename(mapFilePath, '.bsp')
+    this
+    this.name = basename(mapFilePath, '.bsp')
     this.chunks = []
     this.resources = {
       sounds: [],

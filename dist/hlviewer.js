@@ -43949,6 +43949,70 @@ exports.Bsp = Bsp;
 
 /***/ }),
 
+/***/ "./src/Config.ts":
+/*!***********************!*\
+  !*** ./src/Config.ts ***!
+  \***********************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+class Config {
+    static init(params) {
+        if (typeof params === 'string') {
+            return new Config({
+                paths: {
+                    base: params,
+                    replays: `${params}/replays`,
+                    maps: `${params}/maps`,
+                    wads: `${params}/wads`,
+                    skies: `${params}/skies`,
+                    sounds: `${params}/sounds`
+                }
+            });
+        }
+        else {
+            return new Config({
+                paths: {
+                    base: (params && params.paths && params.paths.base) || '',
+                    replays: (params && params.paths && params.paths.replays) || '/replays',
+                    maps: (params && params.paths && params.paths.maps) || '/maps',
+                    wads: (params && params.paths && params.paths.wads) || '/wads',
+                    skies: (params && params.paths && params.paths.skies) || '/skies',
+                    sounds: (params && params.paths && params.paths.sounds) || '/sounds'
+                }
+            });
+        }
+    }
+    constructor(params) {
+        this.paths = Object.assign({}, params.paths);
+    }
+    getBasePath() {
+        return this.paths.base;
+    }
+    getReplaysPath() {
+        return this.paths.replays;
+    }
+    getMapsPath() {
+        return this.paths.maps;
+    }
+    getWadsPath() {
+        return this.paths.wads;
+    }
+    getSkiesPath() {
+        return this.paths.skies;
+    }
+    getSoundsPath() {
+        return this.paths.sounds;
+    }
+}
+exports.Config = Config;
+
+
+/***/ }),
+
 /***/ "./src/Fullscreen.ts":
 /*!***************************!*\
   !*** ./src/Fullscreen.ts ***!
@@ -44042,7 +44106,6 @@ exports.Fullscreen = Fullscreen;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const lodash_es_1 = __webpack_require__(/*! lodash-es */ "./node_modules/lodash-es/lodash.js");
 const events_1 = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 const Time = __webpack_require__(/*! ./Time */ "./src/Time.ts");
 const Mouse_1 = __webpack_require__(/*! ./Mouse */ "./src/Mouse.ts");
@@ -44315,7 +44378,7 @@ class Game {
             this.player.update(dt);
         }
         else if (this.mode === PlayerMode.FREE && this.pointerLocked) {
-            camera.rotation[0] = lodash_es_1.clamp(camera.rotation[0] + mouse.delta.y / 100, -Math.PI / 2, Math.PI / 2);
+            camera.rotation[0] = Math.min(Math.max(camera.rotation[0] + mouse.delta.y / 100, -Math.PI / 2), Math.PI / 2);
             camera.rotation[1] -= mouse.delta.x / 100;
             const speed = 500;
             const ds = speed * dt;
@@ -44892,8 +44955,8 @@ exports.nextPowerOfTwo = (n) => {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const gl_matrix_1 = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/lib/gl-matrix.js");
 const lodash_es_1 = __webpack_require__(/*! lodash-es */ "./node_modules/lodash-es/lodash.js");
+const gl_matrix_1 = __webpack_require__(/*! gl-matrix */ "./node_modules/gl-matrix/lib/gl-matrix.js");
 const WorldShader_1 = __webpack_require__(/*! ./WorldShader/WorldShader */ "./src/Graphics/WorldShader/WorldShader.ts");
 const BspEntityParser_1 = __webpack_require__(/*! ../Parsers/BspEntityParser */ "./src/Parsers/BspEntityParser.ts");
 const Sprite_1 = __webpack_require__(/*! ../Parsers/Sprite */ "./src/Parsers/Sprite.ts");
@@ -45283,7 +45346,9 @@ class WorldScene {
                         ? gl_matrix_1.vec3.fromValues(entity.origin[0], entity.origin[1], entity.origin[2])
                         : gl_matrix_1.vec3.create();
                     const scale = gl_matrix_1.vec3.fromValues(texture.width, 1, texture.height);
-                    const angles = entity.angles ? gl_matrix_1.vec3.fromValues(entity.angles[0], entity.angles[2], entity.angles[1]) : gl_matrix_1.vec3.create();
+                    const angles = entity.angles
+                        ? gl_matrix_1.vec3.fromValues(entity.angles[0], entity.angles[2], entity.angles[1])
+                        : gl_matrix_1.vec3.create();
                     gl_matrix_1.vec3.scale(scale, scale, entity.scale || 1);
                     gl_matrix_1.mat4.identity(mmx);
                     gl_matrix_1.mat4.translate(mmx, mmx, origin);
@@ -45304,14 +45369,14 @@ class WorldScene {
                             break;
                         }
                         case Sprite_1.SpriteType.ORIENTED: {
-                            gl_matrix_1.mat4.rotateY(mmx, mmx, angles[0] * Math.PI / 180 + Math.PI);
-                            gl_matrix_1.mat4.rotateZ(mmx, mmx, angles[1] * Math.PI / 180 + Math.PI);
-                            gl_matrix_1.mat4.rotateX(mmx, mmx, angles[2] * Math.PI / 180 - Math.PI / 2);
+                            gl_matrix_1.mat4.rotateY(mmx, mmx, (angles[0] * Math.PI) / 180 + Math.PI);
+                            gl_matrix_1.mat4.rotateZ(mmx, mmx, (angles[1] * Math.PI) / 180 + Math.PI);
+                            gl_matrix_1.mat4.rotateX(mmx, mmx, (angles[2] * Math.PI) / 180 - Math.PI / 2);
                             break;
                         }
                         case Sprite_1.SpriteType.VP_PARALLEL_ORIENTED: {
-                            gl_matrix_1.mat4.rotateY(mmx, mmx, angles[0] * Math.PI / 180 + Math.PI);
-                            gl_matrix_1.mat4.rotateZ(mmx, mmx, angles[1] * Math.PI / 180 + Math.PI);
+                            gl_matrix_1.mat4.rotateY(mmx, mmx, (angles[0] * Math.PI) / 180 + Math.PI);
+                            gl_matrix_1.mat4.rotateZ(mmx, mmx, (angles[1] * Math.PI) / 180 + Math.PI);
                             break;
                         }
                         default: {
@@ -45467,7 +45532,9 @@ class WorldScene {
                         ? gl_matrix_1.vec3.fromValues(entity.origin[0], entity.origin[1], entity.origin[2])
                         : gl_matrix_1.vec3.create();
                     const scale = gl_matrix_1.vec3.fromValues(texture.width, 1, texture.height);
-                    const angles = entity.angles ? gl_matrix_1.vec3.fromValues(entity.angles[0], entity.angles[2], entity.angles[1]) : gl_matrix_1.vec3.create();
+                    const angles = entity.angles
+                        ? gl_matrix_1.vec3.fromValues(entity.angles[0], entity.angles[2], entity.angles[1])
+                        : gl_matrix_1.vec3.create();
                     gl_matrix_1.vec3.scale(scale, scale, entity.scale || 1);
                     gl_matrix_1.mat4.identity(mmx);
                     gl_matrix_1.mat4.translate(mmx, mmx, origin);
@@ -45488,14 +45555,14 @@ class WorldScene {
                             break;
                         }
                         case Sprite_1.SpriteType.ORIENTED: {
-                            gl_matrix_1.mat4.rotateY(mmx, mmx, angles[0] * Math.PI / 180 + Math.PI);
-                            gl_matrix_1.mat4.rotateZ(mmx, mmx, angles[1] * Math.PI / 180 + Math.PI);
-                            gl_matrix_1.mat4.rotateX(mmx, mmx, angles[2] * Math.PI / 180 - Math.PI / 2);
+                            gl_matrix_1.mat4.rotateY(mmx, mmx, (angles[0] * Math.PI) / 180 + Math.PI);
+                            gl_matrix_1.mat4.rotateZ(mmx, mmx, (angles[1] * Math.PI) / 180 + Math.PI);
+                            gl_matrix_1.mat4.rotateX(mmx, mmx, (angles[2] * Math.PI) / 180 - Math.PI / 2);
                             break;
                         }
                         case Sprite_1.SpriteType.VP_PARALLEL_ORIENTED: {
-                            gl_matrix_1.mat4.rotateY(mmx, mmx, angles[0] * Math.PI / 180 + Math.PI);
-                            gl_matrix_1.mat4.rotateZ(mmx, mmx, angles[1] * Math.PI / 180 + Math.PI);
+                            gl_matrix_1.mat4.rotateY(mmx, mmx, (angles[0] * Math.PI) / 180 + Math.PI);
+                            gl_matrix_1.mat4.rotateZ(mmx, mmx, (angles[1] * Math.PI) / 180 + Math.PI);
                             break;
                         }
                         default: {
@@ -45916,7 +45983,7 @@ class Loader {
                 }
                 this.events.emit('progress', this.replay);
             };
-            const replayPath = this.game.config.paths.replays;
+            const replayPath = this.game.config.getReplaysPath();
             const buffer = yield Xhr_1.xhr(`${replayPath}/${name}`, {
                 method: 'GET',
                 isBinary: true,
@@ -45953,7 +46020,7 @@ class Loader {
                 }
                 this.events.emit('progress', this.map);
             };
-            const mapsPath = this.game.config.paths.maps;
+            const mapsPath = this.game.config.getMapsPath();
             const buffer = yield Xhr_1.xhr(`${mapsPath}/${name}`, {
                 method: 'GET',
                 isBinary: true,
@@ -46003,7 +46070,7 @@ class Loader {
                 item.progress = progress;
                 this.events.emit('progress', item);
             };
-            const buffer = yield Xhr_1.xhr(`${this.game.config.paths.base}/${name}`, {
+            const buffer = yield Xhr_1.xhr(`${this.game.config.getBasePath()}/${name}`, {
                 method: 'GET',
                 isBinary: true,
                 progressCallback
@@ -46030,7 +46097,7 @@ class Loader {
                 item.progress = progress;
                 this.events.emit('progress', item);
             };
-            const skiesPath = this.game.config.paths.skies;
+            const skiesPath = this.game.config.getSkiesPath();
             const buffer = yield Xhr_1.xhr(`${skiesPath}/${name}.tga`, {
                 method: 'GET',
                 isBinary: true,
@@ -46058,7 +46125,7 @@ class Loader {
                 wadItem.progress = progress;
                 this.events.emit('progress', wadItem);
             };
-            const wadsPath = this.game.config.paths.wads;
+            const wadsPath = this.game.config.getWadsPath();
             const buffer = yield Xhr_1.xhr(`${wadsPath}/${name}`, {
                 method: 'GET',
                 isBinary: true,
@@ -46103,7 +46170,7 @@ class Loader {
                 sound.progress = progress;
                 this.events.emit('progress', sound);
             };
-            const soundsPath = this.game.config.paths.sounds;
+            const soundsPath = this.game.config.getSoundsPath();
             const buffer = yield Xhr_1.xhr(`${soundsPath}/${name}`, {
                 method: 'GET',
                 isBinary: true,
@@ -51695,42 +51762,30 @@ exports.xhr = xhr;
 
 "use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
-const defaultsDeep_1 = __webpack_require__(/*! lodash-es/defaultsDeep */ "./node_modules/lodash-es/defaultsDeep.js");
-const index_1 = __webpack_require__(/*! ./PlayerInterface/index */ "./src/PlayerInterface/index.tsx");
+var _a;
 const Game_1 = __webpack_require__(/*! ./Game */ "./src/Game.ts");
-class HLViewer {
-    constructor(rootSelector, params) {
-        const basePath = typeof params === 'string' ? params : '';
-        const config = defaultsDeep_1.default(params, {
-            paths: {
-                base: `${basePath}`,
-                replays: `${basePath}/replays`,
-                maps: `${basePath}/maps`,
-                wads: `${basePath}/wads`,
-                skies: `${basePath}/skies`,
-                sounds: `${basePath}/sounds`
-            }
-        });
-        this.game = new Game_1.Game(config);
-        this.interface = new index_1.PlayerInterface(this.game);
-        this.interface.draw(rootSelector);
-        this.game.draw();
-    }
-    load(name) {
-        this.game.load(name);
-    }
-    setTitle(title) {
-        this.game.setTitle(title);
-    }
-    getTitle() {
-        return this.game.getTitle();
-    }
-}
-HLViewer.VERSION = "0.7.0";
-exports.HLViewer = HLViewer;
-let wnd = window;
-wnd.HLViewer = HLViewer;
+const Config_1 = __webpack_require__(/*! ./Config */ "./src/Config.ts");
+const index_1 = __webpack_require__(/*! ./PlayerInterface/index */ "./src/PlayerInterface/index.tsx");
+module.exports = (_a = class HLViewer {
+        constructor(rootSelector, params) {
+            const config = Config_1.Config.init(params);
+            this.game = new Game_1.Game(config);
+            this.interface = new index_1.PlayerInterface(this.game);
+            this.interface.draw(rootSelector);
+            this.game.draw();
+        }
+        load(name) {
+            this.game.load(name);
+        }
+        setTitle(title) {
+            this.game.setTitle(title);
+        }
+        getTitle() {
+            return this.game.getTitle();
+        }
+    },
+    _a.VERSION = "0.7.1",
+    _a);
 
 
 /***/ })

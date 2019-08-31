@@ -188,7 +188,7 @@ class Loader {
       this.events.emit('progress', this.replay)
     }
 
-    const replayPath = this.game.config.paths.replays
+    const replayPath = this.game.config.getReplaysPath()
     const buffer = await xhr(`${replayPath}/${name}`, {
       method: 'GET',
       isBinary: true,
@@ -232,7 +232,7 @@ class Loader {
       this.events.emit('progress', this.map)
     }
 
-    const mapsPath = this.game.config.paths.maps
+    const mapsPath = this.game.config.getMapsPath()
     const buffer = await xhr(`${mapsPath}/${name}`, {
       method: 'GET',
       isBinary: true,
@@ -295,7 +295,7 @@ class Loader {
       this.events.emit('progress', item)
     }
 
-    const buffer = await xhr(`${this.game.config.paths.base}/${name}`, {
+    const buffer = await xhr(`${this.game.config.getBasePath()}/${name}`, {
       method: 'GET',
       isBinary: true,
       progressCallback
@@ -325,7 +325,7 @@ class Loader {
       this.events.emit('progress', item)
     }
 
-    const skiesPath = this.game.config.paths.skies
+    const skiesPath = this.game.config.getSkiesPath()
     const buffer = await xhr(`${skiesPath}/${name}.tga`, {
       method: 'GET',
       isBinary: true,
@@ -356,7 +356,7 @@ class Loader {
       this.events.emit('progress', wadItem)
     }
 
-    const wadsPath = this.game.config.paths.wads
+    const wadsPath = this.game.config.getWadsPath()
     const buffer = await xhr(`${wadsPath}/${name}`, {
       method: 'GET',
       isBinary: true,
@@ -408,7 +408,7 @@ class Loader {
       this.events.emit('progress', sound)
     }
 
-    const soundsPath = this.game.config.paths.sounds
+    const soundsPath = this.game.config.getSoundsPath()
     const buffer = await xhr(`${soundsPath}/${name}`, {
       method: 'GET',
       isBinary: true,

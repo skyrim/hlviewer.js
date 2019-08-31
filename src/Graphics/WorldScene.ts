@@ -1,5 +1,5 @@
-import { mat4, vec3 } from 'gl-matrix'
 import { cloneDeep } from 'lodash-es'
+import { mat4, vec3 } from 'gl-matrix'
 import { Bsp } from '../Bsp'
 import { Camera } from './Camera'
 import { Context } from './Context'
@@ -573,11 +573,13 @@ export class WorldScene {
               )
             : vec3.create()
           const scale = vec3.fromValues(texture.width, 1, texture.height)
-          const angles = entity.angles ? vec3.fromValues(
-            entity.angles[0],
-            entity.angles[2],
-            entity.angles[1]
-          ) : vec3.create()
+          const angles = entity.angles
+            ? vec3.fromValues(
+                entity.angles[0],
+                entity.angles[2],
+                entity.angles[1]
+              )
+            : vec3.create()
           vec3.scale(scale, scale, entity.scale || 1)
 
           mat4.identity(mmx)
@@ -615,18 +617,18 @@ export class WorldScene {
                   )
                 )
               )
-              
+
               break
             }
             case SpriteType.ORIENTED: {
-              mat4.rotateY(mmx, mmx, angles[0] * Math.PI / 180 + Math.PI)
-              mat4.rotateZ(mmx, mmx, angles[1] * Math.PI / 180 + Math.PI)
-              mat4.rotateX(mmx, mmx, angles[2] * Math.PI / 180 - Math.PI / 2)
+              mat4.rotateY(mmx, mmx, (angles[0] * Math.PI) / 180 + Math.PI)
+              mat4.rotateZ(mmx, mmx, (angles[1] * Math.PI) / 180 + Math.PI)
+              mat4.rotateX(mmx, mmx, (angles[2] * Math.PI) / 180 - Math.PI / 2)
               break
             }
             case SpriteType.VP_PARALLEL_ORIENTED: {
-              mat4.rotateY(mmx, mmx, angles[0] * Math.PI / 180 + Math.PI)
-              mat4.rotateZ(mmx, mmx, angles[1] * Math.PI / 180 + Math.PI)
+              mat4.rotateY(mmx, mmx, (angles[0] * Math.PI) / 180 + Math.PI)
+              mat4.rotateZ(mmx, mmx, (angles[1] * Math.PI) / 180 + Math.PI)
               break
             }
             default: {
@@ -851,16 +853,18 @@ export class WorldScene {
               )
             : vec3.create()
           const scale = vec3.fromValues(texture.width, 1, texture.height)
-          const angles = entity.angles ? vec3.fromValues(
-            entity.angles[0],
-            entity.angles[2],
-            entity.angles[1]
-          ) : vec3.create()
+          const angles = entity.angles
+            ? vec3.fromValues(
+                entity.angles[0],
+                entity.angles[2],
+                entity.angles[1]
+              )
+            : vec3.create()
           vec3.scale(scale, scale, entity.scale || 1)
 
           mat4.identity(mmx)
           mat4.translate(mmx, mmx, origin)
-          
+
           switch (sprite.header.type) {
             case SpriteType.VP_PARALLEL_UPRIGHT: {
               // TODO: incorrect, but will do for now
@@ -893,18 +897,18 @@ export class WorldScene {
                   )
                 )
               )
-              
+
               break
             }
             case SpriteType.ORIENTED: {
-              mat4.rotateY(mmx, mmx, angles[0] * Math.PI / 180 + Math.PI)
-              mat4.rotateZ(mmx, mmx, angles[1] * Math.PI / 180 + Math.PI)
-              mat4.rotateX(mmx, mmx, angles[2] * Math.PI / 180 - Math.PI / 2)
+              mat4.rotateY(mmx, mmx, (angles[0] * Math.PI) / 180 + Math.PI)
+              mat4.rotateZ(mmx, mmx, (angles[1] * Math.PI) / 180 + Math.PI)
+              mat4.rotateX(mmx, mmx, (angles[2] * Math.PI) / 180 - Math.PI / 2)
               break
             }
             case SpriteType.VP_PARALLEL_ORIENTED: {
-              mat4.rotateY(mmx, mmx, angles[0] * Math.PI / 180 + Math.PI)
-              mat4.rotateZ(mmx, mmx, angles[1] * Math.PI / 180 + Math.PI)
+              mat4.rotateY(mmx, mmx, (angles[0] * Math.PI) / 180 + Math.PI)
+              mat4.rotateZ(mmx, mmx, (angles[1] * Math.PI) / 180 + Math.PI)
               break
             }
             default: {

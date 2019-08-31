@@ -1,31 +1,17 @@
-import defaultsDeep from 'lodash-es/defaultsDeep'
+import { Game } from './Game'
+import { Config } from './Config'
 import { PlayerInterface } from './PlayerInterface/index'
-import { Game, Config } from './Game'
 
 declare var VERSION: string
 
-export class HLViewer {
+export = class HLViewer {
   static readonly VERSION = VERSION
 
   game: Game
   interface: PlayerInterface
 
   constructor(rootSelector: string, params: Config | string) {
-    const basePath = typeof params === 'string' ? params : ''
-    const config = defaultsDeep(
-      params,
-      {
-        paths: {
-          base: `${basePath}`,
-          replays: `${basePath}/replays`,
-          maps: `${basePath}/maps`,
-          wads: `${basePath}/wads`,
-          skies: `${basePath}/skies`,
-          sounds: `${basePath}/sounds`
-        }
-      }
-    )
-
+    const config = Config.init(params)
     this.game = new Game(config)
     this.interface = new PlayerInterface(this.game)
     this.interface.draw(rootSelector)
@@ -44,7 +30,3 @@ export class HLViewer {
     return this.game.getTitle()
   }
 }
-
-// had to do this instead of "export default class"
-let wnd: any = window
-wnd.HLViewer = HLViewer

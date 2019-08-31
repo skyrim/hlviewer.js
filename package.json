@@ -1,6 +1,6 @@
 {
   "name": "hlviewer.js",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "View GoldSrc maps and replays in browser",
   "keywords": [
     "hlviewer",

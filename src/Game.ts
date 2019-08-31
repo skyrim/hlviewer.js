@@ -1,4 +1,3 @@
-import { clamp } from 'lodash-es'
 import { EventEmitter } from 'events'
 import { Bsp } from './Bsp'
 import * as Time from './Time'
@@ -14,17 +13,7 @@ import { Context } from './Graphics/Context'
 import { Renderer } from './Graphics/Renderer'
 import { SkyScene } from './Graphics/SkyScene'
 import { WorldScene } from './Graphics/WorldScene'
-
-export interface Config {
-  paths: {
-    base: string
-    replays: string
-    maps: string
-    wads: string
-    skies: string
-    sounds: string
-  }
-}
+import { Config } from './Config';
 
 const checkWebGLSupport = () => {
   const MESSAGES = {
@@ -331,11 +320,11 @@ export class Game {
     if (this.mode === PlayerMode.REPLAY) {
       this.player.update(dt)
     } else if (this.mode === PlayerMode.FREE && this.pointerLocked) {
-      camera.rotation[0] = clamp(
-        camera.rotation[0] + mouse.delta.y / 100,
-        -Math.PI / 2,
+      camera.rotation[0] = Math.min(
+        Math.max(camera.rotation[0] + mouse.delta.y / 100, -Math.PI / 2),
         Math.PI / 2
       )
+
       camera.rotation[1] -= mouse.delta.x / 100
 
       const speed = 500

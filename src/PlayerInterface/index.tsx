@@ -6,20 +6,16 @@ export class PlayerInterface {
   private game: Game
   private rootNode: Element
 
-  constructor(game: Game) {
+  constructor(game: Game, rootNode: Element) {
     this.game = game
+    this.rootNode = rootNode
   }
 
   getRootNode() {
     return this.rootNode
   }
 
-  draw(selector: string) {
-    const element = document.querySelector(selector)
-    if (element) {
-      this.rootNode = element
-      render(<Root game={this.game} root={this.rootNode} />, element)
-    }
-    // TODO: else throw
+  draw() {
+    render(<Root game={this.game} root={this.rootNode} />, this.rootNode)
   }
 }

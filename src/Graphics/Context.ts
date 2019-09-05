@@ -10,15 +10,51 @@ export enum ShaderType {
 }
 
 export class Context {
-  static init(canvas: HTMLCanvasElement) {
+  public static init(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl', {
       alpha: false
     })
     if (!gl) {
-      console.log('contextn\'t')
+      console.error('Failed to get WebGL context')
       return null
     }
     return new Context(gl)
+  }
+
+  public static checkWebGLSupport() {
+    const MESSAGES = {
+      BAD_BROWSER: 'Your browser does not seem to support WebGL',
+      BAD_GPU: 'Your graphics card does not seem to support WebGL'
+    }
+
+    const wnd: any = window
+    if (!wnd.WebGLRenderingContext) {
+      return {
+        hasSupport: false,
+        message: MESSAGES.BAD_BROWSER
+      }
+    }
+
+    const c = document.createElement('canvas')
+    try {
+      const ctx = c.getContext('webgl') || c.getContext('experimental-webgl')
+      if (ctx) {
+        return {
+          hasSupport: true,
+          message: ''
+        }
+      } else {
+        return {
+          hasSupport: false,
+          message: MESSAGES.BAD_GPU
+        }
+      }
+    } catch (e) {
+      return {
+        hasSupport: false,
+        message: MESSAGES.BAD_GPU
+      }
+    }
   }
 
   readonly gl: WebGLRenderingContext
@@ -36,7 +72,7 @@ export class Context {
     const gl = this.gl
     var program = gl.createProgram()
     if (!program) {
-      console.error("gl.createProgramn't")
+      console.error('Failed to create WebGL program')
       return null
     }
 
@@ -68,7 +104,7 @@ export class Context {
       gl.deleteShader(fragmentShader)
 
       const reason = gl.getProgramInfoLog(program)
-      console.debug(`Could not initialize shader: ${reason}`)
+      console.error(`Could not initialize shader: ${reason}`)
       return null
     }
 
@@ -78,7 +114,7 @@ export class Context {
       gl.deleteShader(fragmentShader)
 
       const reason = gl.getProgramInfoLog(program)
-      console.debug(`Could not initialize shader: ${reason}`)
+      console.error(`Could not initialize shader: ${reason}`)
       return null
     }
 
@@ -89,7 +125,7 @@ export class Context {
       const name = params.attributeNames[i]
       const attr = gl.getAttribLocation(program, name)
       if (attr === -1) {
-        console.error(`gl.getAttribLocation't named "${name}"`)
+        console.error(`gl.getAttribLocation failed for attrib named "${name}"`)
         gl.deleteProgram(program)
         return null
       }
@@ -101,7 +137,9 @@ export class Context {
       const name = params.uniformNames[i]
       const uniform = gl.getUniformLocation(program, name)
       if (uniform === null) {
-        console.error(`gl.getUniformLocation't named "${name}"`)
+        console.error(
+          `gl.getUniformLocation failed for uniform named "${name}"`
+        )
         gl.deleteProgram(program)
         return null
       }
@@ -129,7 +167,7 @@ export class Context {
     gl.compileShader(shader)
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.debug(gl.getShaderInfoLog(shader))
+      console.error(gl.getShaderInfoLog(shader))
       gl.deleteShader(shader)
       return null
     }

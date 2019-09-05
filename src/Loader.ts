@@ -263,7 +263,7 @@ class Loader {
         (a: string | undefined, pos: number, arr: (string | undefined)[]) =>
           a && arr.indexOf(a) === pos
       )
-      .forEach((a: string) => this.loadSprite(a))
+      .forEach(a => a && this.loadSprite(a))
 
     const skyname = map.entities[0].skyname
     if (skyname) {

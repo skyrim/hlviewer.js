@@ -1,22 +1,19 @@
-[hlviewer.js](http://skyrim.github.io/hlviewer.js)
------------
+# [hlviewer.js](http://skyrim.github.io/hlviewer.js)
 
 HLViewer is a simple to use javascript library for viewing maps  
 and playing replays of GoldSrc engine based games entirely in browser.
 
-[![Support via PayPal](https://cdn.rawgit.com/twolfson/paypal-github-button/1.0.0/dist/button.svg)](https://www.paypal.me/imquaker/5)
-
-### Demo ###
+## Demo ##
 
 You can check out the live demo [here](http://skyrim.github.io/hlviewer.js)
 
-### Screenshot ###
+## Screenshot ##
 
 ![Screenshot](res/screenshot.png)
 
-### Example Usage ###
+## Example Usage ##
 
-Download the library from _dist_ directory and include it in your html.
+Download the library from __dist__ directory and include it in your html.
 ```html
 <script src="your/path/to/hlviewer.min.js"></script>
 ```
@@ -31,13 +28,16 @@ Width and height MUST be set.
 This code will initialize the state.
 
 ```javascript
-var hlv = new HLViewer('#hlv-target', {
-    // paths where files are stored on your server
-    paths: {
-        replays: 'res/replays',
-        maps:    'res/maps',
-        wads:    'res/wads'
-    }
+var hlv = HLViewer.init('#hlv-target', {
+  // paths where files are stored on your server
+  paths: {
+    base:    '/',
+    replays: 'res/replays',
+    maps:    'res/maps',
+    wads:    'res/wads',
+    skies:   'res/skies',
+    sounds:  'res/sounds'
+  }
 })
 ```
 

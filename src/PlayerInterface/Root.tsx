@@ -20,7 +20,7 @@ interface RootState {
 }
 
 export class Root extends Component<RootProps, RootState> {
-  private node: HTMLDivElement
+  private node: HTMLDivElement | null = null
   private fadeOut: any = 0
 
   constructor(props: RootProps) {
@@ -105,7 +105,7 @@ export class Root extends Component<RootProps, RootState> {
     this.setState({ isActive: false })
   }
 
-  onRootClick = (e: MouseEvent) => {
+  onRootClick = (e: Event) => {
     e.stopPropagation()
     this.setState({ isActive: true })
     this.fadeReset()

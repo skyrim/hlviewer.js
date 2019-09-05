@@ -5,6 +5,7 @@ import { Mouse } from './Mouse'
 import { Sound } from './Sound'
 import { Loader } from './Loader'
 import { Replay } from './Replay'
+import { Config } from './Config'
 import { Keyboard } from './Keyboard'
 import { SoundSystem } from './SoundSystem'
 import { ReplayPlayer } from './ReplayPlayer'
@@ -13,52 +14,42 @@ import { Context } from './Graphics/Context'
 import { Renderer } from './Graphics/Renderer'
 import { SkyScene } from './Graphics/SkyScene'
 import { WorldScene } from './Graphics/WorldScene'
-import { Config } from './Config';
-
-const checkWebGLSupport = () => {
-  const MESSAGES = {
-    BAD_BROWSER: 'Your browser does not seem to support WebGL',
-    BAD_GPU: 'Your graphics card does not seem to support WebGL'
-  }
-
-  const wnd: any = window
-  if (!wnd.WebGLRenderingContext) {
-    return {
-      hasSupport: false,
-      message: MESSAGES.BAD_BROWSER
-    }
-  }
-
-  const c = document.createElement('canvas')
-  try {
-    const ctx = c.getContext('webgl') || c.getContext('experimental-webgl')
-    if (ctx) {
-      return {
-        hasSupport: true,
-        message: ''
-      }
-    } else {
-      return {
-        hasSupport: false,
-        message: MESSAGES.BAD_GPU
-      }
-    }
-  } catch (e) {
-    return {
-      hasSupport: false,
-      message: MESSAGES.BAD_GPU
-    }
-  }
-}
 
 export enum PlayerMode {
   FREE,
   REPLAY
 }
 
+type GameInitSuccess = { status: 'success'; game: Game }
+type GameInitError = { status: 'error'; message: string }
+type GameInit = GameInitSuccess | GameInitError
+
 export class Game {
-  error: boolean
-  errorMessage: string
+  public static init(config: Config): GameInit {
+    const status = Context.checkWebGLSupport()
+    if (!status.hasSupport) {
+      return {
+        status: 'error',
+        message: 'No WebGL support!'
+      }
+    }
+
+    const canvas = document.createElement('canvas')
+    if (!canvas) {
+      return {
+        status: 'error',
+        message: 'Failed to create canvas!'
+      }
+    }
+
+    const game = new Game(config, canvas)
+
+    return {
+      status: 'success',
+      game
+    }
+  }
+
   config: Config
 
   pauseTime: number = 0
@@ -67,7 +58,7 @@ export class Game {
   accumTime: number = 0
   readonly timeStep: number = 1 / 60
 
-  title: string
+  title: string = ''
   mode: PlayerMode
   pointerLocked: boolean = false
 
@@ -82,8 +73,6 @@ export class Game {
   player: ReplayPlayer
 
   canvas: HTMLCanvasElement
-  width: number
-  height: number
   mapName: string
   context: Context
   camera: Camera
@@ -91,18 +80,7 @@ export class Game {
   worldScene: WorldScene
   skyScene: SkyScene
 
-  constructor(config: Config) {
-    const status = checkWebGLSupport()
-    if (!status.hasSupport) {
-      this.error = true
-      this.errorMessage = 'No WebGL support!'
-
-      return
-    } else {
-      this.error = false
-      this.errorMessage = ''
-    }
-
+  constructor(config: Config, canvas: HTMLCanvasElement) {
     this.mouse = new Mouse()
     this.keyboard = new Keyboard()
     this.soundSystem = new SoundSystem()
@@ -154,8 +132,7 @@ export class Game {
     window.addEventListener('keyup', this.keyUp)
     window.addEventListener('visibilitychange', this.onVisibilityChange)
 
-    const canvas = this.getCanvas()
-
+    this.canvas = canvas
     this.camera = Camera.init(canvas.width / canvas.height)
 
     const context = Context.init(canvas)
@@ -191,10 +168,6 @@ export class Game {
   }
 
   getCanvas() {
-    if (!this.canvas) {
-      this.canvas = document.createElement('canvas')
-    }
-
     return this.canvas
   }
 

@@ -75,7 +75,7 @@
         <script src="./dist/hlviewer.js"></script>
         <script>
             window.addEventListener('load', () => {
-                var viewer = new HLViewer('#hlv-target', 'res')
+                var viewer = HLViewer.init('#hlv-target', 'res')
                 viewer.load('kz_ea_highblock.dem')
                 viewer.setTitle('Cupe on kz_ea_highblock done in 02:32.95')
             })

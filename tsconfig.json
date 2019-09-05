@@ -5,6 +5,7 @@
     "module": "commonjs",
     "jsx": "react",
     "jsxFactory": "h",
+    "strict": true,
     "skipLibCheck": true,
     "removeComments": true,
     "noImplicitAny": true,

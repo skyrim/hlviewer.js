@@ -29,7 +29,7 @@ export class WorldScene {
   static init(context: Context) {
     const shader = MainShader.init(context)
     if (!shader) {
-      console.error("shadern't")
+      console.error('Failed to init MainShader')
       return null
     }
 
@@ -37,7 +37,7 @@ export class WorldScene {
 
     const buffer = context.gl.createBuffer()
     if (!buffer) {
-      console.error("buffern't")
+      console.error('Failed to create WebGL buffer')
       return null
     }
 
@@ -54,7 +54,7 @@ export class WorldScene {
     data: new Float32Array(0),
     models: []
   }
-  private bsp: Bsp | null
+  private bsp: Bsp | null = null
   private textures: {
     name: string
     width: number

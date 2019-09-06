@@ -87,45 +87,8 @@ export class Game {
     this.sounds = []
 
     this.config = config
-    this.loader = new Loader(this)
-    this.loader.events.addListener('loadall', (loader: Loader) => {
-      if (loader && loader.replay) {
-        this.changeReplay(loader.replay.data)
-      }
-
-      if (!loader.map || !loader.map.data) {
-        return
-      }
-
-      const map = loader.map.data
-      const skies = loader.skies
-      let skiesValid = true
-      skies.forEach(sky => {
-        skiesValid = skiesValid && sky.isDone()
-      })
-      if (skiesValid) {
-        skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0))
-      }
-
-      // add sprites
-      Object.entries(loader.sprites).forEach(([name, item]) => {
-        if (item.data) {
-          map.sprites[name] = item.data
-        }
-      })
-
-      if (loader.sounds.length > 0) {
-        loader.sounds.forEach(sound => {
-          if (sound.data) {
-            this.sounds.push(sound.data)
-          }
-        })
-      }
-
-      this.changeMap(map)
-
-      this.events.emit('load', loader)
-    })
+    this.loader = new Loader(this.config)
+    this.loader.events.addListener('loadall', this.onLoadAll)
 
     document.addEventListener('mousemove', this.mouseMove, false)
     window.addEventListener('keydown', this.keyDown)
@@ -137,7 +100,7 @@ export class Game {
 
     const context = Context.init(canvas)
     if (!context) {
-      throw new Error(`contextn\'t`)
+      throw new Error(`Failed to initialize WebGL context`)
     }
     this.context = context
 
@@ -225,6 +188,45 @@ export class Game {
 
   getTitle() {
     return this.title
+  }
+
+  onLoadAll = (loader: Loader) => {
+    if (loader && loader.replay) {
+      this.changeReplay(loader.replay.data)
+    }
+
+    if (!loader.map || !loader.map.data) {
+      return
+    }
+
+    const map = loader.map.data
+    const skies = loader.skies
+    let skiesValid = true
+    skies.forEach(sky => {
+      skiesValid = skiesValid && sky.isDone()
+    })
+    if (skiesValid) {
+      skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0))
+    }
+
+    // add sprites
+    Object.entries(loader.sprites).forEach(([name, item]) => {
+      if (item.data) {
+        map.sprites[name] = item.data
+      }
+    })
+
+    if (loader.sounds.length > 0) {
+      loader.sounds.forEach(sound => {
+        if (sound.data) {
+          this.sounds.push(sound.data)
+        }
+      })
+    }
+
+    this.changeMap(map)
+
+    this.events.emit('load', loader)
   }
 
   draw = () => {

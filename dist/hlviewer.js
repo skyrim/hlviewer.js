@@ -10827,9 +10827,10 @@ exports.Fullscreen = Fullscreen;
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 const Time = __webpack_require__(/*! ./Time */ "./src/Time.ts");
-const Mouse_1 = __webpack_require__(/*! ./Mouse */ "./src/Mouse.ts");
 const Loader_1 = __webpack_require__(/*! ./Loader */ "./src/Loader.ts");
-const Keyboard_1 = __webpack_require__(/*! ./Keyboard */ "./src/Keyboard.ts");
+const Mouse_1 = __webpack_require__(/*! ./Input/Mouse */ "./src/Input/Mouse.ts");
+const Touch_1 = __webpack_require__(/*! ./Input/Touch */ "./src/Input/Touch.ts");
+const Keyboard_1 = __webpack_require__(/*! ./Input/Keyboard */ "./src/Input/Keyboard.ts");
 const SoundSystem_1 = __webpack_require__(/*! ./SoundSystem */ "./src/SoundSystem.ts");
 const ReplayPlayer_1 = __webpack_require__(/*! ./ReplayPlayer */ "./src/ReplayPlayer.ts");
 const Camera_1 = __webpack_require__(/*! ./Graphics/Camera */ "./src/Graphics/Camera.ts");
@@ -10837,55 +10838,55 @@ const Context_1 = __webpack_require__(/*! ./Graphics/Context */ "./src/Graphics/
 const Renderer_1 = __webpack_require__(/*! ./Graphics/Renderer */ "./src/Graphics/Renderer.ts");
 const SkyScene_1 = __webpack_require__(/*! ./Graphics/SkyScene */ "./src/Graphics/SkyScene.ts");
 const WorldScene_1 = __webpack_require__(/*! ./Graphics/WorldScene */ "./src/Graphics/WorldScene.ts");
-const checkWebGLSupport = () => {
-    const MESSAGES = {
-        BAD_BROWSER: 'Your browser does not seem to support WebGL',
-        BAD_GPU: 'Your graphics card does not seem to support WebGL'
-    };
-    const wnd = window;
-    if (!wnd.WebGLRenderingContext) {
-        return {
-            hasSupport: false,
-            message: MESSAGES.BAD_BROWSER
-        };
-    }
-    const c = document.createElement('canvas');
-    try {
-        const ctx = c.getContext('webgl') || c.getContext('experimental-webgl');
-        if (ctx) {
-            return {
-                hasSupport: true,
-                message: ''
-            };
-        }
-        else {
-            return {
-                hasSupport: false,
-                message: MESSAGES.BAD_GPU
-            };
-        }
-    }
-    catch (e) {
-        return {
-            hasSupport: false,
-            message: MESSAGES.BAD_GPU
-        };
-    }
-};
 var PlayerMode;
 (function (PlayerMode) {
     PlayerMode[PlayerMode["FREE"] = 0] = "FREE";
     PlayerMode[PlayerMode["REPLAY"] = 1] = "REPLAY";
 })(PlayerMode = exports.PlayerMode || (exports.PlayerMode = {}));
 class Game {
-    constructor(config) {
+    constructor(config, canvas) {
         this.pauseTime = 0;
         this.isPaused = false;
         this.lastTime = 0;
         this.accumTime = 0;
         this.timeStep = 1 / 60;
+        this.title = '';
         this.pointerLocked = false;
+        this.touch = new Touch_1.Touch();
+        this.mouse = new Mouse_1.Mouse();
+        this.keyboard = new Keyboard_1.Keyboard();
         this.entities = [];
+        this.onLoadAll = (loader) => {
+            if (loader && loader.replay) {
+                this.changeReplay(loader.replay.data);
+            }
+            if (!loader.map || !loader.map.data) {
+                return;
+            }
+            const map = loader.map.data;
+            const skies = loader.skies;
+            let skiesValid = true;
+            skies.forEach(sky => {
+                skiesValid = skiesValid && sky.isDone();
+            });
+            if (skiesValid) {
+                skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0));
+            }
+            Object.entries(loader.sprites).forEach(([name, item]) => {
+                if (item.data) {
+                    map.sprites[name] = item.data;
+                }
+            });
+            if (loader.sounds.length > 0) {
+                loader.sounds.forEach(sound => {
+                    if (sound.data) {
+                        this.sounds.push(sound.data);
+                    }
+                });
+            }
+            this.changeMap(map);
+            this.events.emit('load', loader);
+        };
         this.draw = () => {
             requestAnimationFrame(this.draw);
             const canvas = this.canvas;
@@ -10923,11 +10924,35 @@ class Game {
             }
             this.lastTime = currTime;
         };
-        this.mouseMove = (e) => {
-            this.mouse.delta.x = e.movementX * 0.5;
-            this.mouse.delta.y = e.movementY * 0.5;
-            this.mouse.position.x = e.pageX;
-            this.mouse.position.y = e.pageY;
+        this.onTouchStart = (e) => {
+            const touch = e.touches.item(0);
+            if (touch) {
+                this.touch.pressed = true;
+                this.touch.position.x = touch.clientX;
+                this.touch.position.y = touch.clientY;
+            }
+        };
+        this.onTouchEnd = () => {
+            this.touch.pressed = false;
+            this.touch.delta.x = 0;
+            this.touch.delta.y = 0;
+        };
+        this.onTouchMove = (e) => {
+            const touch = e.touches.item(0);
+            if (touch && this.touch.pressed) {
+                this.touch.delta.x = touch.clientX - this.touch.position.x;
+                this.touch.delta.y = touch.clientY - this.touch.position.y;
+                this.touch.position.x = touch.clientX;
+                this.touch.position.y = touch.clientY;
+            }
+        };
+        this.onMouseMove = (e) => {
+            if (this.pointerLocked) {
+                this.mouse.delta.x = e.movementX * 0.5;
+                this.mouse.delta.y = e.movementY * 0.5;
+                this.mouse.position.x = e.pageX;
+                this.mouse.position.y = e.pageY;
+            }
         };
         this.keyDown = (e) => {
             this.keyboard.keys[e.which] = 1;
@@ -10961,62 +10986,24 @@ class Game {
                 this.isPaused = false;
             }
         };
-        const status = checkWebGLSupport();
-        if (!status.hasSupport) {
-            this.error = true;
-            this.errorMessage = 'No WebGL support!';
-            return;
-        }
-        else {
-            this.error = false;
-            this.errorMessage = '';
-        }
-        this.mouse = new Mouse_1.Mouse();
-        this.keyboard = new Keyboard_1.Keyboard();
-        this.soundSystem = new SoundSystem_1.SoundSystem();
         this.sounds = [];
+        this.soundSystem = new SoundSystem_1.SoundSystem();
         this.config = config;
-        this.loader = new Loader_1.Loader(this);
-        this.loader.events.addListener('loadall', (loader) => {
-            if (loader && loader.replay) {
-                this.changeReplay(loader.replay.data);
-            }
-            if (!loader.map || !loader.map.data) {
-                return;
-            }
-            const map = loader.map.data;
-            const skies = loader.skies;
-            let skiesValid = true;
-            skies.forEach(sky => {
-                skiesValid = skiesValid && sky.isDone();
-            });
-            if (skiesValid) {
-                skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0));
-            }
-            Object.entries(loader.sprites).forEach(([name, item]) => {
-                if (item.data) {
-                    map.sprites[name] = item.data;
-                }
-            });
-            if (loader.sounds.length > 0) {
-                loader.sounds.forEach(sound => {
-                    if (sound.data) {
-                        this.sounds.push(sound.data);
-                    }
-                });
-            }
-            this.changeMap(map);
-            this.events.emit('load', loader);
-        });
-        document.addEventListener('mousemove', this.mouseMove, false);
+        this.loader = new Loader_1.Loader(this.config);
+        this.loader.events.addListener('loadall', this.onLoadAll);
+        document.addEventListener('touchstart', this.onTouchStart, false);
+        document.addEventListener('touchend', this.onTouchEnd, false);
+        document.addEventListener('touchcancel', this.onTouchEnd, false);
+        document.addEventListener('touchmove', this.onTouchMove, false);
+        document.addEventListener('mousemove', this.onMouseMove, false);
         window.addEventListener('keydown', this.keyDown);
         window.addEventListener('keyup', this.keyUp);
         window.addEventListener('visibilitychange', this.onVisibilityChange);
-        const canvas = this.getCanvas();
+        this.canvas = canvas;
         this.camera = Camera_1.Camera.init(canvas.width / canvas.height);
         const context = Context_1.Context.init(canvas);
         if (!context) {
-            throw new Error(`contextn\'t`);
+            throw new Error(`Failed to initialize WebGL context`);
         }
         this.context = context;
         const renderer = Renderer_1.Renderer.init(context);
@@ -11039,10 +11026,28 @@ class Game {
         this.events = new events_1.EventEmitter();
         this.mapName = '';
     }
-    getCanvas() {
-        if (!this.canvas) {
-            this.canvas = document.createElement('canvas');
+    static init(config) {
+        const status = Context_1.Context.checkWebGLSupport();
+        if (!status.hasSupport) {
+            return {
+                status: 'error',
+                message: 'No WebGL support!'
+            };
         }
+        const canvas = document.createElement('canvas');
+        if (!canvas) {
+            return {
+                status: 'error',
+                message: 'Failed to create <canvas> element!'
+            };
+        }
+        const game = new Game(config, canvas);
+        return {
+            status: 'success',
+            game
+        };
+    }
+    getCanvas() {
         return this.canvas;
     }
     load(name) {
@@ -11093,12 +11098,19 @@ class Game {
         const camera = this.camera;
         const keyboard = this.keyboard;
         const mouse = this.mouse;
+        const touch = this.touch;
         if (this.mode === PlayerMode.REPLAY) {
             this.player.update(dt);
         }
-        else if (this.mode === PlayerMode.FREE && this.pointerLocked) {
-            camera.rotation[0] = Math.min(Math.max(camera.rotation[0] + mouse.delta.y / 100, -Math.PI / 2), Math.PI / 2);
-            camera.rotation[1] -= mouse.delta.x / 100;
+        else if (this.mode === PlayerMode.FREE) {
+            if (this.touch.pressed) {
+                camera.rotation[0] = Math.min(Math.max(camera.rotation[0] + touch.delta.y / 100, -Math.PI / 2), Math.PI / 2);
+                camera.rotation[1] -= touch.delta.x / 100;
+            }
+            else {
+                camera.rotation[0] = Math.min(Math.max(camera.rotation[0] + mouse.delta.y / 100, -Math.PI / 2), Math.PI / 2);
+                camera.rotation[1] -= mouse.delta.x / 100;
+            }
             const speed = 500;
             const ds = speed * dt;
             const KEY_W = Keyboard_1.Keyboard.KEYS.W;
@@ -11218,10 +11230,45 @@ class Context {
             alpha: false
         });
         if (!gl) {
-            console.log('contextn\'t');
+            console.error('Failed to get WebGL context');
             return null;
         }
         return new Context(gl);
+    }
+    static checkWebGLSupport() {
+        const MESSAGES = {
+            BAD_BROWSER: 'Your browser does not seem to support WebGL',
+            BAD_GPU: 'Your graphics card does not seem to support WebGL'
+        };
+        const wnd = window;
+        if (!wnd.WebGLRenderingContext) {
+            return {
+                hasSupport: false,
+                message: MESSAGES.BAD_BROWSER
+            };
+        }
+        const c = document.createElement('canvas');
+        try {
+            const ctx = c.getContext('webgl') || c.getContext('experimental-webgl');
+            if (ctx) {
+                return {
+                    hasSupport: true,
+                    message: ''
+                };
+            }
+            else {
+                return {
+                    hasSupport: false,
+                    message: MESSAGES.BAD_GPU
+                };
+            }
+        }
+        catch (e) {
+            return {
+                hasSupport: false,
+                message: MESSAGES.BAD_GPU
+            };
+        }
     }
     constructor(gl) {
         this.gl = gl;
@@ -11230,7 +11277,7 @@ class Context {
         const gl = this.gl;
         var program = gl.createProgram();
         if (!program) {
-            console.error("gl.createProgramn't");
+            console.error('Failed to create WebGL program');
             return null;
         }
         const vertexShader = this.createShader({
@@ -11258,7 +11305,7 @@ class Context {
             gl.deleteShader(vertexShader);
             gl.deleteShader(fragmentShader);
             const reason = gl.getProgramInfoLog(program);
-            console.debug(`Could not initialize shader: ${reason}`);
+            console.error(`Could not initialize shader: ${reason}`);
             return null;
         }
         if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
@@ -11266,7 +11313,7 @@ class Context {
             gl.deleteShader(vertexShader);
             gl.deleteShader(fragmentShader);
             const reason = gl.getProgramInfoLog(program);
-            console.debug(`Could not initialize shader: ${reason}`);
+            console.error(`Could not initialize shader: ${reason}`);
             return null;
         }
         gl.useProgram(program);
@@ -11275,7 +11322,7 @@ class Context {
             const name = params.attributeNames[i];
             const attr = gl.getAttribLocation(program, name);
             if (attr === -1) {
-                console.error(`gl.getAttribLocation't named "${name}"`);
+                console.error(`gl.getAttribLocation failed for attrib named "${name}"`);
                 gl.deleteProgram(program);
                 return null;
             }
@@ -11286,7 +11333,7 @@ class Context {
             const name = params.uniformNames[i];
             const uniform = gl.getUniformLocation(program, name);
             if (uniform === null) {
-                console.error(`gl.getUniformLocation't named "${name}"`);
+                console.error(`gl.getUniformLocation failed for uniform named "${name}"`);
                 gl.deleteProgram(program);
                 return null;
             }
@@ -11310,7 +11357,7 @@ class Context {
         gl.shaderSource(shader, params.source);
         gl.compileShader(shader);
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            console.debug(gl.getShaderInfoLog(shader));
+            console.error(gl.getShaderInfoLog(shader));
             gl.deleteShader(shader);
             return null;
         }
@@ -11379,6 +11426,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const SkyShader_1 = __webpack_require__(/*! ./SkyShader/SkyShader */ "./src/Graphics/SkyShader/SkyShader.ts");
 class SkyScene {
     constructor(params) {
+        this.vertexBuffer = null;
+        this.indexBuffer = null;
+        this.texture = null;
         this.isReady = false;
         this.context = params.context;
         this.shader = params.shader;
@@ -11687,6 +11737,7 @@ class WorldScene {
             data: new Float32Array(0),
             models: []
         };
+        this.bsp = null;
         this.textures = [];
         this.sprites = {};
         this.lightmap = null;
@@ -11697,13 +11748,13 @@ class WorldScene {
     static init(context) {
         const shader = WorldShader_1.MainShader.init(context);
         if (!shader) {
-            console.error("shadern't");
+            console.error('Failed to init MainShader');
             return null;
         }
         shader.useProgram(context.gl);
         const buffer = context.gl.createBuffer();
         if (!buffer) {
-            console.error("buffern't");
+            console.error('Failed to create WebGL buffer');
             return null;
         }
         return new WorldScene({ buffer, context, shader });
@@ -12483,10 +12534,10 @@ exports.MainShader = MainShader;
 
 /***/ }),
 
-/***/ "./src/Keyboard.ts":
-/*!*************************!*\
-  !*** ./src/Keyboard.ts ***!
-  \*************************/
+/***/ "./src/Input/Keyboard.ts":
+/*!*******************************!*\
+  !*** ./src/Input/Keyboard.ts ***!
+  \*******************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -12541,6 +12592,54 @@ exports.Keyboard = Keyboard;
 
 /***/ }),
 
+/***/ "./src/Input/Mouse.ts":
+/*!****************************!*\
+  !*** ./src/Input/Mouse.ts ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Vector_1 = __webpack_require__(/*! ../Vector */ "./src/Vector.ts");
+class Mouse {
+    constructor() {
+        this.click = false;
+        this.leftClick = false;
+        this.rightClick = false;
+        this.position = new Vector_1.Vector2();
+        this.delta = new Vector_1.Vector2();
+    }
+}
+exports.Mouse = Mouse;
+
+
+/***/ }),
+
+/***/ "./src/Input/Touch.ts":
+/*!****************************!*\
+  !*** ./src/Input/Touch.ts ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Vector_1 = __webpack_require__(/*! ../Vector */ "./src/Vector.ts");
+class Touch {
+    constructor() {
+        this.pressed = false;
+        this.position = new Vector_1.Vector2();
+        this.delta = new Vector_1.Vector2();
+    }
+}
+exports.Touch = Touch;
+
+
+/***/ }),
+
 /***/ "./src/Loader.ts":
 /*!***********************!*\
   !*** ./src/Loader.ts ***!
@@ -12559,15 +12658,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const events_1 = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 const Path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
-const BspParser_1 = __webpack_require__(/*! ./Parsers/BspParser */ "./src/Parsers/BspParser.ts");
-const Replay_1 = __webpack_require__(/*! ./Replay */ "./src/Replay.ts");
+const events_1 = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 const Sound_1 = __webpack_require__(/*! ./Sound */ "./src/Sound.ts");
+const Replay_1 = __webpack_require__(/*! ./Replay */ "./src/Replay.ts");
 const Tga_1 = __webpack_require__(/*! ./Parsers/Tga */ "./src/Parsers/Tga.ts");
 const Wad_1 = __webpack_require__(/*! ./Parsers/Wad */ "./src/Parsers/Wad.ts");
-const Xhr_1 = __webpack_require__(/*! ./Xhr */ "./src/Xhr.ts");
 const Sprite_1 = __webpack_require__(/*! ./Parsers/Sprite */ "./src/Parsers/Sprite.ts");
+const Xhr_1 = __webpack_require__(/*! ./Xhr */ "./src/Xhr.ts");
+const BspParser_1 = __webpack_require__(/*! ./Parsers/BspParser */ "./src/Parsers/BspParser.ts");
 var LoadItemStatus;
 (function (LoadItemStatus) {
     LoadItemStatus[LoadItemStatus["Loading"] = 1] = "Loading";
@@ -12642,9 +12741,9 @@ class LoadItemSprite extends LoadItemBase {
     }
 }
 class Loader {
-    constructor(game) {
+    constructor(config) {
         this.sprites = {};
-        this.game = game;
+        this.config = config;
         this.replay = undefined;
         this.map = undefined;
         this.skies = [];
@@ -12715,7 +12814,7 @@ class Loader {
                 }
                 this.events.emit('progress', this.replay);
             };
-            const replayPath = this.game.config.getReplaysPath();
+            const replayPath = this.config.getReplaysPath();
             const buffer = yield Xhr_1.xhr(`${replayPath}/${name}`, {
                 method: 'GET',
                 isBinary: true,
@@ -12752,7 +12851,7 @@ class Loader {
                 }
                 this.events.emit('progress', this.map);
             };
-            const mapsPath = this.game.config.getMapsPath();
+            const mapsPath = this.config.getMapsPath();
             const buffer = yield Xhr_1.xhr(`${mapsPath}/${name}`, {
                 method: 'GET',
                 isBinary: true,
@@ -12776,13 +12875,11 @@ class Loader {
                 return undefined;
             })
                 .filter((a, pos, arr) => a && arr.indexOf(a) === pos)
-                .forEach((a) => this.loadSprite(a));
+                .forEach(a => a && this.loadSprite(a));
             const skyname = map.entities[0].skyname;
             if (skyname) {
                 const sides = ['bk', 'dn', 'ft', 'lf', 'rt', 'up'];
-                sides
-                    .map(a => `${skyname}${a}`)
-                    .forEach(a => this.loadSky(a));
+                sides.map(a => `${skyname}${a}`).forEach(a => this.loadSky(a));
             }
             if (map.textures.find(a => a.isExternal)) {
                 const wads = map.entities[0].wad;
@@ -12802,7 +12899,7 @@ class Loader {
                 item.progress = progress;
                 this.events.emit('progress', item);
             };
-            const buffer = yield Xhr_1.xhr(`${this.game.config.getBasePath()}/${name}`, {
+            const buffer = yield Xhr_1.xhr(`${this.config.getBasePath()}/${name}`, {
                 method: 'GET',
                 isBinary: true,
                 progressCallback
@@ -12829,7 +12926,7 @@ class Loader {
                 item.progress = progress;
                 this.events.emit('progress', item);
             };
-            const skiesPath = this.game.config.getSkiesPath();
+            const skiesPath = this.config.getSkiesPath();
             const buffer = yield Xhr_1.xhr(`${skiesPath}/${name}.tga`, {
                 method: 'GET',
                 isBinary: true,
@@ -12857,7 +12954,7 @@ class Loader {
                 wadItem.progress = progress;
                 this.events.emit('progress', wadItem);
             };
-            const wadsPath = this.game.config.getWadsPath();
+            const wadsPath = this.config.getWadsPath();
             const buffer = yield Xhr_1.xhr(`${wadsPath}/${name}`, {
                 method: 'GET',
                 isBinary: true,
@@ -12902,7 +12999,7 @@ class Loader {
                 sound.progress = progress;
                 this.events.emit('progress', sound);
             };
-            const soundsPath = this.game.config.getSoundsPath();
+            const soundsPath = this.config.getSoundsPath();
             const buffer = yield Xhr_1.xhr(`${soundsPath}/${name}`, {
                 method: 'GET',
                 isBinary: true,
@@ -12944,31 +13041,6 @@ class Loader {
     }
 }
 exports.Loader = Loader;
-
-
-/***/ }),
-
-/***/ "./src/Mouse.ts":
-/*!**********************!*\
-  !*** ./src/Mouse.ts ***!
-  \**********************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const Vector_1 = __webpack_require__(/*! ./Vector */ "./src/Vector.ts");
-class Mouse {
-    constructor() {
-        this.click = false;
-        this.leftClick = false;
-        this.rightClick = false;
-        this.position = new Vector_1.Vector2();
-        this.delta = new Vector_1.Vector2();
-    }
-}
-exports.Mouse = Mouse;
 
 
 /***/ }),
@@ -13525,10 +13597,10 @@ exports.BspLightmapParser = BspLightmapParser;
 Object.defineProperty(exports, "__esModule", { value: true });
 const Path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
 const Vdf_1 = __webpack_require__(/*! ../Parsers/Vdf */ "./src/Parsers/Vdf.ts");
+const Bsp_1 = __webpack_require__(/*! ../Bsp */ "./src/Bsp.ts");
 const Reader_1 = __webpack_require__(/*! ../Reader */ "./src/Reader.ts");
 const BspLightmapParser_1 = __webpack_require__(/*! ../Parsers/BspLightmapParser */ "./src/Parsers/BspLightmapParser.ts");
 const Util_1 = __webpack_require__(/*! ./Util */ "./src/Parsers/Util.ts");
-const Bsp_1 = __webpack_require__(/*! ../Bsp */ "./src/Bsp.ts");
 function parseModels(models, faces, edges, surfEdges, vertices, texinfo, textures, lightmap) {
     const parsedModels = [];
     for (let i = 0; i < models.length; ++i) {
@@ -15127,6 +15199,7 @@ const Root_style_1 = __webpack_require__(/*! ./Root.style */ "./src/PlayerInterf
 class Root extends preact_1.Component {
     constructor(props) {
         super(props);
+        this.node = null;
         this.fadeOut = 0;
         this.onPointerLockChange = () => {
             if (document.pointerLockElement === this.props.root) {
@@ -15704,18 +15777,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const preact_1 = __webpack_require__(/*! preact */ "./node_modules/preact/dist/preact.umd.js");
 const Root_1 = __webpack_require__(/*! ./Root */ "./src/PlayerInterface/Root.tsx");
 class PlayerInterface {
-    constructor(game) {
+    constructor(game, rootNode) {
         this.game = game;
+        this.rootNode = rootNode;
     }
     getRootNode() {
         return this.rootNode;
     }
-    draw(selector) {
-        const element = document.querySelector(selector);
-        if (element) {
-            this.rootNode = element;
-            preact_1.render(preact_1.h(Root_1.Root, { game: this.game, root: this.rootNode }), element);
-        }
+    draw() {
+        preact_1.render(preact_1.h(Root_1.Root, { game: this.game, root: this.rootNode }), this.rootNode);
     }
 }
 exports.PlayerInterface = PlayerInterface;
@@ -18494,30 +18564,45 @@ exports.xhr = xhr;
 
 "use strict";
 
-var _a;
 const Game_1 = __webpack_require__(/*! ./Game */ "./src/Game.ts");
 const Config_1 = __webpack_require__(/*! ./Config */ "./src/Config.ts");
 const index_1 = __webpack_require__(/*! ./PlayerInterface/index */ "./src/PlayerInterface/index.tsx");
-module.exports = (_a = class HLViewer {
-        constructor(rootSelector, params) {
-            const config = Config_1.Config.init(params);
-            this.game = new Game_1.Game(config);
-            this.interface = new index_1.PlayerInterface(this.game);
-            this.interface.draw(rootSelector);
-            this.game.draw();
+class HLV {
+    constructor(game) {
+        this.game = game;
+    }
+    load(name) {
+        this.game.load(name);
+    }
+    setTitle(title) {
+        this.game.setTitle(title);
+    }
+    getTitle() {
+        return this.game.getTitle();
+    }
+}
+HLV.VERSION = "0.7.3";
+var HLViewer;
+(function (HLViewer) {
+    function init(rootSelector, params) {
+        const node = document.querySelector(rootSelector);
+        if (!node) {
+            return null;
         }
-        load(name) {
-            this.game.load(name);
+        const config = Config_1.Config.init(params);
+        const result = Game_1.Game.init(config);
+        if (result.status === 'success') {
+            const game = result.game;
+            const ui = new index_1.PlayerInterface(game, node);
+            ui.draw();
+            game.draw();
+            return new HLV(game);
         }
-        setTitle(title) {
-            this.game.setTitle(title);
-        }
-        getTitle() {
-            return this.game.getTitle();
-        }
-    },
-    _a.VERSION = "0.7.2",
-    _a);
+        return null;
+    }
+    HLViewer.init = init;
+})(HLViewer || (HLViewer = {}));
+module.exports = HLViewer;
 
 
 /***/ })

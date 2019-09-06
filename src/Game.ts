@@ -38,7 +38,7 @@ export class Game {
     if (!canvas) {
       return {
         status: 'error',
-        message: 'Failed to create canvas!'
+        message: 'Failed to create <canvas> element!'
       }
     }
 

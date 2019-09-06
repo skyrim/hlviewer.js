@@ -1,12 +1,13 @@
 import { EventEmitter } from 'events'
 import { Bsp } from './Bsp'
 import * as Time from './Time'
-import { Mouse } from './Mouse'
 import { Sound } from './Sound'
 import { Loader } from './Loader'
 import { Replay } from './Replay'
 import { Config } from './Config'
-import { Keyboard } from './Keyboard'
+import { Mouse } from './Input/Mouse'
+import { Touch } from './Input/Touch'
+import { Keyboard } from './Input/Keyboard'
 import { SoundSystem } from './SoundSystem'
 import { ReplayPlayer } from './ReplayPlayer'
 import { Camera } from './Graphics/Camera'
@@ -62,13 +63,14 @@ export class Game {
   mode: PlayerMode
   pointerLocked: boolean = false
 
-  mouse: Mouse
-  keyboard: Keyboard
+  touch: Touch = new Touch()
+  mouse: Mouse = new Mouse()
+  keyboard: Keyboard = new Keyboard()
 
   loader: Loader
   entities: any[] = []
-  soundSystem: SoundSystem
   sounds: Sound[]
+  soundSystem: SoundSystem
   events: EventEmitter
   player: ReplayPlayer
 
@@ -81,16 +83,18 @@ export class Game {
   skyScene: SkyScene
 
   constructor(config: Config, canvas: HTMLCanvasElement) {
-    this.mouse = new Mouse()
-    this.keyboard = new Keyboard()
-    this.soundSystem = new SoundSystem()
     this.sounds = []
+    this.soundSystem = new SoundSystem()
 
     this.config = config
     this.loader = new Loader(this.config)
     this.loader.events.addListener('loadall', this.onLoadAll)
 
-    document.addEventListener('mousemove', this.mouseMove, false)
+    document.addEventListener('touchstart', this.onTouchStart, false)
+    document.addEventListener('touchend', this.onTouchEnd, false)
+    document.addEventListener('touchcancel', this.onTouchEnd, false)
+    document.addEventListener('touchmove', this.onTouchMove, false)
+    document.addEventListener('mousemove', this.onMouseMove, false)
     window.addEventListener('keydown', this.keyDown)
     window.addEventListener('keyup', this.keyUp)
     window.addEventListener('visibilitychange', this.onVisibilityChange)
@@ -291,16 +295,24 @@ export class Game {
     const camera = this.camera
     const keyboard = this.keyboard
     const mouse = this.mouse
+    const touch = this.touch
 
     if (this.mode === PlayerMode.REPLAY) {
       this.player.update(dt)
-    } else if (this.mode === PlayerMode.FREE && this.pointerLocked) {
-      camera.rotation[0] = Math.min(
-        Math.max(camera.rotation[0] + mouse.delta.y / 100, -Math.PI / 2),
-        Math.PI / 2
-      )
-
-      camera.rotation[1] -= mouse.delta.x / 100
+    } else if (this.mode === PlayerMode.FREE) {
+      if (this.touch.pressed) {
+        camera.rotation[0] = Math.min(
+          Math.max(camera.rotation[0] + touch.delta.y / 100, -Math.PI / 2),
+          Math.PI / 2
+        )
+        camera.rotation[1] -= touch.delta.x / 100
+      } else {
+        camera.rotation[0] = Math.min(
+          Math.max(camera.rotation[0] + mouse.delta.y / 100, -Math.PI / 2),
+          Math.PI / 2
+        )
+        camera.rotation[1] -= mouse.delta.x / 100
+      }
 
       const speed = 500
       const ds = speed * dt
@@ -353,12 +365,40 @@ export class Game {
     this.events.removeListener(eventName, callback)
   }
 
-  mouseMove = (e: MouseEvent) => {
-    this.mouse.delta.x = e.movementX * 0.5 // mul 0.5 to lower sensitivity
-    this.mouse.delta.y = e.movementY * 0.5 //
+  onTouchStart = (e: TouchEvent) => {
+    const touch = e.touches.item(0)
+    if (touch) {
+      this.touch.pressed = true
+      this.touch.position.x = touch.clientX
+      this.touch.position.y = touch.clientY
+    }
+  }
 
-    this.mouse.position.x = e.pageX
-    this.mouse.position.y = e.pageY
+  onTouchEnd = () => {
+    this.touch.pressed = false
+    this.touch.delta.x = 0
+    this.touch.delta.y = 0
+  }
+
+  onTouchMove = (e: TouchEvent) => {
+    const touch = e.touches.item(0)
+    if (touch && this.touch.pressed) {
+      this.touch.delta.x = touch.clientX - this.touch.position.x
+      this.touch.delta.y = touch.clientY - this.touch.position.y
+
+      this.touch.position.x = touch.clientX
+      this.touch.position.y = touch.clientY
+    }
+  }
+
+  onMouseMove = (e: MouseEvent) => {
+    if (this.pointerLocked) {
+      this.mouse.delta.x = e.movementX * 0.5 // mul 0.5 to lower sensitivity
+      this.mouse.delta.y = e.movementY * 0.5 //
+
+      this.mouse.position.x = e.pageX
+      this.mouse.position.y = e.pageY
+    }
   }
 
   keyDown = (e: KeyboardEvent) => {

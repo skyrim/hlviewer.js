@@ -197,6 +197,7 @@ export class Game {
   onLoadAll = (loader: Loader) => {
     if (loader && loader.replay) {
       this.changeReplay(loader.replay.data)
+      this.changeMode(PlayerMode.REPLAY)
     }
 
     if (!loader.map || !loader.map.data) {

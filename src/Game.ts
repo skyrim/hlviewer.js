@@ -1,11 +1,13 @@
 import { EventEmitter } from 'events'
 import { Bsp } from './Bsp'
 import * as Time from './Time'
-import { Mouse } from './Mouse'
 import { Sound } from './Sound'
 import { Loader } from './Loader'
 import { Replay } from './Replay'
-import { Keyboard } from './Keyboard'
+import { Config } from './Config'
+import { Mouse } from './Input/Mouse'
+import { Touch } from './Input/Touch'
+import { Keyboard } from './Input/Keyboard'
 import { SoundSystem } from './SoundSystem'
 import { ReplayPlayer } from './ReplayPlayer'
 import { Camera } from './Graphics/Camera'
@@ -13,52 +15,42 @@ import { Context } from './Graphics/Context'
 import { Renderer } from './Graphics/Renderer'
 import { SkyScene } from './Graphics/SkyScene'
 import { WorldScene } from './Graphics/WorldScene'
-import { Config } from './Config';
-
-const checkWebGLSupport = () => {
-  const MESSAGES = {
-    BAD_BROWSER: 'Your browser does not seem to support WebGL',
-    BAD_GPU: 'Your graphics card does not seem to support WebGL'
-  }
-
-  const wnd: any = window
-  if (!wnd.WebGLRenderingContext) {
-    return {
-      hasSupport: false,
-      message: MESSAGES.BAD_BROWSER
-    }
-  }
-
-  const c = document.createElement('canvas')
-  try {
-    const ctx = c.getContext('webgl') || c.getContext('experimental-webgl')
-    if (ctx) {
-      return {
-        hasSupport: true,
-        message: ''
-      }
-    } else {
-      return {
-        hasSupport: false,
-        message: MESSAGES.BAD_GPU
-      }
-    }
-  } catch (e) {
-    return {
-      hasSupport: false,
-      message: MESSAGES.BAD_GPU
-    }
-  }
-}
 
 export enum PlayerMode {
   FREE,
   REPLAY
 }
 
+type GameInitSuccess = { status: 'success'; game: Game }
+type GameInitError = { status: 'error'; message: string }
+type GameInit = GameInitSuccess | GameInitError
+
 export class Game {
-  error: boolean
-  errorMessage: string
+  public static init(config: Config): GameInit {
+    const status = Context.checkWebGLSupport()
+    if (!status.hasSupport) {
+      return {
+        status: 'error',
+        message: 'No WebGL support!'
+      }
+    }
+
+    const canvas = document.createElement('canvas')
+    if (!canvas) {
+      return {
+        status: 'error',
+        message: 'Failed to create <canvas> element!'
+      }
+    }
+
+    const game = new Game(config, canvas)
+
+    return {
+      status: 'success',
+      game
+    }
+  }
+
   config: Config
 
   pauseTime: number = 0
@@ -67,23 +59,22 @@ export class Game {
   accumTime: number = 0
   readonly timeStep: number = 1 / 60
 
-  title: string
+  title: string = ''
   mode: PlayerMode
   pointerLocked: boolean = false
 
-  mouse: Mouse
-  keyboard: Keyboard
+  touch: Touch = new Touch()
+  mouse: Mouse = new Mouse()
+  keyboard: Keyboard = new Keyboard()
 
   loader: Loader
   entities: any[] = []
-  soundSystem: SoundSystem
   sounds: Sound[]
+  soundSystem: SoundSystem
   events: EventEmitter
   player: ReplayPlayer
 
   canvas: HTMLCanvasElement
-  width: number
-  height: number
   mapName: string
   context: Context
   camera: Camera
@@ -91,76 +82,29 @@ export class Game {
   worldScene: WorldScene
   skyScene: SkyScene
 
-  constructor(config: Config) {
-    const status = checkWebGLSupport()
-    if (!status.hasSupport) {
-      this.error = true
-      this.errorMessage = 'No WebGL support!'
-
-      return
-    } else {
-      this.error = false
-      this.errorMessage = ''
-    }
-
-    this.mouse = new Mouse()
-    this.keyboard = new Keyboard()
-    this.soundSystem = new SoundSystem()
+  constructor(config: Config, canvas: HTMLCanvasElement) {
     this.sounds = []
+    this.soundSystem = new SoundSystem()
 
     this.config = config
-    this.loader = new Loader(this)
-    this.loader.events.addListener('loadall', (loader: Loader) => {
-      if (loader && loader.replay) {
-        this.changeReplay(loader.replay.data)
-      }
+    this.loader = new Loader(this.config)
+    this.loader.events.addListener('loadall', this.onLoadAll)
 
-      if (!loader.map || !loader.map.data) {
-        return
-      }
-
-      const map = loader.map.data
-      const skies = loader.skies
-      let skiesValid = true
-      skies.forEach(sky => {
-        skiesValid = skiesValid && sky.isDone()
-      })
-      if (skiesValid) {
-        skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0))
-      }
-
-      // add sprites
-      Object.entries(loader.sprites).forEach(([name, item]) => {
-        if (item.data) {
-          map.sprites[name] = item.data
-        }
-      })
-
-      if (loader.sounds.length > 0) {
-        loader.sounds.forEach(sound => {
-          if (sound.data) {
-            this.sounds.push(sound.data)
-          }
-        })
-      }
-
-      this.changeMap(map)
-
-      this.events.emit('load', loader)
-    })
-
-    document.addEventListener('mousemove', this.mouseMove, false)
+    document.addEventListener('touchstart', this.onTouchStart, false)
+    document.addEventListener('touchend', this.onTouchEnd, false)
+    document.addEventListener('touchcancel', this.onTouchEnd, false)
+    document.addEventListener('touchmove', this.onTouchMove, false)
+    document.addEventListener('mousemove', this.onMouseMove, false)
     window.addEventListener('keydown', this.keyDown)
     window.addEventListener('keyup', this.keyUp)
     window.addEventListener('visibilitychange', this.onVisibilityChange)
 
-    const canvas = this.getCanvas()
-
+    this.canvas = canvas
     this.camera = Camera.init(canvas.width / canvas.height)
 
     const context = Context.init(canvas)
     if (!context) {
-      throw new Error(`contextn\'t`)
+      throw new Error(`Failed to initialize WebGL context`)
     }
     this.context = context
 
@@ -191,10 +135,6 @@ export class Game {
   }
 
   getCanvas() {
-    if (!this.canvas) {
-      this.canvas = document.createElement('canvas')
-    }
-
     return this.canvas
   }
 
@@ -252,6 +192,46 @@ export class Game {
 
   getTitle() {
     return this.title
+  }
+
+  onLoadAll = (loader: Loader) => {
+    if (loader && loader.replay) {
+      this.changeReplay(loader.replay.data)
+      this.changeMode(PlayerMode.REPLAY)
+    }
+
+    if (!loader.map || !loader.map.data) {
+      return
+    }
+
+    const map = loader.map.data
+    const skies = loader.skies
+    let skiesValid = true
+    skies.forEach(sky => {
+      skiesValid = skiesValid && sky.isDone()
+    })
+    if (skiesValid) {
+      skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0))
+    }
+
+    // add sprites
+    Object.entries(loader.sprites).forEach(([name, item]) => {
+      if (item.data) {
+        map.sprites[name] = item.data
+      }
+    })
+
+    if (loader.sounds.length > 0) {
+      loader.sounds.forEach(sound => {
+        if (sound.data) {
+          this.sounds.push(sound.data)
+        }
+      })
+    }
+
+    this.changeMap(map)
+
+    this.events.emit('load', loader)
   }
 
   draw = () => {
@@ -316,16 +296,24 @@ export class Game {
     const camera = this.camera
     const keyboard = this.keyboard
     const mouse = this.mouse
+    const touch = this.touch
 
     if (this.mode === PlayerMode.REPLAY) {
       this.player.update(dt)
-    } else if (this.mode === PlayerMode.FREE && this.pointerLocked) {
-      camera.rotation[0] = Math.min(
-        Math.max(camera.rotation[0] + mouse.delta.y / 100, -Math.PI / 2),
-        Math.PI / 2
-      )
-
-      camera.rotation[1] -= mouse.delta.x / 100
+    } else if (this.mode === PlayerMode.FREE) {
+      if (this.touch.pressed) {
+        camera.rotation[0] = Math.min(
+          Math.max(camera.rotation[0] + touch.delta.y / 100, -Math.PI / 2),
+          Math.PI / 2
+        )
+        camera.rotation[1] -= touch.delta.x / 100
+      } else {
+        camera.rotation[0] = Math.min(
+          Math.max(camera.rotation[0] + mouse.delta.y / 100, -Math.PI / 2),
+          Math.PI / 2
+        )
+        camera.rotation[1] -= mouse.delta.x / 100
+      }
 
       const speed = 500
       const ds = speed * dt
@@ -378,12 +366,40 @@ export class Game {
     this.events.removeListener(eventName, callback)
   }
 
-  mouseMove = (e: MouseEvent) => {
-    this.mouse.delta.x = e.movementX * 0.5 // mul 0.5 to lower sensitivity
-    this.mouse.delta.y = e.movementY * 0.5 //
+  onTouchStart = (e: TouchEvent) => {
+    const touch = e.touches.item(0)
+    if (touch) {
+      this.touch.pressed = true
+      this.touch.position.x = touch.clientX
+      this.touch.position.y = touch.clientY
+    }
+  }
 
-    this.mouse.position.x = e.pageX
-    this.mouse.position.y = e.pageY
+  onTouchEnd = () => {
+    this.touch.pressed = false
+    this.touch.delta.x = 0
+    this.touch.delta.y = 0
+  }
+
+  onTouchMove = (e: TouchEvent) => {
+    const touch = e.touches.item(0)
+    if (touch && this.touch.pressed) {
+      this.touch.delta.x = touch.clientX - this.touch.position.x
+      this.touch.delta.y = touch.clientY - this.touch.position.y
+
+      this.touch.position.x = touch.clientX
+      this.touch.position.y = touch.clientY
+    }
+  }
+
+  onMouseMove = (e: MouseEvent) => {
+    if (this.pointerLocked) {
+      this.mouse.delta.x = e.movementX * 0.5 // mul 0.5 to lower sensitivity
+      this.mouse.delta.y = e.movementY * 0.5 //
+
+      this.mouse.position.x = e.pageX
+      this.mouse.position.y = e.pageY
+    }
   }
 
   keyDown = (e: KeyboardEvent) => {

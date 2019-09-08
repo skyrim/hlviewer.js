@@ -17,9 +17,9 @@ export class SkyScene {
 
   private context: Context
   private shader: SkyShader
-  private vertexBuffer: WebGLBuffer
-  private indexBuffer: WebGLBuffer
-  private texture: WebGLTexture
+  private vertexBuffer: WebGLBuffer | null = null
+  private indexBuffer: WebGLBuffer | null = null
+  private texture: WebGLTexture | null = null
   private isReady: boolean = false
 
   private constructor(params: { context: Context; shader: SkyShader }) {

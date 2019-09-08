@@ -4,18 +4,13 @@ import { PlayerInterface } from './PlayerInterface/index'
 
 declare var VERSION: string
 
-export = class HLViewer {
-  static readonly VERSION = VERSION
+class HLV {
+  public static readonly VERSION = VERSION
 
-  game: Game
-  interface: PlayerInterface
+  private game: Game
 
-  constructor(rootSelector: string, params: Config | string) {
-    const config = Config.init(params)
-    this.game = new Game(config)
-    this.interface = new PlayerInterface(this.game)
-    this.interface.draw(rootSelector)
-    this.game.draw()
+  constructor(game: Game) {
+    this.game = game
   }
 
   load(name: string) {
@@ -30,3 +25,28 @@ export = class HLViewer {
     return this.game.getTitle()
   }
 }
+
+namespace HLViewer {
+  export function init(rootSelector: string, params: Config | string) {
+    const node = document.querySelector(rootSelector)
+    if (!node) {
+      return null
+    }
+
+    const config = Config.init(params)
+    const result = Game.init(config)
+    if (result.status === 'success') {
+      const game = result.game
+      const ui = new PlayerInterface(game, node)
+
+      ui.draw()
+      game.draw()
+
+      return new HLV(game)
+    }
+
+    return null
+  }
+}
+
+export = HLViewer

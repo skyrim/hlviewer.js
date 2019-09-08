@@ -1,14 +1,14 @@
 import { EventEmitter } from 'events'
-import { Game } from './Game'
 import { Bsp } from './Bsp'
-import { BspParser } from './Parsers/BspParser'
-import { Replay } from './Replay'
 import { Sound } from './Sound'
+import { extname } from './Util'
+import { Config } from './Config'
+import { Replay } from './Replay'
 import { Tga } from './Parsers/Tga'
 import { Wad } from './Parsers/Wad'
-import { ProgressCallback, xhr } from './Xhr'
 import { Sprite } from './Parsers/Sprite'
-import { extname } from './Util';
+import { ProgressCallback, xhr } from './Xhr'
+import { BspParser } from './Parsers/BspParser'
 
 enum LoadItemStatus {
   Loading = 1,
@@ -94,7 +94,7 @@ export type LoadItem =
   | LoadItemSprite
 
 class Loader {
-  game: Game
+  config: Config
 
   replay?: LoadItemReplay
   map?: LoadItemBsp
@@ -104,8 +104,8 @@ class Loader {
   sprites: { [name: string]: LoadItemSprite } = {}
   events: EventEmitter
 
-  constructor(game: Game) {
-    this.game = game
+  constructor(config: Config) {
+    this.config = config
 
     this.replay = undefined
     this.map = undefined
@@ -188,7 +188,7 @@ class Loader {
       this.events.emit('progress', this.replay)
     }
 
-    const replayPath = this.game.config.getReplaysPath()
+    const replayPath = this.config.getReplaysPath()
     const buffer = await xhr(`${replayPath}/${name}`, {
       method: 'GET',
       isBinary: true,
@@ -232,7 +232,7 @@ class Loader {
       this.events.emit('progress', this.map)
     }
 
-    const mapsPath = this.game.config.getMapsPath()
+    const mapsPath = this.config.getMapsPath()
     const buffer = await xhr(`${mapsPath}/${name}`, {
       method: 'GET',
       isBinary: true,
@@ -263,14 +263,12 @@ class Loader {
         (a: string | undefined, pos: number, arr: (string | undefined)[]) =>
           a && arr.indexOf(a) === pos
       )
-      .forEach((a: string) => this.loadSprite(a))
+      .forEach(a => a && this.loadSprite(a))
 
     const skyname = map.entities[0].skyname
     if (skyname) {
-      const sides =  ['bk', 'dn', 'ft', 'lf', 'rt', 'up']
-      sides
-        .map(a => `${skyname}${a}`)
-        .forEach(a => this.loadSky(a))
+      const sides = ['bk', 'dn', 'ft', 'lf', 'rt', 'up']
+      sides.map(a => `${skyname}${a}`).forEach(a => this.loadSky(a))
     }
 
     // check if there is at least one missing texture
@@ -295,7 +293,7 @@ class Loader {
       this.events.emit('progress', item)
     }
 
-    const buffer = await xhr(`${this.game.config.getBasePath()}/${name}`, {
+    const buffer = await xhr(`${this.config.getBasePath()}/${name}`, {
       method: 'GET',
       isBinary: true,
       progressCallback
@@ -325,7 +323,7 @@ class Loader {
       this.events.emit('progress', item)
     }
 
-    const skiesPath = this.game.config.getSkiesPath()
+    const skiesPath = this.config.getSkiesPath()
     const buffer = await xhr(`${skiesPath}/${name}.tga`, {
       method: 'GET',
       isBinary: true,
@@ -356,7 +354,7 @@ class Loader {
       this.events.emit('progress', wadItem)
     }
 
-    const wadsPath = this.game.config.getWadsPath()
+    const wadsPath = this.config.getWadsPath()
     const buffer = await xhr(`${wadsPath}/${name}`, {
       method: 'GET',
       isBinary: true,
@@ -408,7 +406,7 @@ class Loader {
       this.events.emit('progress', sound)
     }
 
-    const soundsPath = this.game.config.getSoundsPath()
+    const soundsPath = this.config.getSoundsPath()
     const buffer = await xhr(`${soundsPath}/${name}`, {
       method: 'GET',
       isBinary: true,

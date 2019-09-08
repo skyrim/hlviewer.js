@@ -43,7 +43,46 @@ export class Game {
       }
     }
 
-    const game = new Game(config, canvas)
+    const context = Context.init(canvas)
+    if (!context) {
+      return {
+        status: 'error',
+        message: 'Failed to initialize WebGL context'
+      }
+    }
+
+    const renderer = Renderer.init(context)
+    if (!renderer) {
+      return {
+        status: 'error',
+        message: 'Failed to initialize renderer'
+      }
+    }
+
+    const worldScene = WorldScene.init(context)
+    if (!worldScene) {
+      return {
+        status: 'error',
+        message: 'Failed to initialize world scene'
+      }
+    }
+
+    const skyScene = SkyScene.init(context)
+    if (!skyScene) {
+      return {
+        status: 'error',
+        message: 'Failed to initialize sky scene'
+      }
+    }
+
+    const game = new Game({
+      canvas,
+      config,
+      context,
+      renderer,
+      worldScene,
+      skyScene
+    })
 
     return {
       status: 'success',
@@ -82,11 +121,18 @@ export class Game {
   worldScene: WorldScene
   skyScene: SkyScene
 
-  constructor(config: Config, canvas: HTMLCanvasElement) {
+  constructor(params: {
+    config: Config
+    canvas: HTMLCanvasElement
+    context: Context
+    renderer: Renderer
+    worldScene: WorldScene
+    skyScene: SkyScene
+  }) {
     this.sounds = []
     this.soundSystem = new SoundSystem()
 
-    this.config = config
+    this.config = params.config
     this.loader = new Loader(this.config)
     this.loader.events.addListener('loadall', this.onLoadAll)
 
@@ -99,32 +145,13 @@ export class Game {
     window.addEventListener('keyup', this.keyUp)
     window.addEventListener('visibilitychange', this.onVisibilityChange)
 
-    this.canvas = canvas
-    this.camera = Camera.init(canvas.width / canvas.height)
+    this.canvas = params.canvas
+    this.camera = Camera.init(this.canvas.width / this.canvas.height)
 
-    const context = Context.init(canvas)
-    if (!context) {
-      throw new Error(`Failed to initialize WebGL context`)
-    }
-    this.context = context
-
-    const renderer = Renderer.init(context)
-    if (!renderer) {
-      throw new Error('Failed to initialize renderer')
-    }
-    this.renderer = renderer
-
-    const worldScene = WorldScene.init(context)
-    if (!worldScene) {
-      throw new Error('Failed to initialize world scene')
-    }
-    this.worldScene = worldScene
-
-    const skyScene = SkyScene.init(context)
-    if (!skyScene) {
-      throw new Error('Failed to initialize sky scene')
-    }
-    this.skyScene = skyScene
+    this.context = params.context
+    this.renderer = params.renderer
+    this.worldScene = params.worldScene
+    this.skyScene = params.skyScene
 
     this.mode = PlayerMode.FREE
 

@@ -200,7 +200,7 @@ export enum BspLumpIndex {
   Models = 14
 }
 
-interface BspLump {
+export interface BspLump {
   offset: number
   length: number
 }

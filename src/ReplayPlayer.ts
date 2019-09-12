@@ -1,7 +1,8 @@
 import { glMatrix } from 'gl-matrix'
 import { EventEmitter } from 'events'
 import { Game } from './Game'
-import { Replay, ReplayState } from './Replay'
+import { Replay } from './Replay/Replay'
+import { ReplayState } from './Replay/ReplayState'
 
 const updateGame = (game: Game, state: ReplayState) => {
   game.camera.position[0] = state.cameraPos[0]
@@ -12,7 +13,7 @@ const updateGame = (game: Game, state: ReplayState) => {
   game.camera.rotation[2] = glMatrix.toRadian(state.cameraRot[2])
 }
 
-class ReplayPlayer {
+export class ReplayPlayer {
   game: Game
   state: ReplayState
   replay: any
@@ -268,5 +269,3 @@ class ReplayPlayer {
     }
   }
 }
-
-export { ReplayPlayer }

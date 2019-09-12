@@ -6,7 +6,7 @@ const wnd: any = window
 const polyfillAudioContext = wnd.AudioContext || wnd.webkitAudioContext
 const audioContext: AudioContext = new polyfillAudioContext()
 
-class SoundSystem {
+export class SoundSystem {
   context: AudioContext
   channels: any[]
   masterGain: GainNode
@@ -86,5 +86,3 @@ class SoundSystem {
     }
   }
 }
-
-export { SoundSystem }

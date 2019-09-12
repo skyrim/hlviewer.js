@@ -16,10 +16,6 @@ export class Reader {
   offset: number
 
   constructor(data: ArrayBuffer) {
-    if (data.byteLength === 0) {
-      throw new Error('ArrayBuffer must have size greater than zero')
-    }
-
     this.data = new DataView(data)
     this.offset = 0
   }
@@ -101,7 +97,7 @@ export class Reader {
 
   nstr(n: number) {
     if (n < 0) {
-      throw new Error('Invalid string length')
+      return ''
     }
 
     let r = ''

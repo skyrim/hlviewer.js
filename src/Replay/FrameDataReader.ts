@@ -6,7 +6,7 @@ import { Reader, ReaderDataType } from '../Reader'
 
 type FrameDataHandler = (r: Reader, deltaDecoder: DeltaDecoderTable) => any
 
-class FrameDataReader {
+export class FrameDataReader {
   static bad() {
     throw new Error('Invalid message type')
   }
@@ -1342,5 +1342,3 @@ namespace FrameDataReader {
     SENDCVARVALUE2 = 58
   }
 }
-
-export { FrameDataReader }

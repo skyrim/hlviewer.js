@@ -1,4 +1,4 @@
-class Keyboard {
+export class Keyboard {
   keys: Uint8Array
 
   constructor() {
@@ -9,7 +9,7 @@ class Keyboard {
   }
 }
 
-namespace Keyboard {
+export namespace Keyboard {
   export enum KEYS {
     A = 'A'.charCodeAt(0),
     B = 'B'.charCodeAt(0),
@@ -42,5 +42,3 @@ namespace Keyboard {
     SPACE = 32
   }
 }
-
-export { Keyboard }

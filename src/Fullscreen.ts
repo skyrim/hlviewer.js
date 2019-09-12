@@ -47,7 +47,7 @@ for (let i = 0; i < apis.length; ++i) {
   }
 }
 
-class Fullscreen {
+export class Fullscreen {
   static element() {
     return doc[apis[apiIdx].element]
   }
@@ -80,5 +80,3 @@ class Fullscreen {
     return window.addEventListener(apis[apiIdx].error, callback)
   }
 }
-
-export { Fullscreen }

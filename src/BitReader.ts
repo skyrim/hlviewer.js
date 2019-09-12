@@ -1,4 +1,4 @@
-class BitView {
+export class BitView {
   static scratch = new DataView(new ArrayBuffer(8))
 
   private view: Uint8Array
@@ -84,7 +84,7 @@ class BitView {
   }
 }
 
-class BitStream {
+export class BitStream {
   private view: BitView
   index: number
 
@@ -187,4 +187,3 @@ class BitStream {
   }
 }
 
-export { BitView, BitStream }

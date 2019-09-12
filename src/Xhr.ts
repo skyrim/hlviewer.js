@@ -1,14 +1,14 @@
-interface ProgressCallback {
+export interface ProgressCallback {
   (request: XMLHttpRequest, progress: number): void
 }
 
-interface XhrParams {
+export interface XhrParams {
   method: string
   isBinary: boolean
   progressCallback: ProgressCallback
 }
 
-function xhr(url: string, params: XhrParams): Promise<any> {
+export function xhr(url: string, params: XhrParams): Promise<any> {
   let method = params.method || 'GET'
   let isBinary = params.isBinary
   let progressCallback = params.progressCallback
@@ -71,5 +71,3 @@ function xhr(url: string, params: XhrParams): Promise<any> {
     request.send()
   })
 }
-
-export { ProgressCallback, XhrParams, xhr }

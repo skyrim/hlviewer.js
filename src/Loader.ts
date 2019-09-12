@@ -93,7 +93,7 @@ export type LoadItem =
   | LoadItemSound
   | LoadItemSprite
 
-class Loader {
+export class Loader {
   config: Config
 
   replay?: LoadItemReplay
@@ -454,5 +454,3 @@ class Loader {
     this.events.removeListener('progress', listener)
   }
 }
-
-export { Loader }

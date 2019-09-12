@@ -3,15 +3,15 @@ import { Bsp } from './Bsp'
 import * as Time from './Time'
 import { Sound } from './Sound'
 import { Loader } from './Loader'
-import { Replay } from './Replay'
 import { Config } from './Config'
 import { Mouse } from './Input/Mouse'
 import { Touch } from './Input/Touch'
+import { Replay } from './Replay/Replay'
+import { Camera } from './Graphics/Camera'
 import { Keyboard } from './Input/Keyboard'
 import { SoundSystem } from './SoundSystem'
-import { ReplayPlayer } from './ReplayPlayer'
-import { Camera } from './Graphics/Camera'
 import { Context } from './Graphics/Context'
+import { ReplayPlayer } from './ReplayPlayer'
 import { Renderer } from './Graphics/Renderer'
 import { SkyScene } from './Graphics/SkyScene'
 import { WorldScene } from './Graphics/WorldScene'
@@ -330,16 +330,16 @@ export class Game {
     } else if (this.mode === PlayerMode.FREE) {
       if (this.touch.pressed) {
         camera.rotation[0] = Math.min(
-          Math.max(camera.rotation[0] + touch.delta.y / 100, -Math.PI / 2),
+          Math.max(camera.rotation[0] + touch.delta[1] / 100, -Math.PI / 2),
           Math.PI / 2
         )
-        camera.rotation[1] -= touch.delta.x / 100
+        camera.rotation[1] -= touch.delta[0] / 100
       } else {
         camera.rotation[0] = Math.min(
-          Math.max(camera.rotation[0] + mouse.delta.y / 100, -Math.PI / 2),
+          Math.max(camera.rotation[0] + mouse.delta[1] / 100, -Math.PI / 2),
           Math.PI / 2
         )
-        camera.rotation[1] -= mouse.delta.x / 100
+        camera.rotation[1] -= mouse.delta[0] / 100
       }
 
       const speed = 500
@@ -379,8 +379,8 @@ export class Game {
       }
     }
 
-    mouse.delta.x = 0
-    mouse.delta.y = 0
+    mouse.delta[0] = 0
+    mouse.delta[1] = 0
 
     this.events.emit('postupdate', this)
   }
@@ -397,35 +397,36 @@ export class Game {
     const touch = e.touches.item(0)
     if (touch) {
       this.touch.pressed = true
-      this.touch.position.x = touch.clientX
-      this.touch.position.y = touch.clientY
+      this.touch.position[0] = touch.clientX
+      this.touch.position[1] = touch.clientY
     }
   }
 
   onTouchEnd = () => {
     this.touch.pressed = false
-    this.touch.delta.x = 0
-    this.touch.delta.y = 0
+    this.touch.delta[0] = 0
+    this.touch.delta[1] = 0
   }
 
   onTouchMove = (e: TouchEvent) => {
     const touch = e.touches.item(0)
     if (touch && this.touch.pressed) {
-      this.touch.delta.x = touch.clientX - this.touch.position.x
-      this.touch.delta.y = touch.clientY - this.touch.position.y
+      this.touch.delta[0]
+      this.touch.delta[0] = touch.clientX - this.touch.position[0]
+      this.touch.delta[1] = touch.clientY - this.touch.position[1]
 
-      this.touch.position.x = touch.clientX
-      this.touch.position.y = touch.clientY
+      this.touch.position[0] = touch.clientX
+      this.touch.position[1] = touch.clientY
     }
   }
 
   onMouseMove = (e: MouseEvent) => {
     if (this.pointerLocked) {
-      this.mouse.delta.x = e.movementX * 0.5 // mul 0.5 to lower sensitivity
-      this.mouse.delta.y = e.movementY * 0.5 //
+      this.mouse.delta[0] = e.movementX * 0.5 // mul 0.5 to lower sensitivity
+      this.mouse.delta[1] = e.movementY * 0.5 //
 
-      this.mouse.position.x = e.pageX
-      this.mouse.position.y = e.pageY
+      this.mouse.position[0] = e.pageX
+      this.mouse.position[1] = e.pageY
     }
   }
 

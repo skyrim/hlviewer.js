@@ -1,7 +1,7 @@
-import * as Path from 'path'
 import { EventEmitter } from 'events'
 import { Bsp } from './Bsp'
 import { Sound } from './Sound'
+import { extname } from './Util'
 import { Config } from './Config'
 import { Replay } from './Replay'
 import { Tga } from './Parsers/Tga'
@@ -166,7 +166,7 @@ class Loader {
   }
 
   load(name: string) {
-    const extension = Path.extname(name)
+    const extension = extname(name)
     if (extension === '.dem') {
       this.loadReplay(name)
     } else if (extension === '.bsp') {

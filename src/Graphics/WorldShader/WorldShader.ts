@@ -59,7 +59,7 @@ export class MainShader {
       uniformNames
     })
     if (!program) {
-      console.log(`programn't`)
+      console.error('Failed to create MainShader program')
       return null
     }
 

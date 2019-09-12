@@ -34,12 +34,10 @@ function parseDecal(r: Reader): WadDecal {
   }
 }
 
-function parseCache(_r: Reader, metadata: WadEntryMetadata): WadCache {
-  return {
-    type: 'cache',
-    name: metadata.name
-  }
-}
+const parseCache = (_r: Reader, metadata: WadEntryMetadata): WadCache => ({
+  type: 'cache',
+  name: metadata.name
+})
 
 function parseTexture(r: Reader): WadTexture {
   const name = r.nstr(16)
@@ -75,7 +73,8 @@ function parseTexture(r: Reader): WadTexture {
 }
 
 function parseFont(r: Reader, metadata: WadEntryMetadata): WadFont {
-  const width = r.ui()
+  // TODO: figure out why width is incorrect
+  const width = r.ui() && 256 // NOTE: fonts are lying about their width
   const height = r.ui()
   const rowCount = r.ui()
   const rowHeight = r.ui()
@@ -83,9 +82,14 @@ function parseFont(r: Reader, metadata: WadEntryMetadata): WadFont {
   const glyphs = []
   // hardcoded 256 number of glyphs
   for (let i = 0; i < 256; ++i) {
+    const glyphOffset = r.us()
+    const glyphWidth = r.us()
+
     glyphs.push({
-      offset: r.us(),
-      width: r.us()
+      x: glyphOffset % width,
+      y: (Math.floor(glyphOffset / width) / rowHeight) * rowHeight,
+      width: glyphWidth,
+      height: rowHeight
     })
   }
 
@@ -104,17 +108,15 @@ function parseFont(r: Reader, metadata: WadEntryMetadata): WadFont {
     rowCount,
     rowHeight,
     glyphs,
-    data: paletteToRGBA(pixels, palette)
+    data: paletteWithLastTransToRGBA(pixels, palette)
   }
 }
 
-function parseUnknown(r: Reader, metadata: WadEntryMetadata): WadUnknown {
-  return {
-    type: 'unknown',
-    name: metadata.name,
-    data: r.arrx(metadata.length, r.ub.bind(r))
-  }
-}
+const parseUnknown = (r: Reader, metadata: WadEntryMetadata): WadUnknown => ({
+  type: 'unknown',
+  name: metadata.name,
+  data: r.arrx(metadata.length, ReaderDataType.UByte)
+})
 
 function parseEntry(r: Reader, metadata: WadEntryMetadata): WadEntry {
   r.seek(metadata.offset)
@@ -168,8 +170,10 @@ export interface WadFont {
   rowCount: number
   rowHeight: number
   glyphs: {
-    offset: number
+    x: number
+    y: number
     width: number
+    height: number
   }[]
   data: Uint8Array
 }

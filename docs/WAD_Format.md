@@ -66,7 +66,7 @@ EntryTypes:
 0x40 = decal??? don't know what it is (found in tempdecal.wad)
 0x42 = cache??? don't know what it is (found in cached.wad)
 0x43 = texture
-0x46 = font (found in gfx.wad, seems unused)
+0x46 = font (found in gfx.wad and fonts.wad)
 ```
 
 Property `offset` points to a structure. Type of a structure depends on the `type` property. Structures are documented below.
@@ -136,24 +136,25 @@ Exactly the same as texture.
 ### Font
 
 ```
-+------------------------------------------------------------------+
-| FONT                                                             |
-+-------------+-----------------------+----------------------------+
-| width       | uint                  |                            |
-| height      | uint                  |                            |
-| rowCount    | uint                  |                            |
-| rowHeight   | uint                  |                            |
-| glyphs      | GLYPH[256]            |                            |
-| mipmap      | ubyte[width * height] | original, full size mipmap |
-| paletteSize | ushort                | always equal to 256        |
-| palette     | color[paletteSize]    | actual colors              |
-| padding     | byte[2]               | unused, skip this          |
-+-------------+-----------------------+----------------------------+
++----------------------------------------------------------------------+
+| FONT                                                                 |
++-------------+-----------------------+--------------------------------+
+| width       | uint                  | always equals to 256           |
+| height      | uint                  |                                |
+| rowCount    | uint                  | number of glyph rows           |
+| rowHeight   | uint                  | height of each glyph row       |
+| glyphs      | GLYPH[256]            | offset and width of each glyph |
+| mipmap      | ubyte[width * height] | original, full size mipmap     |
+| paletteSize | ushort                | always equal to 256            |
+| palette     | color[paletteSize]    | actual colors                  |
+| padding     | byte[2]               | unused, skip this              |
++-------------+-----------------------+--------------------------------+
 
-+-----------------+
-| GLYPH           |
-+--------+--------+
-| offset | ushort |
-| width  | ushort |
-+--------+--------+
++--------------------------------------------------------+
+| GLYPH                                                  |
++--------+--------+--------------------------------------+
+| offset | ushort | offset to the first pixel of a glyph |
+| width  | ushort | width of glyph                       |
++--------+--------+--------------------------------------+
 ````
+

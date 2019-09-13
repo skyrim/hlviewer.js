@@ -100,7 +100,16 @@
     <script src="./dist/hlviewer.js"></script>
     <script>
       window.addEventListener('load', () => {
-        var viewer = HLViewer.init('#hlv-target', 'res')
+        var viewer = HLViewer.init('#hlv-target', {
+          autoplayOnLoad: false,
+          paths: {
+            replays: '/res/replays',
+            maps: '/res/maps',
+            wads: '/res/wads',
+            sounds: '/res/sounds',
+            skies: '/res/skies'
+          }
+        })
         viewer.load('kz_ea_highblock.dem')
         viewer.setTitle('Cupe on kz_ea_highblock done in 02:32.95')
       })

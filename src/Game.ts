@@ -258,6 +258,10 @@ export class Game {
 
     this.changeMap(map)
 
+    if (this.config.shouldAutoplayOnLoad()) {
+      this.player.play()
+    }
+
     this.events.emit('load', loader)
   }
 

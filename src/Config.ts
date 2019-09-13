@@ -1,16 +1,8 @@
-type ConfigPaths = {
-  base: string
-  replays: string
-  maps: string
-  wads: string
-  skies: string
-  sounds: string
-}
-
 export class Config {
   public static init(params: any): Config {
     if (typeof params === 'string') {
       return new Config({
+        autoplayOnLoad: false,
         paths: {
           base: params,
           replays: `${params}/replays`,
@@ -22,9 +14,11 @@ export class Config {
       })
     } else {
       return new Config({
+        autoplayOnLoad: !!params.autoplayOnLoad,
         paths: {
           base: (params && params.paths && params.paths.base) || '',
-          replays: (params && params.paths && params.paths.replays) || '/replays',
+          replays:
+            (params && params.paths && params.paths.replays) || '/replays',
           maps: (params && params.paths && params.paths.maps) || '/maps',
           wads: (params && params.paths && params.paths.wads) || '/wads',
           skies: (params && params.paths && params.paths.skies) || '/skies',
@@ -34,10 +28,33 @@ export class Config {
     }
   }
 
-  private paths: ConfigPaths
+  private autoplayOnLoad: boolean
+  private paths: {
+    base: string
+    replays: string
+    maps: string
+    wads: string
+    skies: string
+    sounds: string
+  }
 
-  constructor(params: { paths: ConfigPaths }) {
+  constructor(params: {
+    autoplayOnLoad: boolean
+    paths: {
+      base: string
+      replays: string
+      maps: string
+      wads: string
+      skies: string
+      sounds: string
+    }
+  }) {
+    this.autoplayOnLoad = params.autoplayOnLoad
     this.paths = { ...params.paths }
+  }
+
+  shouldAutoplayOnLoad() {
+    return this.autoplayOnLoad
   }
 
   getBasePath() {

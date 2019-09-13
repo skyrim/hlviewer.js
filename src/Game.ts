@@ -303,6 +303,10 @@ export class Game {
       }
     }
 
+    if (this.isPaused) {
+      return
+    }
+
     const currTime = Time.now() / 1000
     const dt = currTime - this.lastTime
     this.accumTime += dt

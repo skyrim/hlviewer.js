@@ -1279,7 +1279,7 @@ export class FrameDataReader {
   ]
 }
 
-namespace FrameDataReader {
+export namespace FrameDataReader {
   export enum SVC {
     BAD = 0,
     NOP = 1,

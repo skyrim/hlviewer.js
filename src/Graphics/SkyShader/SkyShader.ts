@@ -42,7 +42,7 @@ export class SkyShader {
       uniformNames
     })
     if (!program) {
-      console.error(`Failed to create sky shader program`)
+      console.error(`Failed to create SkyShader program`)
       return null
     }
 

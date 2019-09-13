@@ -8,7 +8,7 @@ export class SkyScene {
   static init(context: Context): SkyScene | null {
     const shader = SkyShader.init(context)
     if (!shader) {
-      console.error("skyscenen't")
+      console.error('Failed to init SkyScene')
       return null
     }
 

@@ -29,7 +29,7 @@ export class WorldScene {
   static init(context: Context) {
     const shader = MainShader.init(context)
     if (!shader) {
-      console.error('Failed to init MainShader')
+      console.error('Failed to init WorldScene')
       return null
     }
 

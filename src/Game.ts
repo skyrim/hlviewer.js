@@ -265,7 +265,7 @@ export class Game {
     this.events.emit('load', loader)
   }
 
-  draw = () => {
+  draw = (time: number) => {
     requestAnimationFrame(this.draw)
 
     const canvas = this.canvas
@@ -307,7 +307,7 @@ export class Game {
       return
     }
 
-    const currTime = Time.now() / 1000
+    const currTime = time * 0.001
     const dt = currTime - this.lastTime
     this.accumTime += dt
 

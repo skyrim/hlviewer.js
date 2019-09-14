@@ -40,7 +40,7 @@ namespace HLViewer {
       const ui = new PlayerInterface(game, node)
 
       ui.draw()
-      game.draw()
+      requestAnimationFrame(game.draw.bind(game))
 
       return new HLV(game)
     }

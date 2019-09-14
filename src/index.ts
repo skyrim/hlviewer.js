@@ -7,9 +7,11 @@ declare var VERSION: string
 class HLV {
   public static readonly VERSION = VERSION
 
+  private ui: PlayerInterface
   private game: Game
 
-  constructor(game: Game) {
+  constructor(game: Game, ui: PlayerInterface) {
+    this.ui = ui
     this.game = game
   }
 
@@ -18,11 +20,11 @@ class HLV {
   }
 
   setTitle(title: string) {
-    this.game.setTitle(title)
+    this.ui.getStore().setTitle(title)
   }
 
   getTitle() {
-    return this.game.getTitle()
+    return this.ui.getStore().getTitle()
   }
 }
 
@@ -42,7 +44,7 @@ namespace HLViewer {
       ui.draw()
       requestAnimationFrame(game.draw)
 
-      return new HLV(game)
+      return new HLV(game, ui)
     }
 
     return null

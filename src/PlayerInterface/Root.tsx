@@ -1,4 +1,5 @@
 import { h, Component } from 'preact'
+import { Store } from './store'
 import { Loading } from './Loading'
 import { FreeMode } from './FreeMode'
 import { ReplayMode } from './ReplayMode'
@@ -9,10 +10,10 @@ import { RootStyle as s } from './Root.style'
 interface RootProps {
   game: Game
   root: Element
+  store: Store
 }
 
 interface RootState {
-  title: string
   isActive: boolean
   isLoading: boolean
   isMouseOver: boolean
@@ -27,7 +28,6 @@ export class Root extends Component<RootProps, RootState> {
     super(props)
 
     this.state = {
-      title: props.game.title,
       isActive: false,
       isLoading: false,
       isMouseOver: false,
@@ -48,7 +48,7 @@ export class Root extends Component<RootProps, RootState> {
     game.on('loadstart', this.onLoadStart)
     game.on('load', this.onLoadEnd)
     game.on('modechange', this.onModeChange)
-    game.on('titlechange', this.onTitleChange)
+    this.props.store.addTitleChangeListener(this.onTitleChange)
 
     root.addEventListener('click', this.onRootClick)
     window.addEventListener('click', this.onWindowClick)
@@ -72,7 +72,7 @@ export class Root extends Component<RootProps, RootState> {
     game.off('loadstart', this.onLoadStart)
     game.off('load', this.onLoadEnd)
     game.off('modechange', this.onModeChange)
-    game.off('titlechange', this.onTitleChange)
+    this.props.store.removeTitleChangeListener(this.onTitleChange)
 
     root.removeEventListener('click', this.onRootClick)
     window.removeEventListener('click', this.onWindowClick)
@@ -87,6 +87,10 @@ export class Root extends Component<RootProps, RootState> {
     root.removeEventListener('mousemove', this.onMouseMove)
     root.removeEventListener('mouseout', this.onMouseLeave)
     root.removeEventListener('contextmenu', this.onContextMenu)
+  }
+
+  onTitleChange = () => {
+    this.forceUpdate()
   }
 
   onPointerLockChange = () => {
@@ -194,10 +198,6 @@ export class Root extends Component<RootProps, RootState> {
     this.setState({ isLoading: false })
   }
 
-  onTitleChange = (title: string) => {
-    this.setState({ title })
-  }
-
   onMouseEnter = () => {
     this.setState({ isMouseOver: true })
     this.fadeReset()
@@ -262,11 +262,12 @@ export class Root extends Component<RootProps, RootState> {
   render() {
     const game = this.props.game
     const isVisible = this.state.isVisible
+    const title = this.props.store.getTitle()
 
     return (
       <div class={isVisible ? s.rootVisible : s.root}>
-        <div class={isVisible ? s.titleVisible : s.title}>
-          {this.state.title}
+        <div class={isVisible && title.length ? s.titleVisible : s.title}>
+          {title}
         </div>
 
         <Loading game={game} visible={this.state.isLoading} />

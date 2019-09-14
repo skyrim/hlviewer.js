@@ -98,7 +98,6 @@ export class Game {
   accumTime: number = 0
   readonly timeStep: number = 1 / 60
 
-  title: string = ''
   mode: PlayerMode
   pointerLocked: boolean = false
 
@@ -210,15 +209,6 @@ export class Game {
   changeMode(mode: PlayerMode) {
     this.mode = mode
     this.events.emit('modechange', mode)
-  }
-
-  setTitle(title: string) {
-    this.title = title
-    this.events.emit('titlechange', title)
-  }
-
-  getTitle() {
-    return this.title
   }
 
   onLoadAll = (loader: Loader) => {

@@ -29,7 +29,6 @@
     "@types/node": "^10.5.4",
     "@types/pngjs": "^3.3.2",
     "awesome-typescript-loader": "^5.2.0",
-    "babel-minify-webpack-plugin": "^0.3.1",
     "chai": "3.5.0",
     "cross-env": "^5.2.0",
     "gl-matrix": "^3.1.0",
@@ -44,5 +43,8 @@
   },
   "files": [
     "dist/hlviewer.js"
-  ]
+  ],
+  "dependencies": {
+    "terser-webpack-plugin": "^2.1.0"
+  }
 }

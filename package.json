@@ -25,8 +25,7 @@
   },
   "homepage": "https://skyrim.github.io/hlviewer.js",
   "devDependencies": {
-    "@types/gl-matrix": "^2.4.1",
-    "@types/node": "^10.5.4",
+    "@types/gl-matrix": "^2.4.5",
     "@types/pngjs": "^3.3.2",
     "awesome-typescript-loader": "^5.2.0",
     "chai": "3.5.0",
@@ -35,6 +34,7 @@
     "mocha": "^5.2.0",
     "pngjs": "^3.3.3",
     "preact": "^10.0.0-rc.3",
+    "terser-webpack-plugin": "^2.1.0",
     "typescript": "^3.6.3",
     "typestyle": "^2.0.4",
     "webpack": "^4.16.3",
@@ -43,8 +43,5 @@
   },
   "files": [
     "dist/hlviewer.js"
-  ],
-  "dependencies": {
-    "terser-webpack-plugin": "^2.1.0"
-  }
+  ]
 }

@@ -1,4 +1,5 @@
-import { mat4, vec3 } from 'gl-matrix'
+import mat4 = require('gl-matrix/cjs/mat4')
+import vec3 = require('gl-matrix/cjs/vec3')
 import { Bsp } from '../Bsp'
 import { Camera } from './Camera'
 import { Context } from './Context'
@@ -12,6 +13,7 @@ type FaceInfo = {
   length: number
   textureIndex: number
 }
+
 type ModelInfo = {
   origin: number[]
   offset: number
@@ -19,6 +21,7 @@ type ModelInfo = {
   isTransparent: boolean
   faces: FaceInfo[]
 }
+
 type SceneInfo = {
   length: number
   data: Float32Array

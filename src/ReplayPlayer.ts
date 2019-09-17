@@ -1,4 +1,4 @@
-import { glMatrix } from 'gl-matrix'
+import glMatrix = require('gl-matrix/cjs/common')
 import { EventEmitter } from 'events'
 import { Game } from './Game'
 import { Replay } from './Replay/Replay'

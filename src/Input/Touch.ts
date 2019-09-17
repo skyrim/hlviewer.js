@@ -1,4 +1,4 @@
-import { vec2 } from 'gl-matrix'
+import vec2 = require('gl-matrix/cjs/vec2')
 
 export class Touch {
   pressed: boolean = false

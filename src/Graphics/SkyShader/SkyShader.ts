@@ -1,4 +1,4 @@
-import { mat4 } from 'gl-matrix'
+import mat4 = require('gl-matrix/src/gl-matrix/mat4')
 import { Context, Program } from '../Context'
 
 const fragmentSrc = `#ifdef GL_ES

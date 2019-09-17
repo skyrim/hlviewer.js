@@ -1,4 +1,6 @@
-import { glMatrix, vec3, mat4 } from 'gl-matrix'
+import vec3 = require('gl-matrix/cjs/vec3')
+import mat4 = require('gl-matrix/cjs/mat4')
+import glMatrix = require('gl-matrix/cjs/common')
 
 export class Camera {
   static init(aspect: number) {

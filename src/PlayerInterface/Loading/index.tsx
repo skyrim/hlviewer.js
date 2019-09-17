@@ -1,94 +1,30 @@
-import { h, Component } from 'preact'
+import { h } from 'preact'
+import { useState } from 'preact/hooks'
 import { Game } from '../../Game'
-import { LoadItem } from '../../Loader'
+import { Spinner } from './Spinner'
+import { useLoader } from './useLoader'
+import { LoadingItem } from './LoadingItem'
 import { LoadingStyle as s } from './style'
 
-interface LoadingProps {
-  game: Game
-  visible: boolean
+type Item = {
+  name: string
+  progress: number
 }
 
-interface LoadingState {
-  items: {
-    [name: string]: {
-      name: string
-      progress: number
-    }[]
-  }
-}
+type ItemGroups = { [name: string]: Item[] }
 
-const itemTypeGroupName: { [name: string]: string } = {
-  replay: 'Replay',
-  bsp: 'Map',
-  sound: 'Sounds',
-  sky: 'Skybox',
-  sprite: 'Sprites',
-  wad: 'Wads'
-}
+export function Loading(props: { game: Game; visible: boolean }) {
+  const [itemGroups, setItemGroups] = useState({} as ItemGroups)
+  useLoader(props.game.loader, setItemGroups)
 
-export class Loading extends Component<LoadingProps, LoadingState> {
-  state: LoadingState = {
-    items: {}
-  }
+  return (
+    <div class={props.visible ? s.loading : s.loadingHidden}>
+      <Spinner />
 
-  componentDidMount() {
-    const loader = this.props.game.loader
-    loader.addLoadStartListener(this.onItemLoad)
-    loader.addProgressListener(this.onItemProgress)
-  }
-
-  componentWillUnmount() {
-    const loader = this.props.game.loader
-    loader.removeLoadStartListener(this.onItemLoad)
-    loader.removeProgressListener(this.onItemProgress)
-  }
-
-  onItemLoad = (item: LoadItem) => {
-    const items = this.state.items[item.type] ? this.state.items[item.type] : []
-
-    for (let i = 0; i < items.length; ++i) {
-      if (items[i] === item) {
-        return
-      }
-    }
-
-    items.push({
-      name: item.name,
-      progress: 0
-    })
-
-    this.setState({
-      items: {
-        ...this.state.items,
-        [item.type]: items
-      }
-    })
-  }
-
-  onItemProgress = (item: any) => {
-    if (!this.state.items[item.type]) {
-      return
-    }
-
-    const items = this.state.items[item.type]
-
-    for (let i = 0; i < items.length; ++i) {
-      if (items[i].name === item.name) {
-        items[i].progress = item.progress
-        break
-      }
-    }
-
-    this.forceUpdate()
-  }
-
-  render() {
-    return (
-      <div class={this.props.visible ? s.loading : s.loadingHidden}>
-        <Spinner />
-
-        <ul class={s.log}>
-          {Object.entries(this.state.items).map(([name, items]) => (
+      <ul class={s.log}>
+        {Object.entries(itemGroups)
+          .filter(([_, items]) => items.length)
+          .map(([name, items]) => (
             <LoadingItem
               name={name}
               progress={
@@ -97,46 +33,7 @@ export class Loading extends Component<LoadingProps, LoadingState> {
               }
             />
           ))}
-        </ul>
-      </div>
-    )
-  }
-}
-
-function Spinner() {
-  return (
-    <div class={s.spinner}>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        x="0px"
-        y="0px"
-        width="80px"
-        height="80px"
-        viewBox="0 0 80 80"
-        xmlSpace="preserve"
-      >
-        <path
-          fill="#ffffff"
-          width="10px"
-          d="M40,72C22.4,72,8,57.6,8,40C8,22.4,22.4,8,40,8c17.6,0,32,14.4,32,32c0,1.1-0.9,2-2,2s-2-0.9-2-2c0-15.4-12.6-28-28-28S12,24.6,12,40s12.6,28,28,28c1.1,0,2,0.9,2,2S41.1,72,40,72z"
-        />
-      </svg>
+      </ul>
     </div>
   )
-}
-
-function LoadingItem(props: { name: string; progress: number }) {
-  const name = itemTypeGroupName[props.name]
-  const status = Math.round(props.progress * 100) + '%'
-
-  let length = 29 - name.length - status.length
-  if (length < 2) {
-    length = 9 - status.length
-  }
-
-  const dots = Array(length).join('.')
-
-  const fmt = `${name}${dots}${status}`
-
-  return <li class={s.logItem}>{fmt}</li>
 }

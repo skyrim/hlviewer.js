@@ -248,8 +248,6 @@ export class Wad {
       entriesMetadata.push(entry)
     }
 
-    console.log(entriesMetadata)
-
     const entries: WadEntry[] = entriesMetadata.map(e => parseEntry(r, e))
 
     return new Wad(entries)

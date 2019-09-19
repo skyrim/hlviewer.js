@@ -34,10 +34,27 @@ function parseDecal(r: Reader): WadDecal {
   }
 }
 
-const parseCache = (_r: Reader, metadata: WadEntryMetadata): WadCache => ({
-  type: 'cache',
-  name: metadata.name
-})
+const parseCache = (r: Reader, metadata: WadEntryMetadata): WadCache => {
+  const width = r.ui()
+  const height = r.ui()
+
+  const pixelCount = width * height
+  const pixels = r.arrx(pixelCount, ReaderDataType.UByte)
+
+  r.skip(2) // skip padding bytes
+
+  const palette = r.arrx(768, ReaderDataType.UByte)
+
+  const data = paletteToRGBA(pixels, palette)
+
+  return {
+    type: 'cache',
+    name: metadata.name,
+    width,
+    height,
+    data
+  }
+}
 
 function parseTexture(r: Reader): WadTexture {
   const name = r.nstr(16)
@@ -160,6 +177,9 @@ export interface WadDecal {
 export interface WadCache {
   type: 'cache'
   name: string
+  width: number
+  height: number
+  data: Uint8Array
 }
 
 export interface WadFont {
@@ -227,6 +247,8 @@ export class Wad {
       entry.name = r.nstr(16)
       entriesMetadata.push(entry)
     }
+
+    console.log(entriesMetadata)
 
     const entries: WadEntry[] = entriesMetadata.map(e => parseEntry(r, e))
 

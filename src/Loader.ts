@@ -200,7 +200,7 @@ export class Loader {
       this.events.emit('error', err, this.replay)
     })
 
-    if (this.replay.isError()) {
+    if (!buffer || this.replay.isError()) {
       return
     }
 
@@ -245,7 +245,7 @@ export class Loader {
       this.events.emit('error', err, this.map)
     })
 
-    if (this.map.isError()) {
+    if (!buffer || this.map.isError()) {
       return
     }
 
@@ -303,7 +303,7 @@ export class Loader {
       this.checkStatus()
     })
 
-    if (item.isError()) {
+    if (!buffer || item.isError()) {
       return
     }
 
@@ -334,7 +334,7 @@ export class Loader {
       this.checkStatus()
     })
 
-    if (item.isError()) {
+    if (!buffer || item.isError()) {
       return
     }
 
@@ -365,7 +365,7 @@ export class Loader {
       this.checkStatus()
     })
 
-    if (wadItem.isError()) {
+    if (!buffer || wadItem.isError()) {
       return
     }
 
@@ -417,7 +417,7 @@ export class Loader {
       this.checkStatus()
     })
 
-    if (sound.isError()) {
+    if (!buffer || sound.isError()) {
       return
     }
 

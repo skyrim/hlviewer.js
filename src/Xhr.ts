@@ -3,21 +3,39 @@ export interface ProgressCallback {
 }
 
 export interface XhrParams {
-  method: string
-  isBinary: boolean
-  progressCallback: ProgressCallback
+  method?: string
+  isBinary?: boolean
+  progressCallback?: ProgressCallback
 }
 
+export function xhr(
+  url: string,
+  params: {
+    method?: string
+    isBinary: true
+    progressCallback?: ProgressCallback
+  }
+): Promise<ArrayBuffer>
+
+export function xhr(
+  url: string,
+  params: {
+    method?: string
+    isBinary?: false
+    progressCallback?: ProgressCallback
+  }
+): Promise<string>
+
 export function xhr(url: string, params: XhrParams): Promise<any> {
-  let method = params.method || 'GET'
-  let isBinary = params.isBinary
-  let progressCallback = params.progressCallback
+  const method = params.method || 'GET'
+  const isBinary = params.isBinary
+  const progressCallback = params.progressCallback
 
   if (!url) {
     throw new Error('Url parameter missing')
   }
 
-  return new Promise<string>((resolve, reject) => {
+  return new Promise<any>((resolve, reject) => {
     let request = new XMLHttpRequest()
 
     if (isBinary) {

@@ -1,21 +1,35 @@
 import { h } from 'preact'
-import { useState } from 'preact/hooks'
+import { useEffect } from 'preact/hooks'
+import { useSelector, useDispatch } from 'react-redux'
 import { Game } from '../../Game'
 import { Spinner } from './Spinner'
-import { useLoader } from './useLoader'
+import { AppState } from '../State'
 import { LoadingItem } from './LoadingItem'
 import { LoadingStyle as s } from './style'
-
-type Item = {
-  name: string
-  progress: number
-}
-
-type ItemGroups = { [name: string]: Item[] }
+import {
+  loadingAdd,
+  loadingProgress,
+  loadingClear
+} from '../State/Loading/actions'
 
 export function Loading(props: { game: Game; visible: boolean }) {
-  const [itemGroups, setItemGroups] = useState({} as ItemGroups)
-  useLoader(props.game.loader, setItemGroups)
+  const dispatch = useDispatch()
+  const itemGroups = useSelector((state: AppState) => state.loading.groups)
+  useEffect(() => {
+    props.game.loader.addLoadStartListener(resource => {
+      console.log(resource.name, resource.type)
+      dispatch(loadingAdd(resource))
+    })
+
+    props.game.loader.addProgressListener((resource, progress) => {
+      console.log(resource.name, resource.type, progress)
+      dispatch(loadingProgress(resource, progress))
+    })
+
+    return () => {
+      dispatch(loadingClear())
+    }
+  }, [])
 
   return (
     <div class={props.visible ? s.loading : s.loadingHidden}>
@@ -28,8 +42,10 @@ export function Loading(props: { game: Game; visible: boolean }) {
             <LoadingItem
               name={name}
               progress={
-                items.reduce((prev, cur) => prev + cur.progress, 0) /
-                items.length
+                Object.values(items).reduce(
+                  (prev, cur) => prev + cur.progress,
+                  0
+                ) / Object.values(items).length
               }
             />
           ))}

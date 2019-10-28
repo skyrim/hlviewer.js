@@ -20,7 +20,7 @@ class HLV {
   }
 
   setTitle(title: string) {
-    this.ui.setTitle(title + '!')
+    this.ui.setTitle(title)
   }
 
   getTitle() {

@@ -162,7 +162,7 @@ export class Loader {
       }
     }
 
-    this.events.emit('loadall', this)
+    this.emitLoadAll()
   }
 
   load(name: string) {
@@ -178,14 +178,19 @@ export class Loader {
 
   async loadReplay(name: string) {
     this.replay = new LoadItemReplay(name)
-    this.events.emit('loadstart', this.replay)
+    this.emitLoadStart({ type: 'replay', name: this.replay.name })
 
     const progressCallback: ProgressCallback = (_1, progress) => {
       if (this.replay) {
         this.replay.progress = progress
       }
 
-      this.events.emit('progress', this.replay)
+      if (this.replay) {
+        this.emitLoadProgress(
+          { type: 'replay', name: this.replay.name },
+          progress
+        )
+      }
     }
 
     const replayPath = this.config.getReplaysPath()
@@ -222,14 +227,16 @@ export class Loader {
 
   async loadMap(name: string) {
     this.map = new LoadItemBsp(name)
-    this.events.emit('loadstart', this.map)
+    this.emitLoadStart({ type: 'map', name: this.map.name })
 
     const progressCallback: ProgressCallback = (_1, progress) => {
       if (this.map) {
         this.map.progress = progress
       }
 
-      this.events.emit('progress', this.map)
+      if (this.map) {
+        this.emitLoadProgress({ type: 'map', name: this.map.name }, progress)
+      }
     }
 
     const mapsPath = this.config.getMapsPath()
@@ -288,11 +295,11 @@ export class Loader {
   async loadSprite(name: string) {
     const item = new LoadItemSprite(name)
     this.sprites[name] = item
-    this.events.emit('loadstart', item)
+    this.emitLoadStart({ type: 'sprite', name: item.name })
 
     const progressCallback: ProgressCallback = (_1, progress) => {
       item.progress = progress
-      this.events.emit('progress', item)
+      this.emitLoadProgress({ type: 'sprite', name: item.name }, progress)
     }
 
     const buffer = await xhr(`${this.config.getBasePath()}/${name}`, {
@@ -318,11 +325,11 @@ export class Loader {
   async loadSky(name: string) {
     const item = new LoadItemSky(name)
     this.skies.push(item)
-    this.events.emit('loadstart', item)
+    this.emitLoadStart({ type: 'sky', name: item.name })
 
     const progressCallback: ProgressCallback = (_1, progress) => {
       item.progress = progress
-      this.events.emit('progress', item)
+      this.emitLoadProgress({ type: 'sky', name: item.name }, progress)
     }
 
     const skiesPath = this.config.getSkiesPath()
@@ -349,11 +356,11 @@ export class Loader {
   async loadWad(name: string) {
     const wadItem = new LoadItemWad(name)
     this.wads.push(wadItem)
-    this.events.emit('loadstart', wadItem)
+    this.emitLoadStart({ type: 'wad', name: wadItem.name })
 
     const progressCallback: ProgressCallback = (_1, progress) => {
       wadItem.progress = progress
-      this.events.emit('progress', wadItem)
+      this.emitLoadProgress({ type: 'wad', name: wadItem.name }, progress)
     }
 
     const wadsPath = this.config.getWadsPath()
@@ -401,11 +408,11 @@ export class Loader {
   async loadSound(name: string, index: number) {
     const sound = new LoadItemSound(name)
     this.sounds.push(sound)
-    this.events.emit('loadstart', sound)
+    this.emitLoadStart({ type: 'sound', name: sound.name })
 
     const progressCallback: ProgressCallback = (_1, progress) => {
       sound.progress = progress
-      this.events.emit('progress', sound)
+      this.emitLoadProgress({ type: 'sound', name: sound.name }, progress)
     }
 
     const soundsPath = this.config.getSoundsPath()
@@ -440,19 +447,36 @@ export class Loader {
     this.checkStatus()
   }
 
-  addLoadStartListener(listener: (item: LoadItem) => void) {
+  addLoadStartListener(listener: LoadStartListener) {
     this.events.addListener('loadstart', listener)
   }
 
-  removeLoadStartListener(listener: (item: LoadItem) => void) {
+  removeLoadStartListener(listener: LoadStartListener) {
     this.events.removeListener('loadstart', listener)
   }
 
-  addProgressListener(listener: (item: LoadItem) => void) {
+  addProgressListener(listener: LoadProgressListener) {
     this.events.addListener('progress', listener)
   }
 
-  removeProgressListener(listener: (item: LoadItem) => void) {
+  removeProgressListener(listener: LoadProgressListener) {
     this.events.removeListener('progress', listener)
   }
+
+  private emitLoadStart(resource: Resource) {
+    console.log(resource.type, resource.name)
+    this.events.emit('loadstart', { resource }, 1, 2)
+  }
+
+  private emitLoadProgress(resource: Resource, progress: number) {
+    this.events.emit('progress', { resource, progress })
+  }
+
+  private emitLoadAll() {
+    this.events.emit('loadall', this)
+  }
 }
+
+type Resource = { type: string; name: string }
+type LoadStartListener = (resource: Resource) => void
+type LoadProgressListener = (resource: Resource, progress: number) => void

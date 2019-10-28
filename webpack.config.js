@@ -28,7 +28,12 @@ module.exports = {
     ]
   },
   resolve: {
-    extensions: ['.js', '.ts', '.tsx', '.jsx']
+    extensions: ['.js', '.ts', '.tsx', '.jsx'],
+    alias: {
+      react: 'preact/compat',
+      'react-dom/test-utils': 'preact/test-utils',
+      'react-dom': 'preact/compat'
+    }
   },
   plugins: [
     new CheckerPlugin(),

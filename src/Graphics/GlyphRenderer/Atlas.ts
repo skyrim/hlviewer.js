@@ -63,5 +63,7 @@ export class Atlas {
     this.glyphs = { ...params.glyphs }
   }
 
-  
+  print() {
+    console.log(this.width, this.height, this.pixels, this.texture, this.glyphs)
+  }
 }

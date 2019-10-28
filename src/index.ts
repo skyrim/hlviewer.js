@@ -1,6 +1,6 @@
 import { Game } from './Game'
 import { Config } from './Config'
-import { PlayerInterface } from './PlayerInterface/index'
+import { PlayerInterface } from './PlayerInterface'
 
 declare var VERSION: string
 
@@ -20,11 +20,11 @@ class HLV {
   }
 
   setTitle(title: string) {
-    this.ui.getStore().setTitle(title)
+    this.ui.setTitle(title + '!')
   }
 
   getTitle() {
-    return this.ui.getStore().getTitle()
+    return this.ui.getTitle()
   }
 }
 

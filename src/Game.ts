@@ -15,6 +15,9 @@ import { ReplayPlayer } from './ReplayPlayer'
 import { Renderer } from './Graphics/Renderer'
 import { SkyScene } from './Graphics/SkyScene'
 import { WorldScene } from './Graphics/WorldScene'
+// import { WadFont } from './Parsers/Wad'
+// import { GlyphRenderer } from './Graphics/GlyphRenderer'
+// import { Atlas } from './Graphics/GlyphRenderer/Atlas'
 
 export enum PlayerMode {
   FREE,
@@ -133,6 +136,24 @@ export class Game {
 
     this.config = params.config
     this.loader = new Loader(this.config)
+    // this.loader.events.addListener('load-font', (font: WadFont) => {
+    //   if (font.name !== 'CONCHARS') {
+    //     return
+    //   }
+
+    //   const glyphRenderer = GlyphRenderer.init(params.context)
+    //   const atlas = Atlas.init(params.context, {
+    //     pixels: font.data,
+    //     width: font.width,
+    //     height: font.height,
+    //     glyphs: font.glyphs
+    //   })
+
+    //   if (glyphRenderer && atlas) {
+    //     const vertices = glyphRenderer.makeVerticesForString(atlas, 'hello')
+    //     console.log(vertices)
+    //   }
+    // })
     this.loader.events.addListener('loadall', this.onLoadAll)
 
     document.addEventListener('touchstart', this.onTouchStart, false)
@@ -164,7 +185,7 @@ export class Game {
     return this.canvas
   }
 
-  load(name: string) {
+  async load(name: string) {
     this.events.emit('loadstart')
     this.loader.load(name)
   }

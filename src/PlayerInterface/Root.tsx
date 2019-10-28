@@ -1,5 +1,6 @@
 import { h, Component } from 'preact'
-import { Store } from './store'
+import { useSelector } from 'react-redux'
+import { AppState } from './State'
 import { Loading } from './Loading'
 import { FreeMode } from './FreeMode'
 import { ReplayMode } from './ReplayMode'
@@ -10,7 +11,6 @@ import { RootStyle as s } from './Root.style'
 interface RootProps {
   game: Game
   root: Element
-  store: Store
 }
 
 interface RootState {
@@ -48,7 +48,6 @@ export class Root extends Component<RootProps, RootState> {
     game.on('loadstart', this.onLoadStart)
     game.on('load', this.onLoadEnd)
     game.on('modechange', this.onModeChange)
-    this.props.store.addTitleChangeListener(this.onTitleChange)
 
     root.addEventListener('click', this.onRootClick)
     window.addEventListener('click', this.onWindowClick)
@@ -72,7 +71,6 @@ export class Root extends Component<RootProps, RootState> {
     game.off('loadstart', this.onLoadStart)
     game.off('load', this.onLoadEnd)
     game.off('modechange', this.onModeChange)
-    this.props.store.removeTitleChangeListener(this.onTitleChange)
 
     root.removeEventListener('click', this.onRootClick)
     window.removeEventListener('click', this.onWindowClick)
@@ -87,10 +85,6 @@ export class Root extends Component<RootProps, RootState> {
     root.removeEventListener('mousemove', this.onMouseMove)
     root.removeEventListener('mouseout', this.onMouseLeave)
     root.removeEventListener('contextmenu', this.onContextMenu)
-  }
-
-  onTitleChange = () => {
-    this.forceUpdate()
   }
 
   onPointerLockChange = () => {
@@ -262,7 +256,7 @@ export class Root extends Component<RootProps, RootState> {
   render() {
     const game = this.props.game
     const isVisible = this.state.isVisible
-    const title = this.props.store.getTitle()
+    const title = useSelector((state: AppState) => state.general.title)
 
     return (
       <div class={isVisible ? s.rootVisible : s.root}>

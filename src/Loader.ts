@@ -274,10 +274,12 @@ export class Loader {
     // check if there is at least one missing texture
     // if yes then load wad files (textures should be there)
     if (map.textures.find(a => a.isExternal)) {
-      const wads = map.entities[0].wad
+      const wads: any[] = map.entities[0].wad
       const wadPromises = wads.map((w: string) => this.loadWad(w))
       await Promise.all(wadPromises)
     }
+
+    await this.loadWad('gfx.wad')
 
     this.events.emit('load', this.map)
     this.checkStatus()
@@ -379,17 +381,17 @@ export class Loader {
     const map = this.map.data
     const cmp = (a: any, b: any) => a.toLowerCase() === b.toLowerCase()
     wad.entries.forEach(entry => {
-      if (entry.type !== 'texture') {
-        return
+      if (entry.type === 'texture') {
+        map.textures.forEach(texture => {
+          if (cmp(entry.name, texture.name)) {
+            texture.width = entry.width
+            texture.height = entry.height
+            texture.data = entry.data
+          }
+        })
+      } else if (entry.type === 'font') {
+        this.events.emit('load-font', entry)
       }
-
-      map.textures.forEach(texture => {
-        if (cmp(entry.name, texture.name)) {
-          texture.width = entry.width
-          texture.height = entry.height
-          texture.data = entry.data
-        }
-      })
     })
 
     this.events.emit('load', wadItem)

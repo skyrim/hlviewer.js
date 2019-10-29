@@ -464,12 +464,11 @@ export class Loader {
   }
 
   private emitLoadStart(resource: Resource) {
-    console.log(resource.type, resource.name)
-    this.events.emit('loadstart', { resource }, 1, 2)
+    this.events.emit('loadstart', resource)
   }
 
   private emitLoadProgress(resource: Resource, progress: number) {
-    this.events.emit('progress', { resource, progress })
+    this.events.emit('progress', resource, progress)
   }
 
   private emitLoadAll() {

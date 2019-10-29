@@ -8,8 +8,8 @@ import { LoadingItem } from './LoadingItem'
 import { LoadingStyle as s } from './style'
 import {
   loadingAdd,
-  loadingProgress,
-  loadingClear
+  loadingClear,
+  loadingProgress
 } from '../State/Loading/actions'
 
 export function Loading(props: { game: Game; visible: boolean }) {
@@ -17,12 +17,10 @@ export function Loading(props: { game: Game; visible: boolean }) {
   const itemGroups = useSelector((state: AppState) => state.loading.groups)
   useEffect(() => {
     props.game.loader.addLoadStartListener(resource => {
-      console.log(resource.name, resource.type)
       dispatch(loadingAdd(resource))
     })
 
     props.game.loader.addProgressListener((resource, progress) => {
-      console.log(resource.name, resource.type, progress)
       dispatch(loadingProgress(resource, progress))
     })
 
@@ -36,19 +34,18 @@ export function Loading(props: { game: Game; visible: boolean }) {
       <Spinner />
 
       <ul class={s.log}>
-        {Object.entries(itemGroups)
-          .filter(([_, items]) => items.length)
-          .map(([name, items]) => (
-            <LoadingItem
-              name={name}
-              progress={
-                Object.values(items).reduce(
-                  (prev, cur) => prev + cur.progress,
-                  0
-                ) / Object.values(items).length
-              }
-            />
-          ))}
+        {Object.entries(itemGroups).map(([name, items]) => (
+          <LoadingItem
+            key={name}
+            name={name}
+            progress={
+              Object.values(items).reduce(
+                (prev, cur) => prev + cur.progress,
+                0
+              ) / Object.values(items).length
+            }
+          />
+        ))}
       </ul>
     </div>
   )

@@ -3,7 +3,7 @@ import { LoadingStyle as s } from './style'
 
 const itemTypeGroupName: { [name: string]: string } = {
   replay: 'Replay',
-  bsp: 'Map',
+  map: 'Map',
   sound: 'Sounds',
   sky: 'Skybox',
   sprite: 'Sprites',

@@ -1,23 +1,11 @@
 import { stylesheet, keyframes } from 'typestyle'
 
-const loadingStyle = () => ({
-  position: 'relative' as 'relative',
-  width: '100%',
-  height: '100%',
-  opacity: 1,
-  transition: 'opacity 2s ease, z-index 1s linear',
-  zIndex: 30
-})
-
 export const LoadingStyle = stylesheet({
   loading: {
-    ...loadingStyle()
-  },
-  loadingHidden: {
-    ...loadingStyle(),
-    opacity: 0,
-    userSelect: 'none',
-    zIndex: 0
+    position: 'relative' as 'relative',
+    width: '100%',
+    height: '100%',
+    transition: 'opacity 2s ease, z-index 1s linear'
   },
   spinner: {
     position: 'absolute',

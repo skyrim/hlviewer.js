@@ -60,6 +60,16 @@ export const RootStyle = stylesheet({
     opacity: 1
   },
 
+  loading: {
+    opacity: 0,
+    userSelect: 'none',
+    zIndex: 0
+  },
+  loadingVisible: {
+    opacity: 1,
+    zIndex: 30
+  },
+
   screen: {
     position: 'absolute' as 'absolute',
     top: 0,

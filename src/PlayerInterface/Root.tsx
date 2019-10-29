@@ -264,7 +264,10 @@ export class Root extends Component<RootProps, RootState> {
           {title}
         </div>
 
-        <Loading game={game} visible={this.state.isLoading} />
+        <Loading
+          class={this.state.isLoading ? s.loadingVisible : s.loading}
+          loader={game.loader}
+        />
 
         <div
           class={s.screen}

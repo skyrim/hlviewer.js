@@ -1,9 +1,10 @@
 import { h } from 'preact'
+import { classes } from 'typestyle'
 import { useEffect } from 'preact/hooks'
 import { useSelector, useDispatch } from 'react-redux'
-import { Game } from '../../Game'
 import { Spinner } from './Spinner'
 import { AppState } from '../State'
+import { Loader } from '../../Loader'
 import { LoadingItem } from './LoadingItem'
 import { LoadingStyle as s } from './style'
 import {
@@ -12,15 +13,15 @@ import {
   loadingProgress
 } from '../State/Loading/actions'
 
-export function Loading(props: { game: Game; visible: boolean }) {
+export function Loading(props: { loader: Loader; class?: string }) {
   const dispatch = useDispatch()
   const itemGroups = useSelector((state: AppState) => state.loading.groups)
   useEffect(() => {
-    props.game.loader.addLoadStartListener(resource => {
+    props.loader.addLoadStartListener(resource => {
       dispatch(loadingAdd(resource))
     })
 
-    props.game.loader.addProgressListener((resource, progress) => {
+    props.loader.addProgressListener((resource, progress) => {
       dispatch(loadingProgress(resource, progress))
     })
 
@@ -30,7 +31,7 @@ export function Loading(props: { game: Game; visible: boolean }) {
   }, [])
 
   return (
-    <div class={props.visible ? s.loading : s.loadingHidden}>
+    <div class={classes(props.class, s.loading)}>
       <Spinner />
 
       <ul class={s.log}>

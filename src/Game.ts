@@ -2,7 +2,6 @@ import { EventEmitter } from 'events'
 import { Bsp } from './Bsp'
 import * as Time from './Time'
 import { Sound } from './Sound'
-import { Loader } from './Loader'
 import { Config } from './Config'
 import { Mouse } from './Input/Mouse'
 import { Touch } from './Input/Touch'
@@ -15,6 +14,8 @@ import { ReplayPlayer } from './ReplayPlayer'
 import { Renderer } from './Graphics/Renderer'
 import { SkyScene } from './Graphics/SkyScene'
 import { WorldScene } from './Graphics/WorldScene'
+import { Loader, ResourceBag } from './Resource/Loader'
+import { defaultFetcher } from './Resource/DefaultFetcher'
 // import { WadFont } from './Parsers/Wad'
 // import { GlyphRenderer } from './Graphics/GlyphRenderer'
 // import { Atlas } from './Graphics/GlyphRenderer/Atlas'
@@ -108,7 +109,7 @@ export class Game {
   mouse: Mouse = new Mouse()
   keyboard: Keyboard = new Keyboard()
 
-  loader: Loader
+  loader: Loader = Loader.init(defaultFetcher)
   entities: any[] = []
   sounds: Sound[]
   soundSystem: SoundSystem
@@ -135,26 +136,6 @@ export class Game {
     this.soundSystem = new SoundSystem()
 
     this.config = params.config
-    this.loader = new Loader(this.config)
-    // this.loader.events.addListener('load-font', (font: WadFont) => {
-    //   if (font.name !== 'CONCHARS') {
-    //     return
-    //   }
-
-    //   const glyphRenderer = GlyphRenderer.init(params.context)
-    //   const atlas = Atlas.init(params.context, {
-    //     pixels: font.data,
-    //     width: font.width,
-    //     height: font.height,
-    //     glyphs: font.glyphs
-    //   })
-
-    //   if (glyphRenderer && atlas) {
-    //     const vertices = glyphRenderer.makeVerticesForString(atlas, 'hello')
-    //     console.log(vertices)
-    //   }
-    // })
-    this.loader.events.addListener('loadall', this.onLoadAll)
 
     document.addEventListener('touchstart', this.onTouchStart, false)
     document.addEventListener('touchend', this.onTouchEnd, false)
@@ -186,8 +167,21 @@ export class Game {
   }
 
   async load(name: string) {
-    this.events.emit('loadstart')
-    this.loader.load(name)
+    const load = await this.loader.load(name)
+    switch (load.type) {
+      case 'error': {
+        // TODO: display error
+        break
+      }
+      case 'cancel': {
+        // TODO: reset to blank state
+        break
+      }
+      case 'success': {
+        this.onLoadAll(load.resources)
+        break
+      }
+    }
   }
 
   changeMap(map: Bsp) {
@@ -232,17 +226,19 @@ export class Game {
     this.events.emit('modechange', mode)
   }
 
-  onLoadAll = (loader: Loader) => {
-    if (loader && loader.replay) {
-      this.changeReplay(loader.replay.data)
+  onLoadAll = (resources: ResourceBag) => {
+    if (resources.replay) {
+      this.changeReplay(resources.replay)
       this.changeMode(PlayerMode.REPLAY)
     }
 
-    if (!loader.map || !loader.map.data) {
+    if (!resources.map) {
       return
     }
 
-    const map = loader.map.data
+    const map = resources.map
+    map.skies
+    const textures = resources.textures
     const skies = loader.skies
     let skiesValid = true
     skies.forEach(sky => {

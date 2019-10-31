@@ -1,8 +1,15 @@
 import { Bsp } from '../Bsp'
-import { Tga } from '../Parsers/Tga'
 import { Camera } from './Camera'
 import { Context } from './Context'
+import { Texture } from './Texture'
+import { Tga } from '../Parsers/Tga'
 import { SkyShader } from './SkyShader/SkyShader'
+import {
+  GLTexture,
+  TextureWrap,
+  TextureMinFilter,
+  TextureMagFilter
+} from './GLTexture'
 
 export class SkyScene {
   static init(context: Context): SkyScene | null {
@@ -19,7 +26,7 @@ export class SkyScene {
   private shader: SkyShader
   private vertexBuffer: WebGLBuffer | null = null
   private indexBuffer: WebGLBuffer | null = null
-  private texture: WebGLTexture | null = null
+  private texture: GLTexture | null = null
   private isReady: boolean = false
 
   private constructor(params: { context: Context; shader: SkyShader }) {
@@ -36,8 +43,7 @@ export class SkyScene {
     const gl = this.context.gl
     const vertexBuffer = gl.createBuffer()
     const indexBuffer = gl.createBuffer()
-    const texture = gl.createTexture()
-    if (!vertexBuffer || !indexBuffer || !texture) {
+    if (!vertexBuffer || !indexBuffer) {
       // TODO
       throw new Error('shouldnt happen')
     }
@@ -139,44 +145,29 @@ export class SkyScene {
     })
 
     const pixelData = ctx.getImageData(0, 0, 512, 1024).data
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA,
-      512,
-      1024,
-      0,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      new Uint8Array(pixelData)
+
+    this.texture = GLTexture.create(
+      this.context,
+      Texture.fromUint8ClampedArray('sky', 512, 1024, pixelData),
+      {
+        wrapS: TextureWrap.repeat,
+        wrapT: TextureWrap.repeat,
+        minFilter: TextureMinFilter.linearMipmapLinear,
+        magFilter: TextureMagFilter.linear,
+        anisotropy: 16
+      }
     )
-    gl.generateMipmap(gl.TEXTURE_2D)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_MIN_FILTER,
-      gl.LINEAR_MIPMAP_LINEAR
-    )
-    gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-    const anisotropy = this.context.getAnisotropyExtension()
-    if (anisotropy) {
-      gl.texParameteri(
-        gl.TEXTURE_2D,
-        anisotropy.TEXTURE_MAX_ANISOTROPY_EXT,
-        this.context.getMaxAnisotropy(anisotropy)
-      )
+    if (!this.texture) {
+      throw new Error('Failed to create sky texture')
     }
 
     this.vertexBuffer = vertexBuffer
     this.indexBuffer = indexBuffer
-    this.texture = texture
     this.isReady = true
   }
 
   draw(camera: Camera) {
-    if (!this.isReady) {
+    if (!this.isReady || !this.texture) {
       return
     }
 
@@ -184,7 +175,7 @@ export class SkyScene {
     const shader = this.shader
 
     shader.useProgram(gl)
-    gl.bindTexture(gl.TEXTURE_2D, this.texture)
+    gl.bindTexture(gl.TEXTURE_2D, this.texture.getHandle())
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer)
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer)
     shader.enableVertexAttribs(gl)

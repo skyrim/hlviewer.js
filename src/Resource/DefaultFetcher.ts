@@ -1,5 +1,5 @@
 import { xhr } from './Xhr'
-import { Fetcher } from './Fetcher'
+import { FetchFunction } from './FetchFunction'
 import { ResourceTypes } from './ResourceTypes'
 import { basename, extname, assertUnreachable } from '../Util'
 
@@ -40,7 +40,7 @@ const resolveUrl = (type: ResourceTypes, name: string): string => {
   assertUnreachable(type)
 }
 
-export const defaultFetcher: Fetcher = (type, name) => {
+export const defaultFetcher: FetchFunction = (type, name) => {
   const url = resolveUrl(type, name)
   const req = xhr(url, {
     isBinary: true

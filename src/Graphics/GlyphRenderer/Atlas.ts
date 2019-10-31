@@ -1,9 +1,9 @@
 import { Context } from '../Context'
 
 type AtlasParams = {
-  pixels: Uint8Array
   width: number
   height: number
+  data: Uint8Array
   glyphs: {
     x: number
     y: number
@@ -32,7 +32,7 @@ export class Atlas {
       0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
-      params.pixels
+      params.data
     )
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
@@ -58,7 +58,7 @@ export class Atlas {
   private constructor(params: AtlasParams & { texture: WebGLTexture }) {
     this.width = params.width
     this.height = params.height
-    this.pixels = params.pixels
+    this.pixels = params.data
     this.texture = params.texture
     this.glyphs = { ...params.glyphs }
   }

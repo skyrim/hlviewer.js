@@ -1,12 +1,13 @@
 import { Bsp } from '../Bsp'
 import { Sound } from '../Sound'
 import { WadFont } from '../Parsers/Wad'
-import { Replay } from '../Replay/Replay'
 import { Sprite } from '../Parsers/Sprite'
 import { Mdl } from '../Parsers/MdlParser'
 import { Texture } from '../Graphics/Texture'
+import { ResourceType } from './ResourceType'
 import { FetchFunction } from './FetchFunction'
-import { ResourceTypes } from './ResourceTypes'
+import { BspParser } from '../Parsers/BspParser'
+import { Replay, ReplayChunks } from '../Replay/Replay'
 
 export enum ResourceStatus {
   loading,
@@ -20,6 +21,7 @@ type Resource = {
   progress: number
   buffer: ArrayBuffer | null
   error?: string
+  cancel: () => void
 }
 
 type LoadResultError = {
@@ -32,7 +34,7 @@ type LoadResultCancel = {
 }
 
 export type ResourceBag = {
-  replay?: Replay
+  replay?: ReplayChunks
   map: Bsp
   textures: Texture[]
   fonts: WadFont[]
@@ -54,20 +56,20 @@ export enum LoadListenerType {
   finish
 }
 
-type LoadListenerStartFn = (type: string, name: string) => void
+type LoadListenerStartFn = (type: ResourceType, name: string) => void
 type LoadListenerStart = {
   type: LoadListenerType.start
   listener: LoadListenerStartFn
 }
 
-type LoadListenerFinishFn = (type: string, name: string) => void
+type LoadListenerFinishFn = (type: ResourceType, name: string) => void
 type LoadListenerFinish = {
   type: LoadListenerType.finish
   listener: LoadListenerFinishFn
 }
 
 type LoadListenerProgressFn = (
-  type: string,
+  type: ResourceType,
   name: string,
   progress: number
 ) => void
@@ -120,16 +122,12 @@ export class Loader {
     this.groups = {}
   }
 
-  queue(file: string, group?: string) {
-    const type = 'TODO'
+  async queue(
+    type: ResourceType,
+    file: string,
+    group?: string
+  ): Promise<Resource> {
     const name = file
-
-    const resource: Resource = {
-      status: ResourceStatus.loading,
-      file,
-      progress: 0,
-      buffer: null
-    }
 
     for (let i = 0; i < this.listeners.length; ++i) {
       const listener = this.listeners[i]
@@ -145,71 +143,156 @@ export class Loader {
     }
 
     const resourceGroup = this.groups[groupName]
-    resourceGroup.resources.push(resource)
 
-    this.fetchFn(ResourceTypes.replay, '').subscribe({
-      progress: progress => {
-        const resources = resourceGroup.resources
-        const total = resources.reduce((prev, cur) => cur.progress + prev, 0)
-        const count = resourceGroup.resources.length
+    return new Promise<Resource>(resolve => {
+      const resource: Resource = {
+        status: ResourceStatus.loading,
+        file,
+        progress: 0,
+        buffer: null,
+        cancel: this.fetchFn(type, name).subscribe({
+          progress: progress => {
+            const resources = resourceGroup.resources
+            const total = resources.reduce(
+              (prev, cur) => cur.progress + prev,
+              0
+            )
+            const count = resourceGroup.resources.length
 
-        resource.progress = progress
-        resourceGroup.progress = total / count
+            resource.progress = progress
+            resourceGroup.progress = total / count
 
-        for (let i = 0; i < this.listeners.length; ++i) {
-          const listener = this.listeners[i]
-          if (listener.type === LoadListenerType.progress) {
-            listener.listener(type, name, progress)
+            for (let i = 0; i < this.listeners.length; ++i) {
+              const listener = this.listeners[i]
+              if (listener.type === LoadListenerType.progress) {
+                listener.listener(type, name, progress)
+              }
+            }
+          },
+          error: err => {
+            resource.progress = 1
+            resource.status = ResourceStatus.error
+            resource.error = err.toString()
+
+            for (let i = 0; i < this.listeners.length; ++i) {
+              const listener = this.listeners[i]
+              if (listener.type === LoadListenerType.finish) {
+                listener.listener(type, name)
+              }
+            }
+
+            resolve(resource)
+          },
+          complete: buffer => {
+            resource.buffer = buffer
+            resource.progress = 1
+            resource.status = ResourceStatus.ok
+
+            for (let i = 0; i < this.listeners.length; ++i) {
+              const listener = this.listeners[i]
+              if (listener.type === LoadListenerType.finish) {
+                listener.listener(type, name)
+              }
+            }
+
+            resolve(resource)
           }
-        }
-      },
-      error: err => {
-        resource.progress = 1
-        resource.status = ResourceStatus.error
-        resource.error = err.toString()
-
-        for (let i = 0; i < this.listeners.length; ++i) {
-          const listener = this.listeners[i]
-          if (listener.type === LoadListenerType.finish) {
-            listener.listener(type, name)
-          }
-        }
-      },
-      complete: buffer => {
-        resource.buffer = buffer
-        resource.progress = 1
-        resource.status = ResourceStatus.ok
-
-        for (let i = 0; i < this.listeners.length; ++i) {
-          const listener = this.listeners[i]
-          if (listener.type === LoadListenerType.finish) {
-            listener.listener(type, name)
-          }
-        }
+        })
       }
+
+      resourceGroup.resources.push(resource)
     })
   }
 
-  /**
-   * Load the file, check file type if it is replay or map
-   * if not error
-   * if replay load map
-   * if map continue loading other files
-   *
-   * @param name Replay or map name
-   */
   async load(name: string): Promise<LoadResult> {
-    const x = this.queue(name)
+    if (name.slice(-4) === '.dem') {
+      const replayFile = await this.queue(ResourceType.replay, name, 'replay')
+      if (replayFile.error || !replayFile.buffer) {
+        return {
+          type: 'error',
+          reason: 'Failed to load replay file'
+        }
+      }
+      const replay = Replay.parseIntoChunks(replayFile.buffer)
 
-    return {
-      type: 'success',
-      resources: {
-        map: {} as Bsp,
-        textures: [],
-        fonts: [],
-        sounds: [],
-        sprites: [],
-        models: []
+      const mapName = replay.maps[0].name + '.bsp'
+      const mapFile = await this.queue(ResourceType.map, mapName, 'map')
+      if (mapFile.error || !mapFile.buffer) {
+        return {
+          type: 'error',
+          reason: 'Failed to load map file'
+        }
+      }
+      const map = BspParser.parse(mapName, mapFile.buffer)
+
+      const soundPromises: Promise<Resource>[] = []
+      const soundNames = replay.maps[0].resources.sounds
+      for (let i = 0; i < soundNames.length; ++i) {
+        const name = soundNames[i].name
+        if (soundNames[i].used) {
+          console.log(soundNames[i])
+          soundPromises.push(this.queue(ResourceType.sound, name, 'sound'))
+        }
+      }
+      const soundFiles = await Promise.all(soundPromises)
+      const sounds = await Promise.all(
+        soundFiles.map((a, i) => {
+          return new Promise<Sound | null>(resolve => {
+            if (a.buffer) {
+              Sound.create(a.buffer).then(s => {
+                resolve(s)
+
+                // FIX THIS
+                s.name = soundNames[i].name
+                s.index = soundNames[i].index
+              })
+            } else {
+              resolve(null)
+            }
+          })
+        })
+      )
+
+      return {
+        type: 'success',
+        resources: {
+          replay,
+          map,
+          textures: [],
+          fonts: [],
+          sounds: sounds.filter(a => a) as Sound[],
+          sprites: [],
+          models: []
+        }
+      }
+    } else if (name.slice(-4) === '.bsp') {
+      const mapFile = await this.queue(ResourceType.map, name, 'map')
+      if (mapFile.error || !mapFile.buffer) {
+        return {
+          type: 'error',
+          reason: 'Failed to load map file'
+        }
+      }
+      const map = BspParser.parse(
+        name.slice(0, name.length - 4),
+        mapFile.buffer
+      )
+
+      return {
+        type: 'success',
+        resources: {
+          map,
+          textures: [],
+          fonts: [],
+          sounds: [],
+          sprites: [],
+          models: []
+        }
+      }
+    } else {
+      return {
+        type: 'error',
+        reason: 'Invalid file extension. Expected either .dem or .bsp'
       }
     }
   }

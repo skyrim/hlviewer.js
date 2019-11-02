@@ -5,7 +5,6 @@ import { Sound } from './Sound'
 import { Config } from './Config'
 import { Mouse } from './Input/Mouse'
 import { Touch } from './Input/Touch'
-import { Replay } from './Replay/Replay'
 import { Camera } from './Graphics/Camera'
 import { Keyboard } from './Input/Keyboard'
 import { SoundSystem } from './SoundSystem'
@@ -13,12 +12,10 @@ import { Context } from './Graphics/Context'
 import { ReplayPlayer } from './ReplayPlayer'
 import { Renderer } from './Graphics/Renderer'
 import { SkyScene } from './Graphics/SkyScene'
+import { ReplayChunks } from './Replay/Replay'
 import { WorldScene } from './Graphics/WorldScene'
 import { Loader, ResourceBag } from './Resource/Loader'
 import { defaultFetcher } from './Resource/DefaultFetcher'
-// import { WadFont } from './Parsers/Wad'
-// import { GlyphRenderer } from './Graphics/GlyphRenderer'
-// import { Atlas } from './Graphics/GlyphRenderer/Atlas'
 
 export enum PlayerMode {
   FREE,
@@ -213,7 +210,7 @@ export class Game {
     this.camera.rotation[2] = 0
   }
 
-  changeReplay(replay: Replay) {
+  changeReplay(replay: ReplayChunks) {
     this.events.emit('prereplaychange', this, replay)
 
     this.player.changeReplay(replay)
@@ -237,39 +234,32 @@ export class Game {
     }
 
     const map = resources.map
-    map.skies
-    const textures = resources.textures
-    const skies = loader.skies
-    let skiesValid = true
-    skies.forEach(sky => {
-      skiesValid = skiesValid && sky.isDone()
-    })
-    if (skiesValid) {
-      skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0))
-    }
+    // map.skies
+    // const textures = resources.textures
+    // const skies = loader.skies
+    // let skiesValid = true
+    // skies.forEach(sky => {
+    //   skiesValid = skiesValid && sky.isDone()
+    // })
+    // if (skiesValid) {
+    //   skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0))
+    // }
 
-    // add sprites
-    Object.entries(loader.sprites).forEach(([name, item]) => {
-      if (item.data) {
-        map.sprites[name] = item.data
-      }
-    })
+    // // add sprites
+    // Object.entries(loader.sprites).forEach(([name, item]) => {
+    //   if (item.data) {
+    //     map.sprites[name] = item.data
+    //   }
+    // })
 
-    if (loader.sounds.length > 0) {
-      loader.sounds.forEach(sound => {
-        if (sound.data) {
-          this.sounds.push(sound.data)
-        }
-      })
-    }
+    resources.sounds.forEach(sound => this.sounds.push(sound))
+    console.log(this.sounds)
 
     this.changeMap(map)
 
     if (this.config.shouldAutoplayOnLoad()) {
       this.player.play()
     }
-
-    this.events.emit('load', loader)
   }
 
   draw = (time: number) => {

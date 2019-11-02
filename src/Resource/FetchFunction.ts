@@ -1,7 +1,7 @@
 import { Observable } from './Observable'
-import { ResourceTypes } from './ResourceTypes'
+import { ResourceType } from './ResourceType'
 
 export type FetchFunction = (
-  type: ResourceTypes,
+  type: ResourceType,
   file: string
 ) => Observable<ArrayBuffer>

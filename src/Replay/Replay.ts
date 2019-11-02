@@ -4,6 +4,7 @@ import { ReplayState } from './ReplayState'
 import { Reader, ReaderDataType } from '../Reader'
 import { FrameDataReader } from './FrameDataReader'
 import { getInitialDeltaDecoders } from './readDelta'
+import { DeltaDecoderTable } from './DeltaDecoder'
 
 const checkType = (r: Reader) => {
   let magic = r.nstr(8)
@@ -537,7 +538,7 @@ export class Replay {
     return new Replay(header, directories)
   }
 
-  static parseIntoChunks(buffer: ArrayBuffer) {
+  static parseIntoChunks(buffer: ArrayBuffer): ReplayChunks {
     let r = new Reader(buffer)
 
     if (!checkType(r)) {
@@ -582,6 +583,7 @@ export class Replay {
         let resourceList = frame.data.find(
           (msg: any) => msg.type === FrameDataReader.SVC.RESOURCELIST
         )
+        console.log(resourceList)
         if (resourceList && currentMap) {
           currentMap.setResources(resourceList.data)
         }
@@ -736,4 +738,11 @@ export class Replay {
   static readFrameData(r: Reader, deltaDecoders: any, customMessages: any) {
     return readFrame(r, deltaDecoders, customMessages)
   }
+}
+
+export interface ReplayChunks {
+  length: number
+  maps: ReplayMap[]
+  deltaDecoders: DeltaDecoderTable
+  customMessages: any[]
 }

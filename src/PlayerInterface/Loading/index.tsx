@@ -6,6 +6,7 @@ import { Spinner } from './Spinner'
 import { AppState } from '../State'
 import { LoadingItem } from './LoadingItem'
 import { LoadingStyle as s } from './style'
+import { ResourceType } from '../../Resource/ResourceType'
 import { Loader, LoadListenerType } from '../../Resource/Loader'
 import {
   loadingAdd,
@@ -13,20 +14,30 @@ import {
   loadingProgress
 } from '../State/Loading/actions'
 
+const typeTable = {
+  [`${ResourceType.replay}`]: 'replay',
+  [`${ResourceType.map}`]: 'map',
+  [`${ResourceType.texture}`]: 'texture',
+  [`${ResourceType.font}`]: 'font',
+  [`${ResourceType.sound}`]: 'sound',
+  [`${ResourceType.sprite}`]: 'sprite',
+  [`${ResourceType.model}`]: 'model'
+}
+
 export function Loading(props: { loader: Loader; class?: string }) {
   const dispatch = useDispatch()
   const itemGroups = useSelector((state: AppState) => state.loading.groups)
   useEffect(() => {
-    const loadStartListener = (type: string, name: string) => {
-      dispatch(loadingAdd({ type, name }))
+    const loadStartListener = (type: ResourceType, name: string) => {
+      dispatch(loadingAdd({ type: typeTable[`${type}`], name }))
     }
 
     const loadProgressListener = (
-      type: string,
+      type: ResourceType,
       name: string,
       progress: number
     ) => {
-      dispatch(loadingProgress({ type, name }, progress))
+      dispatch(loadingProgress({ type: typeTable[`${type}`], name }, progress))
     }
 
     props.loader.addListener({

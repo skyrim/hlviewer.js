@@ -4,10 +4,11 @@ import { LoadingStyle as s } from './style'
 const itemTypeGroupName: { [name: string]: string } = {
   replay: 'Replay',
   map: 'Map',
+  texture: 'Textures',
+  font: 'Fonts',
   sound: 'Sounds',
-  sky: 'Skybox',
   sprite: 'Sprites',
-  wad: 'Wads'
+  model: 'Models'
 }
 
 export function LoadingItem(props: { name: string; progress: number }) {

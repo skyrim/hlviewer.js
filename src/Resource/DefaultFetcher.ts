@@ -1,38 +1,32 @@
 import { xhr } from './Xhr'
 import { FetchFunction } from './FetchFunction'
-import { ResourceTypes } from './ResourceTypes'
+import { ResourceType } from './ResourceType'
 import { basename, extname, assertUnreachable } from '../Util'
 
-const resolveUrl = (type: ResourceTypes, name: string): string => {
+const resolveUrl = (type: ResourceType, name: string): string => {
   const extension = extname(name)
   const bname = basename(name, extension)
 
   switch (type) {
-    case ResourceTypes.replay: {
+    case ResourceType.replay: {
       return `/res/replays/${bname}.dem`
     }
-    case ResourceTypes.map: {
+    case ResourceType.map: {
       return `/res/maps/${bname}.bsp`
     }
-    case ResourceTypes.wad: {
-      return `/res/wads/${bname}.wad`
-    }
-    case ResourceTypes.texture: {
+    case ResourceType.texture: {
       return `/res/textures/${bname}.png`
     }
-    case ResourceTypes.font: {
+    case ResourceType.font: {
       return `/res/fonts/${bname}.png`
     }
-    case ResourceTypes.sky: {
-      return `/res/skies/${bname}.tga`
+    case ResourceType.sound: {
+      return `/res/sounds/${name}`
     }
-    case ResourceTypes.sound: {
-      return `/res/sounds/${bname}.wav`
-    }
-    case ResourceTypes.sprite: {
+    case ResourceType.sprite: {
       return `/res/sprites/${bname}.spr`
     }
-    case ResourceTypes.model: {
+    case ResourceType.model: {
       return `/res/models/${bname}.mdl`
     }
   }

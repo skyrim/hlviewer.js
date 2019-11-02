@@ -1,10 +1,8 @@
-export enum ResourceTypes {
+export enum ResourceType {
   replay,
   map,
-  wad,
   texture,
   font,
-  sky,
   sound,
   sprite,
   model

@@ -1,10 +1,25 @@
 import * as Path from 'path'
 import { ReplayChunk } from './ReplayChunk'
 
+export type ReplayResource = {
+  type: number
+  name: string
+  index: number
+  size: number
+  used?: boolean
+}
+
 export class ReplayMap {
   name: string
   chunks: ReplayChunk[]
-  resources: any
+  resources: {
+    sounds: ReplayResource[]
+    skins: ReplayResource[]
+    models: ReplayResource[]
+    decals: ReplayResource[]
+    custom: ReplayResource[]
+    events: ReplayResource[]
+  }
 
   constructor(mapFilePath: string) {
     this.name = Path.basename(mapFilePath, '.bsp')
@@ -19,7 +34,7 @@ export class ReplayMap {
     }
   }
 
-  setResources(resources: any[]) {
+  setResources(resources: ReplayResource[]) {
     resources.forEach(res => {
       switch (res.type) {
         case 0: {

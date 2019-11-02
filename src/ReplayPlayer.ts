@@ -1,8 +1,8 @@
 import glMatrix = require('gl-matrix/cjs/common')
 import { EventEmitter } from 'events'
 import { Game } from './Game'
-import { Replay } from './Replay/Replay'
 import { ReplayState } from './Replay/ReplayState'
+import { Replay, ReplayChunks } from './Replay/Replay'
 
 const updateGame = (game: Game, state: ReplayState) => {
   game.camera.position[0] = state.cameraPos[0]
@@ -16,7 +16,7 @@ const updateGame = (game: Game, state: ReplayState) => {
 export class ReplayPlayer {
   game: Game
   state: ReplayState
-  replay: any
+  replay: ReplayChunks | null
   events: EventEmitter
 
   currentMap: number = 0
@@ -47,7 +47,9 @@ export class ReplayPlayer {
 
     if (this.replay) {
       let firstChunk = this.replay.maps[0].chunks[0]
-      firstChunk.reader.seek(0)
+      if (firstChunk.reader) {
+        firstChunk.reader.seek(0)
+      }
       this.state = firstChunk.state.clone()
     }
   }
@@ -60,7 +62,7 @@ export class ReplayPlayer {
     this.events.removeListener(eventName, callback)
   }
 
-  changeReplay(replay: Replay) {
+  changeReplay(replay: ReplayChunks) {
     this.replay = replay
     this.reset()
   }
@@ -97,6 +99,10 @@ export class ReplayPlayer {
   }
 
   seek(value: number) {
+    if (!this.replay) {
+      return
+    }
+
     let t = Math.max(0, Math.min(this.replay.length, value))
 
     let maps = this.replay.maps
@@ -115,6 +121,10 @@ export class ReplayPlayer {
           let deltaDecoders = this.replay.deltaDecoders
           let customMessages = this.replay.customMessages
           let r = chunk.reader
+          if (!r) {
+            break
+          }
+
           r.seek(0)
           while (true) {
             let offset = r.tell()
@@ -137,13 +147,17 @@ export class ReplayPlayer {
   }
 
   seekByPercent(value: number) {
+    if (!this.replay) {
+      return
+    }
+
     value = Math.max(0, Math.min(value, 100)) / 100
     value *= this.replay.length
     this.seek(value)
   }
 
   update(dt: number) {
-    if (!this.isPlaying || this.isPaused) {
+    if (!this.isPlaying || this.isPaused || !this.replay) {
       return
     }
 
@@ -159,7 +173,12 @@ export class ReplayPlayer {
     let hitStop = false
 
     while (true) {
+      if (!chunk.data || !r) {
+        return
+      }
+
       let offset = r.tell()
+
       if (offset >= chunk.data.length) {
         if (this.currentChunk === map.chunks.length - 1) {
           if (this.currentMap === this.replay.maps.length - 1) {
@@ -177,6 +196,9 @@ export class ReplayPlayer {
         }
 
         r = chunk.reader
+        if (!r) {
+          return
+        }
         r.seek(0)
         offset = 0
 
@@ -192,6 +214,7 @@ export class ReplayPlayer {
             // TODO: Magic number SVC_SOUND
             let msgSound = message.data
             let sound = sounds.find((s: any) => s.index === msgSound.soundIndex)
+            console.log(msgSound)
             if (sound && sound.name !== 'common/null.wav') {
               let channel = msgSound.channel
               let volume = msgSound.volume

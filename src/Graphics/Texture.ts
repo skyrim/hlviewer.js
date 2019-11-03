@@ -17,12 +17,7 @@ export class Texture {
     return new Texture(name, width, height, new Uint8Array(data))
   }
 
-  private constructor(
-    name: string,
-    width: number,
-    height: number,
-    data: Uint8Array
-  ) {
+  constructor(name: string, width: number, height: number, data: Uint8Array) {
     this.name = name
     this.width = width
     this.height = height

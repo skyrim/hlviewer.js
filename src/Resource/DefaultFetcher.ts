@@ -3,9 +3,15 @@ import { FetchFunction } from './FetchFunction'
 import { ResourceType } from './ResourceType'
 import { basename, extname, assertUnreachable } from '../Util'
 
-const resolveUrl = (type: ResourceType, name: string): string => {
+const resolveUrl = (
+  type: ResourceType,
+  name: string,
+  wads: string[]
+): string => {
   const extension = extname(name)
   const bname = basename(name, extension)
+
+  console.log(wads)
 
   switch (type) {
     case ResourceType.replay: {
@@ -34,8 +40,8 @@ const resolveUrl = (type: ResourceType, name: string): string => {
   assertUnreachable(type)
 }
 
-export const defaultFetcher: FetchFunction = (type, name) => {
-  const url = resolveUrl(type, name)
+export const defaultFetcher: FetchFunction = (type, name, wads) => {
+  const url = resolveUrl(type, name, wads)
   const req = xhr(url, {
     isBinary: true
   })

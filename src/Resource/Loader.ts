@@ -83,12 +83,6 @@ type LoadListener =
   | LoadListenerFinish
   | LoadListenerProgress
 
-/**
- * Loader's job is to track what resources are currently loading,
- * their progress and what resources have done loading.
- *
- * Actual job of loading the data is delegated to a Fetcher.
- */
 export class Loader {
   public static init(fetchFn: FetchFunction): Loader {
     return new Loader(fetchFn)
@@ -125,7 +119,8 @@ export class Loader {
   async queue(
     type: ResourceType,
     file: string,
-    group?: string
+    group?: string,
+    wads: string[] = []
   ): Promise<Resource> {
     const name = file
 
@@ -150,7 +145,7 @@ export class Loader {
         file,
         progress: 0,
         buffer: null,
-        cancel: this.fetchFn(type, name).subscribe({
+        cancel: this.fetchFn(type, name, wads).subscribe({
           progress: progress => {
             const resources = resourceGroup.resources
             const total = resources.reduce(
@@ -205,32 +200,57 @@ export class Loader {
   }
 
   async load(name: string): Promise<LoadResult> {
+    const bag: {
+      replays: ReplayChunks[]
+      maps: Bsp[]
+      sounds: Sound[]
+      fonts: WadFont[]
+      textures: Texture[]
+      sprites: Sprite[]
+      models: Mdl[]
+    } = {
+      replays: [],
+      maps: [],
+      sounds: [],
+      fonts: [],
+      textures: [],
+      sprites: [],
+      models: []
+    }
+
     if (name.slice(-4) === '.dem') {
       const replayFile = await this.queue(ResourceType.replay, name, 'replay')
       if (replayFile.error || !replayFile.buffer) {
-        return {
-          type: 'error',
-          reason: 'Failed to load replay file'
-        }
+        return { type: 'error', reason: 'Failed to load replay file' }
       }
-      const replay = Replay.parseIntoChunks(replayFile.buffer)
+      bag.replays.push(Replay.parseIntoChunks(replayFile.buffer))
+    }
 
-      const mapName = replay.maps[0].name + '.bsp'
-      const mapFile = await this.queue(ResourceType.map, mapName, 'map')
-      if (mapFile.error || !mapFile.buffer) {
-        return {
-          type: 'error',
-          reason: 'Failed to load map file'
-        }
+    let mapName = ''
+    if (bag.replays.length) {
+      mapName = bag.replays[0].maps[0].name + '.bsp'
+    } else if (name.slice(-4) === '.bsp') {
+      mapName = name
+    } else {
+      return {
+        type: 'error',
+        reason: 'Invalid file name. Expected .dem or .bsp'
       }
-      const map = BspParser.parse(mapName, mapFile.buffer)
+    }
 
+    const mapFile = await this.queue(ResourceType.map, mapName, 'map')
+    if (mapFile.error || !mapFile.buffer) {
+      return { type: 'error', reason: 'Failed to load map file' }
+    }
+    bag.maps.push(BspParser.parse(mapName, mapFile.buffer))
+
+    if (bag.replays.length) {
       const soundPromises: {
-        name: string,
-        index: number,
-        promise:Promise<Resource>
+        name: string
+        index: number
+        promise: Promise<Resource>
       }[] = []
-      const soundNames = replay.maps[0].resources.sounds
+      const soundNames = bag.replays[0].maps[0].resources.sounds
       for (let i = 0; i < soundNames.length; ++i) {
         const name = soundNames[i].name
         if (soundNames[i].used) {
@@ -242,7 +262,7 @@ export class Loader {
         }
       }
       const soundFiles = await Promise.all(soundPromises.map(a => a.promise))
-      const sounds = await Promise.all(
+      bag.sounds = (await Promise.all(
         soundFiles.map((a, i) => {
           return new Promise<Sound | null>(resolve => {
             if (a.buffer) {
@@ -257,48 +277,23 @@ export class Loader {
             }
           })
         })
-      )
+      )).filter(a => a) as Sound[]
+    }
 
-      return {
-        type: 'success',
-        resources: {
-          replay,
-          map,
-          textures: [],
-          fonts: [],
-          sounds: sounds.filter(a => a) as Sound[],
-          sprites: [],
-          models: []
-        }
-      }
-    } else if (name.slice(-4) === '.bsp') {
-      const mapFile = await this.queue(ResourceType.map, name, 'map')
-      if (mapFile.error || !mapFile.buffer) {
-        return {
-          type: 'error',
-          reason: 'Failed to load map file'
-        }
-      }
-      const map = BspParser.parse(
-        name.slice(0, name.length - 4),
-        mapFile.buffer
-      )
+    bag.textures = bag.maps[0].textures
+      .filter(a => !a.isExternal)
+      .map(a => new Texture(a.name, a.width, a.height, a.data))
 
-      return {
-        type: 'success',
-        resources: {
-          map,
-          textures: [],
-          fonts: [],
-          sounds: [],
-          sprites: [],
-          models: []
-        }
-      }
-    } else {
-      return {
-        type: 'error',
-        reason: 'Invalid file extension. Expected either .dem or .bsp'
+    return {
+      type: 'success',
+      resources: {
+        replay: bag.replays[0],
+        map: bag.maps[0],
+        textures: bag.textures,
+        fonts: bag.fonts,
+        sounds: bag.sounds,
+        sprites: bag.sprites,
+        models: bag.models
       }
     }
   }

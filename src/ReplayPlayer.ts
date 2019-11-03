@@ -214,7 +214,6 @@ export class ReplayPlayer {
             // TODO: Magic number SVC_SOUND
             let msgSound = message.data
             let sound = sounds.find((s: any) => s.index === msgSound.soundIndex)
-            console.log(msgSound)
             if (sound && sound.name !== 'common/null.wav') {
               let channel = msgSound.channel
               let volume = msgSound.volume

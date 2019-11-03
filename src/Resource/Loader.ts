@@ -225,16 +225,23 @@ export class Loader {
       }
       const map = BspParser.parse(mapName, mapFile.buffer)
 
-      const soundPromises: Promise<Resource>[] = []
+      const soundPromises: {
+        name: string,
+        index: number,
+        promise:Promise<Resource>
+      }[] = []
       const soundNames = replay.maps[0].resources.sounds
       for (let i = 0; i < soundNames.length; ++i) {
         const name = soundNames[i].name
         if (soundNames[i].used) {
-          console.log(soundNames[i])
-          soundPromises.push(this.queue(ResourceType.sound, name, 'sound'))
+          soundPromises.push({
+            name: soundNames[i].name,
+            index: soundNames[i].index,
+            promise: this.queue(ResourceType.sound, name, 'sound')
+          })
         }
       }
-      const soundFiles = await Promise.all(soundPromises)
+      const soundFiles = await Promise.all(soundPromises.map(a => a.promise))
       const sounds = await Promise.all(
         soundFiles.map((a, i) => {
           return new Promise<Sound | null>(resolve => {
@@ -242,9 +249,8 @@ export class Loader {
               Sound.create(a.buffer).then(s => {
                 resolve(s)
 
-                // FIX THIS
-                s.name = soundNames[i].name
-                s.index = soundNames[i].index
+                s.name = soundPromises[i].name
+                s.index = soundPromises[i].index
               })
             } else {
               resolve(null)

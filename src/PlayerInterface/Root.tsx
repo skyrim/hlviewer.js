@@ -7,6 +7,7 @@ import { ReplayMode } from './ReplayMode'
 import { Fullscreen } from '../Fullscreen'
 import { Game, PlayerMode } from '../Game'
 import { RootStyle as s } from './Root.style'
+import { LoadListenerType } from '../Resource/Loader'
 
 interface RootProps {
   game: Game
@@ -45,8 +46,14 @@ export class Root extends Component<RootProps, RootState> {
 
     this.node.appendChild(game.getCanvas())
 
-    game.on('loadstart', this.onLoadStart)
-    game.on('load', this.onLoadEnd)
+    game.loader.addListener({
+      type: LoadListenerType.batchStart,
+      listener: this.onLoadStart
+    })
+    game.loader.addListener({
+      type: LoadListenerType.batchFinish,
+      listener: this.onLoadEnd
+    })
     game.on('modechange', this.onModeChange)
 
     root.addEventListener('click', this.onRootClick)
@@ -68,8 +75,14 @@ export class Root extends Component<RootProps, RootState> {
     const game = this.props.game
     const root = this.props.root
 
-    game.off('loadstart', this.onLoadStart)
-    game.off('load', this.onLoadEnd)
+    game.loader.removeListener({
+      type: LoadListenerType.batchStart,
+      listener: this.onLoadStart
+    })
+    game.loader.removeListener({
+      type: LoadListenerType.batchFinish,
+      listener: this.onLoadEnd
+    })
     game.off('modechange', this.onModeChange)
 
     root.removeEventListener('click', this.onRootClick)
@@ -188,7 +201,8 @@ export class Root extends Component<RootProps, RootState> {
     this.setState({ isLoading: true })
   }
 
-  onLoadEnd = () => {
+  onLoadEnd = (/* error: string */) => {
+    // TODO: display loading error message if loading failed
     this.setState({ isLoading: false })
   }
 

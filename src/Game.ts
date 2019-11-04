@@ -229,33 +229,17 @@ export class Game {
       this.changeMode(PlayerMode.REPLAY)
     }
 
-    if (!resources.map) {
-      return
-    }
-
-    const map = resources.map
-    // map.skies
-    // const textures = resources.textures
-    // const skies = loader.skies
-    // let skiesValid = true
-    // skies.forEach(sky => {
-    //   skiesValid = skiesValid && sky.isDone()
-    // })
-    // if (skiesValid) {
-    //   skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0))
-    // }
-
-    // // add sprites
+    // TODO: set sky textures
+    // TODO: add sprites
     // Object.entries(loader.sprites).forEach(([name, item]) => {
     //   if (item.data) {
     //     map.sprites[name] = item.data
     //   }
     // })
-
+    
     resources.sounds.forEach(sound => this.sounds.push(sound))
-    console.log(this.sounds)
 
-    this.changeMap(map)
+    this.changeMap(resources.map)
 
     if (this.config.shouldAutoplayOnLoad()) {
       this.player.play()

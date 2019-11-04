@@ -41,12 +41,12 @@ export function Loading(props: { loader: Loader; class?: string }) {
     }
 
     props.loader.addListener({
-      type: LoadListenerType.start,
+      type: LoadListenerType.itemStart,
       listener: loadStartListener
     })
 
     props.loader.addListener({
-      type: LoadListenerType.progress,
+      type: LoadListenerType.itemProgress,
       listener: loadProgressListener
     })
 
@@ -54,11 +54,11 @@ export function Loading(props: { loader: Loader; class?: string }) {
       dispatch(loadingClear())
 
       props.loader.removeListener({
-        type: LoadListenerType.start,
+        type: LoadListenerType.itemStart,
         listener: loadStartListener
       })
       props.loader.removeListener({
-        type: LoadListenerType.progress,
+        type: LoadListenerType.itemProgress,
         listener: loadProgressListener
       })
     }

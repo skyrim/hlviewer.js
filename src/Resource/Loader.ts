@@ -51,37 +51,53 @@ type LoadResultSuccess = {
 type LoadResult = LoadResultError | LoadResultCancel | LoadResultSuccess
 
 export enum LoadListenerType {
-  start,
-  progress,
-  finish
+  batchStart,
+  batchFinish,
+  itemStart,
+  itemFinish,
+  itemProgress
 }
 
-type LoadListenerStartFn = (type: ResourceType, name: string) => void
-type LoadListenerStart = {
-  type: LoadListenerType.start
-  listener: LoadListenerStartFn
+type LoadListenerBatchStartFn = () => void
+type LoadListenerBatchStart = {
+  type: LoadListenerType.batchStart
+  listener: LoadListenerBatchStartFn
 }
 
-type LoadListenerFinishFn = (type: ResourceType, name: string) => void
-type LoadListenerFinish = {
-  type: LoadListenerType.finish
-  listener: LoadListenerFinishFn
+type LoadListenerBatchFinishFn = (error: string) => void
+type LoadListenerBatchFinish = {
+  type: LoadListenerType.batchFinish
+  listener: LoadListenerBatchFinishFn
 }
 
-type LoadListenerProgressFn = (
+type LoadListenerItemStartFn = (type: ResourceType, name: string) => void
+type LoadListenerItemStart = {
+  type: LoadListenerType.itemStart
+  listener: LoadListenerItemStartFn
+}
+
+type LoadListenerItemFinishFn = (type: ResourceType, name: string) => void
+type LoadListenerItemFinish = {
+  type: LoadListenerType.itemFinish
+  listener: LoadListenerItemFinishFn
+}
+
+type LoadListenerItemProgressFn = (
   type: ResourceType,
   name: string,
   progress: number
 ) => void
-type LoadListenerProgress = {
-  type: LoadListenerType.progress
-  listener: LoadListenerProgressFn
+type LoadListenerItemProgress = {
+  type: LoadListenerType.itemProgress
+  listener: LoadListenerItemProgressFn
 }
 
 type LoadListener =
-  | LoadListenerStart
-  | LoadListenerFinish
-  | LoadListenerProgress
+  | LoadListenerBatchStart
+  | LoadListenerBatchFinish
+  | LoadListenerItemStart
+  | LoadListenerItemFinish
+  | LoadListenerItemProgress
 
 export class Loader {
   public static init(fetchFn: FetchFunction): Loader {
@@ -89,17 +105,16 @@ export class Loader {
   }
 
   private fetchFn: FetchFunction
+  private listeners: LoadListener[] = []
   private groups: {
     [name: string]: {
       progress: number
       resources: Resource[]
     }
   } = {}
-  private listeners: LoadListener[] = []
 
   private constructor(fetchFn: FetchFunction) {
     this.fetchFn = fetchFn
-    this.addListener({ type: LoadListenerType.start, listener: () => {} })
   }
 
   addListener(listener: LoadListener) {
@@ -126,7 +141,7 @@ export class Loader {
 
     for (let i = 0; i < this.listeners.length; ++i) {
       const listener = this.listeners[i]
-      if (listener.type === LoadListenerType.start) {
+      if (listener.type === LoadListenerType.itemStart) {
         listener.listener(type, name)
       }
     }
@@ -148,10 +163,7 @@ export class Loader {
         cancel: this.fetchFn(type, name, wads).subscribe({
           progress: progress => {
             const resources = resourceGroup.resources
-            const total = resources.reduce(
-              (prev, cur) => cur.progress + prev,
-              0
-            )
+            const total = resources.reduce((p, c) => c.progress + p, 0)
             const count = resourceGroup.resources.length
 
             resource.progress = progress
@@ -159,7 +171,7 @@ export class Loader {
 
             for (let i = 0; i < this.listeners.length; ++i) {
               const listener = this.listeners[i]
-              if (listener.type === LoadListenerType.progress) {
+              if (listener.type === LoadListenerType.itemProgress) {
                 listener.listener(type, name, progress)
               }
             }
@@ -171,7 +183,7 @@ export class Loader {
 
             for (let i = 0; i < this.listeners.length; ++i) {
               const listener = this.listeners[i]
-              if (listener.type === LoadListenerType.finish) {
+              if (listener.type === LoadListenerType.itemFinish) {
                 listener.listener(type, name)
               }
             }
@@ -185,7 +197,7 @@ export class Loader {
 
             for (let i = 0; i < this.listeners.length; ++i) {
               const listener = this.listeners[i]
-              if (listener.type === LoadListenerType.finish) {
+              if (listener.type === LoadListenerType.itemFinish) {
                 listener.listener(type, name)
               }
             }
@@ -199,18 +211,39 @@ export class Loader {
     })
   }
 
+  private runBatchStartListeners() {
+    console.log(1)
+    for (let i = 0; i < this.listeners.length; ++i) {
+      const listener = this.listeners[i]
+      if (listener.type === LoadListenerType.batchStart) {
+        listener.listener()
+      }
+    }
+  }
+
+  private runBatchFinishListeners(error: string) {
+    for (let i = 0; i < this.listeners.length; ++i) {
+      const listener = this.listeners[i]
+      if (listener.type === LoadListenerType.batchFinish) {
+        listener.listener(error)
+      }
+    }
+  }
+
   async load(name: string): Promise<LoadResult> {
+    this.runBatchStartListeners()
+
     const bag: {
-      replays: ReplayChunks[]
-      maps: Bsp[]
+      replay: ReplayChunks | undefined
+      map: Bsp | undefined
       sounds: Sound[]
       fonts: WadFont[]
       textures: Texture[]
       sprites: Sprite[]
       models: Mdl[]
     } = {
-      replays: [],
-      maps: [],
+      replay: undefined,
+      map: undefined,
       sounds: [],
       fonts: [],
       textures: [],
@@ -221,17 +254,27 @@ export class Loader {
     if (name.slice(-4) === '.dem') {
       const replayFile = await this.queue(ResourceType.replay, name, 'replay')
       if (replayFile.error || !replayFile.buffer) {
+        this.runBatchFinishListeners('TODO')
         return { type: 'error', reason: 'Failed to load replay file' }
       }
-      bag.replays.push(Replay.parseIntoChunks(replayFile.buffer))
+      try {
+        bag.replay = Replay.parseIntoChunks(replayFile.buffer)
+      } catch (e) {
+        this.runBatchFinishListeners('TODO')
+        return {
+          type: 'error',
+          reason: `Failed to parse replay file (${name})`
+        }
+      }
     }
 
     let mapName = ''
-    if (bag.replays.length) {
-      mapName = bag.replays[0].maps[0].name + '.bsp'
+    if (bag.replay) {
+      mapName = bag.replay.maps[0].name + '.bsp'
     } else if (name.slice(-4) === '.bsp') {
       mapName = name
     } else {
+      this.runBatchFinishListeners('TODO')
       return {
         type: 'error',
         reason: 'Invalid file name. Expected .dem or .bsp'
@@ -240,17 +283,26 @@ export class Loader {
 
     const mapFile = await this.queue(ResourceType.map, mapName, 'map')
     if (mapFile.error || !mapFile.buffer) {
+      this.runBatchFinishListeners('TODO')
       return { type: 'error', reason: 'Failed to load map file' }
     }
-    bag.maps.push(BspParser.parse(mapName, mapFile.buffer))
+    try {
+      bag.map = BspParser.parse(mapName, mapFile.buffer)
+    } catch (e) {
+      this.runBatchFinishListeners('TODO')
+      return {
+        type: 'error',
+        reason: `Failed to parse map file (${mapName})`
+      }
+    }
 
-    if (bag.replays.length) {
+    if (bag.replay) {
       const soundPromises: {
         name: string
         index: number
         promise: Promise<Resource>
       }[] = []
-      const soundNames = bag.replays[0].maps[0].resources.sounds
+      const soundNames = bag.replay.maps[0].resources.sounds
       for (let i = 0; i < soundNames.length; ++i) {
         const name = soundNames[i].name
         if (soundNames[i].used) {
@@ -280,15 +332,23 @@ export class Loader {
       )).filter(a => a) as Sound[]
     }
 
-    bag.textures = bag.maps[0].textures
+    bag.textures = bag.map.textures
       .filter(a => !a.isExternal)
       .map(a => new Texture(a.name, a.width, a.height, a.data))
+    const wads: string[] = bag.map.entities[0].wad
+    const externalTextures = await Promise.all(
+      bag.map.textures
+        .filter(a => a.isExternal)
+        .map(a => this.queue(ResourceType.texture, a.name, 'texture', wads))
+    )
+    console.log(externalTextures)
 
+    this.runBatchFinishListeners('TODO')
     return {
       type: 'success',
       resources: {
-        replay: bag.replays[0],
-        map: bag.maps[0],
+        replay: bag.replay,
+        map: bag.map,
         textures: bag.textures,
         fonts: bag.fonts,
         sounds: bag.sounds,

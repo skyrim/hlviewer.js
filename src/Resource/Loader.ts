@@ -336,12 +336,41 @@ export class Loader {
       .filter(a => !a.isExternal)
       .map(a => new Texture(a.name, a.width, a.height, a.data))
     const wads: string[] = bag.map.entities[0].wad
-    const externalTextures = await Promise.all(
-      bag.map.textures
-        .filter(a => a.isExternal)
-        .map(a => this.queue(ResourceType.texture, a.name, 'texture', wads))
+    const externalTextures = bag.map.textures.filter(a => a.isExternal)
+    const externalTextureFiles = await Promise.all(
+      externalTextures.map(a =>
+        this.queue(ResourceType.texture, a.name, 'texture', wads)
+      )
     )
-    console.log(externalTextures)
+    for (let i = 0; i < externalTextures.length; ++i) {
+      const a = externalTextures[i]
+
+      const file = externalTextureFiles[i]
+      if (!file.error && file.buffer) {
+        const blob = new Blob([file.buffer], { type: 'image/png' })
+        const image = new Image()
+        await new Promise((resolve) => {
+          image.onload = resolve
+          image.src = window.URL.createObjectURL(blob)
+        })
+        const canvas = document.createElement('canvas')
+        canvas.width = image.width
+        canvas.height = image.height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          break
+        }
+        ctx.drawImage(image, 0, 0)
+        console.log(image)
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        
+
+        bag.textures.push(
+          Texture.fromUint8ClampedArray(a.name, a.width, a.height, data.data)
+        )
+      }
+    }
+    // console.log(externalTextures)
 
     this.runBatchFinishListeners('TODO')
     return {

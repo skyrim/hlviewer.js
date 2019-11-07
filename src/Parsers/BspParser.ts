@@ -454,7 +454,7 @@ export class BspParser {
       const data = new Uint8Array(4)
       data[0] = data[1] = data[2] = data[3] = 255
 
-      return { name, width: 1, height: 1, data, isExternal }
+      return { name, width, height, data, isExternal }
     } else {
       r.skip(3 * 4) // skip mipmap offsets
 

@@ -6,12 +6,10 @@ import { basename, extname, assertUnreachable } from '../Util'
 const resolveUrl = (
   type: ResourceType,
   name: string,
-  wads: string[]
+  _wads: string[]
 ): string => {
   const extension = extname(name)
   const bname = basename(name, extension)
-
-  console.log(wads)
 
   switch (type) {
     case ResourceType.replay: {
@@ -42,8 +40,5 @@ const resolveUrl = (
 
 export const defaultFetcher: FetchFunction = (type, name, wads) => {
   const url = resolveUrl(type, name, wads)
-  const req = xhr(url, {
-    isBinary: true
-  })
-  return req
+  return xhr(url, { isBinary: true })
 }

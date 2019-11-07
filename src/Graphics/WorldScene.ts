@@ -3,6 +3,7 @@ import vec3 = require('gl-matrix/cjs/vec3')
 import { Bsp } from '../Bsp'
 import { Camera } from './Camera'
 import { Context } from './Context'
+import { Texture } from './Texture'
 import { MainShader } from './WorldShader/WorldShader'
 import { RenderMode } from '../Parsers/BspEntityParser'
 import { Sprite, SpriteType } from '../Parsers/Sprite'
@@ -80,9 +81,9 @@ export class WorldScene {
     this.shader = params.shader
   }
 
-  changeMap(bsp: Bsp) {
+  changeMap(bsp: Bsp, textures: Texture[]) {
     this.fillBuffer(bsp)
-    this.loadTextures(bsp)
+    this.loadTextures(bsp, textures)
     this.loadSpriteTextures(bsp)
     this.loadLightmap(bsp)
     this.bsp = bsp
@@ -294,7 +295,7 @@ export class WorldScene {
     gl.bufferData(gl.ARRAY_BUFFER, this.sceneInfo.data, gl.STATIC_DRAW)
   }
 
-  private loadTextures(bsp: Bsp) {
+  private loadTextures(bsp: Bsp, textures: Texture[]) {
     const gl = this.context.gl
 
     for (let i = 0; i < bsp.textures.length; ++i) {
@@ -305,7 +306,15 @@ export class WorldScene {
         throw new Error('fatal error')
       }
 
-      const texture = bsp.textures[i]
+      const texName = bsp.textures[i].name
+      let texture: Texture = bsp.textures[i]
+      const t = textures.find(a => a.name === texName)
+      if (t) {
+        texture = t
+      } else {
+        texture.width = 1
+        texture.height = 1
+      }
       if (!isPowerOfTwo(texture.width) || !isPowerOfTwo(texture.height)) {
         const w = texture.width
         const h = texture.height

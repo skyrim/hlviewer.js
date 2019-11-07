@@ -16,6 +16,7 @@ import { ReplayChunks } from './Replay/Replay'
 import { WorldScene } from './Graphics/WorldScene'
 import { Loader, ResourceBag } from './Resource/Loader'
 import { defaultFetcher } from './Resource/DefaultFetcher'
+import { Texture } from './Graphics/Texture'
 
 export enum PlayerMode {
   FREE,
@@ -181,14 +182,14 @@ export class Game {
     }
   }
 
-  changeMap(map: Bsp) {
+  changeMap(map: Bsp, textures: Texture[]) {
     if (this.mapName.toLowerCase() === map.name.toLowerCase()) {
       return
     }
 
     this.mapName = map.name
 
-    this.worldScene.changeMap(map)
+    this.worldScene.changeMap(map, textures)
     this.skyScene.changeMap(map)
 
     this.entities = map.entities
@@ -236,10 +237,10 @@ export class Game {
     //     map.sprites[name] = item.data
     //   }
     // })
-    
+
     resources.sounds.forEach(sound => this.sounds.push(sound))
 
-    this.changeMap(resources.map)
+    this.changeMap(resources.map, resources.textures)
 
     if (this.config.shouldAutoplayOnLoad()) {
       this.player.play()

@@ -9,6 +9,7 @@ import { Camera } from './Graphics/Camera'
 import { Keyboard } from './Input/Keyboard'
 import { SoundSystem } from './SoundSystem'
 import { Context } from './Graphics/Context'
+import { Texture } from './Graphics/Texture'
 import { ReplayPlayer } from './ReplayPlayer'
 import { Renderer } from './Graphics/Renderer'
 import { SkyScene } from './Graphics/SkyScene'
@@ -16,7 +17,6 @@ import { ReplayChunks } from './Replay/Replay'
 import { WorldScene } from './Graphics/WorldScene'
 import { Loader, ResourceBag } from './Resource/Loader'
 import { defaultFetcher } from './Resource/DefaultFetcher'
-import { Texture } from './Graphics/Texture'
 
 export enum PlayerMode {
   FREE,

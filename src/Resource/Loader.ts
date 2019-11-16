@@ -7,6 +7,7 @@ import { Texture } from '../Graphics/Texture'
 import { ResourceType } from './ResourceType'
 import { FetchFunction } from './FetchFunction'
 import { BspParser } from '../Parsers/BspParser'
+import { BrowserImage } from '../Parsers/BrowserImage'
 import { Replay, ReplayChunks } from '../Replay/Replay'
 
 export enum ResourceStatus {
@@ -212,7 +213,6 @@ export class Loader {
   }
 
   private runBatchStartListeners() {
-    console.log(1)
     for (let i = 0; i < this.listeners.length; ++i) {
       const listener = this.listeners[i]
       if (listener.type === LoadListenerType.batchStart) {
@@ -314,63 +314,27 @@ export class Loader {
         }
       }
       const soundFiles = await Promise.all(soundPromises.map(a => a.promise))
-      bag.sounds = (await Promise.all(
-        soundFiles.map((a, i) => {
-          return new Promise<Sound | null>(resolve => {
-            if (a.buffer) {
-              Sound.create(a.buffer).then(s => {
-                resolve(s)
+      bag.sounds = (
+        await Promise.all(
+          soundFiles.map((a, i) => {
+            return new Promise<Sound | null>(resolve => {
+              if (a.buffer) {
+                Sound.create(a.buffer).then(s => {
+                  resolve(s)
 
-                s.name = soundPromises[i].name
-                s.index = soundPromises[i].index
-              })
-            } else {
-              resolve(null)
-            }
+                  s.name = soundPromises[i].name
+                  s.index = soundPromises[i].index
+                })
+              } else {
+                resolve(null)
+              }
+            })
           })
-        })
-      )).filter(a => a) as Sound[]
-    }
-
-    bag.textures = bag.map.textures
-      .filter(a => !a.isExternal)
-      .map(a => new Texture(a.name, a.width, a.height, a.data))
-    const wads: string[] = bag.map.entities[0].wad
-    const externalTextures = bag.map.textures.filter(a => a.isExternal)
-    const externalTextureFiles = await Promise.all(
-      externalTextures.map(a =>
-        this.queue(ResourceType.texture, a.name, 'texture', wads)
-      )
-    )
-    for (let i = 0; i < externalTextures.length; ++i) {
-      const a = externalTextures[i]
-
-      const file = externalTextureFiles[i]
-      if (!file.error && file.buffer) {
-        const blob = new Blob([file.buffer], { type: 'image/png' })
-        const image = new Image()
-        await new Promise((resolve) => {
-          image.onload = resolve
-          image.src = window.URL.createObjectURL(blob)
-        })
-        const canvas = document.createElement('canvas')
-        canvas.width = image.width
-        canvas.height = image.height
-        const ctx = canvas.getContext('2d')
-        if (!ctx) {
-          break
-        }
-        ctx.drawImage(image, 0, 0)
-        console.log(image)
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        
-
-        bag.textures.push(
-          Texture.fromUint8ClampedArray(a.name, a.width, a.height, data.data)
         )
-      }
+      ).filter(a => a) as Sound[]
     }
-    // console.log(externalTextures)
+
+    bag.textures = await this.loadTextures(bag.map)
 
     this.runBatchFinishListeners('TODO')
     return {
@@ -385,6 +349,56 @@ export class Loader {
         models: bag.models
       }
     }
+  }
+
+  private async loadTextures(map: Bsp) {
+    const wads: string[] = map.entities[0].wad
+
+    const promises: Promise<Resource>[] = []
+    const textures: Texture[] = []
+    for (let i = 0; i < map.textures.length; ++i) {
+      const texture = map.textures[i]
+      textures.push(
+        new Texture(texture.name, texture.width, texture.height, texture.data)
+      )
+
+      if (texture.isExternal) {
+        promises.push(
+          this.queue(ResourceType.texture, texture.name, 'texture', wads)
+        )
+      }
+    }
+
+    const resources = await Promise.all(promises)
+    for (let i = 0; i < resources.length; ++i) {
+      const resource = resources[i]
+
+      const name = resource.file
+      const texture = textures.find(a => a.name === name)
+      if (!texture) {
+        // NOTE: Cannot happen, but type system doesn't know
+        continue
+      }
+
+      if (resource.error || !resource.buffer) {
+        // TODO: Log error? Texture file not fetched. Setting default texture.
+        texture.width = 1
+        texture.height = 1
+        texture.data = new Uint8Array([28, 217, 111, 255])
+        continue
+      }
+
+      const parsedTexture = await BrowserImage.parseArrayBuffer(resource.buffer)
+      if (!parsedTexture) {
+        // TODO: Log error? Image parser might fail
+        continue
+      }
+      texture.width = parsedTexture.width
+      texture.height = parsedTexture.height
+      texture.data = parsedTexture.data
+    }
+
+    return textures
   }
 
   cancel() {}

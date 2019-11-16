@@ -19,6 +19,7 @@ const resolveUrl = (
       return `/res/maps/${bname}.bsp`
     }
     case ResourceType.texture: {
+      // TODO: file types other than png
       return `/res/textures/${bname}.png`
     }
     case ResourceType.font: {

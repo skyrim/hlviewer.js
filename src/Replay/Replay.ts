@@ -583,7 +583,6 @@ export class Replay {
         let resourceList = frame.data.find(
           (msg: any) => msg.type === FrameDataReader.SVC.RESOURCELIST
         )
-        console.log(resourceList)
         if (resourceList && currentMap) {
           currentMap.setResources(resourceList.data)
         }

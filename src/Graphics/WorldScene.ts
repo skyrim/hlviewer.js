@@ -7,7 +7,18 @@ import { Texture } from './Texture'
 import { MainShader } from './WorldShader/WorldShader'
 import { RenderMode } from '../Parsers/BspEntityParser'
 import { Sprite, SpriteType } from '../Parsers/Sprite'
-import { isPowerOfTwo, nextPowerOfTwo, resizeTexture } from './Util'
+import {
+  isPowerOfTwo,
+  nextPowerOfTwo,
+  resizeTexture,
+  normalizeTextureToPowerOfTwoResolution
+} from './Util'
+import {
+  GLTexture,
+  TextureMagFilter,
+  TextureMinFilter,
+  TextureWrap
+} from './GLTexture'
 
 type FaceInfo = {
   offset: number
@@ -83,7 +94,7 @@ export class WorldScene {
 
   changeMap(bsp: Bsp, textures: Texture[]) {
     this.fillBuffer(bsp)
-    this.loadTextures(bsp, textures)
+    this.textures = this.loadTextures(textures)
     this.loadSpriteTextures(bsp)
     this.loadLightmap(bsp)
     this.bsp = bsp
@@ -295,75 +306,31 @@ export class WorldScene {
     gl.bufferData(gl.ARRAY_BUFFER, this.sceneInfo.data, gl.STATIC_DRAW)
   }
 
-  private loadTextures(bsp: Bsp, textures: Texture[]) {
-    const gl = this.context.gl
-
-    for (let i = 0; i < bsp.textures.length; ++i) {
-      const glTexture = gl.createTexture()
+  private loadTextures(textures: Texture[]) {
+    return textures.map(texture => {
+      texture = normalizeTextureToPowerOfTwoResolution(texture)
+      const glTexture = GLTexture.create(this.context, texture, {
+        minFilter: TextureMinFilter.linearMipmapLinear,
+        magFilter: TextureMagFilter.linear,
+        wrapS: TextureWrap.repeat,
+        wrapT: TextureWrap.repeat,
+        anisotropy: 16,
+        generateMipmap: true
+      })
       if (!glTexture) {
         // shouldnt happen
         // TODO: handle better
         throw new Error('fatal error')
       }
 
-      const texName = bsp.textures[i].name
-      let texture: Texture = bsp.textures[i]
-      const t = textures.find(a => a.name === texName)
-      if (t) {
-        texture = t
-      } else {
-        texture.width = 1
-        texture.height = 1
-      }
-      if (!isPowerOfTwo(texture.width) || !isPowerOfTwo(texture.height)) {
-        const w = texture.width
-        const h = texture.height
-        const nw = nextPowerOfTwo(texture.width)
-        const nh = nextPowerOfTwo(texture.height)
-        texture.data = resizeTexture(texture.data, w, h, nw, nh)
-        texture.width = nw
-        texture.height = nh
-      }
-
-      gl.bindTexture(gl.TEXTURE_2D, glTexture)
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        texture.width,
-        texture.height,
-        0,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        texture.data
-      )
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-      gl.texParameteri(
-        gl.TEXTURE_2D,
-        gl.TEXTURE_MIN_FILTER,
-        gl.LINEAR_MIPMAP_LINEAR
-      )
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-      gl.generateMipmap(gl.TEXTURE_2D)
-
-      const anisotropy = this.context.getAnisotropyExtension()
-      if (anisotropy) {
-        gl.texParameteri(
-          gl.TEXTURE_2D,
-          anisotropy.TEXTURE_MAX_ANISOTROPY_EXT,
-          this.context.getMaxAnisotropy(anisotropy)
-        )
-      }
-
-      this.textures.push({
+      return {
         name: texture.name,
         width: texture.width,
         height: texture.height,
         data: texture.data,
-        handle: glTexture
-      })
-    }
+        handle: glTexture.getHandle()
+      }
+    })
   }
 
   private loadSpriteTextures(bsp: Bsp) {

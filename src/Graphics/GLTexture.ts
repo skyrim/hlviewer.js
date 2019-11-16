@@ -30,6 +30,7 @@ type TextureExtraParams = {
   minFilter?: TextureMinFilter
   magFilter?: TextureMagFilter
   anisotropy?: number
+  generateMipmap?: boolean
 }
 
 export class GLTexture {
@@ -58,13 +59,13 @@ export class GLTexture {
       gl.UNSIGNED_BYTE,
       texture.data
     )
-    gl.bindTexture(gl.TEXTURE_2D, texture)
 
-    const premulAlpha =
-      params.unpackPremultiplyAlpha !== undefined
-        ? params.unpackPremultiplyAlpha
-        : true
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, premulAlpha)
+    // TODO: why does this generate a warning?
+    // const premulAlpha =
+    //   params.unpackPremultiplyAlpha !== undefined
+    //     ? params.unpackPremultiplyAlpha
+    //     : true
+    // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, premulAlpha)
 
     const wrapS = params.wrapS || TextureWrap.clampToEdge
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS)
@@ -85,6 +86,12 @@ export class GLTexture {
         const a = Math.max(1, Math.min(params.anisotropy, maxAf))
         gl.texParameteri(gl.TEXTURE_2D, afExt.TEXTURE_MAX_ANISOTROPY_EXT, a)
       }
+    }
+
+    const generateMipmap =
+      params.generateMipmap === undefined ? true : params.generateMipmap
+    if (generateMipmap) {
+      gl.generateMipmap(gl.TEXTURE_2D)
     }
 
     return new GLTexture(texture.name, texture.width, texture.height, tex)

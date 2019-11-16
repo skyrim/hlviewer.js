@@ -1,3 +1,5 @@
+import { Texture } from './Texture'
+
 export const resizeTexture = (
   pixels: Uint8Array,
   width: number,
@@ -43,4 +45,18 @@ export const nextPowerOfTwo = (n: number) => {
     n = n | (n >> i)
   }
   return n + 1
+}
+
+export const normalizeTextureToPowerOfTwoResolution = (texture: Texture) => {
+  if (!isPowerOfTwo(texture.width) || !isPowerOfTwo(texture.height)) {
+    const w = texture.width
+    const h = texture.height
+    const nw = nextPowerOfTwo(texture.width)
+    const nh = nextPowerOfTwo(texture.height)
+    const data = resizeTexture(texture.data, w, h, nw, nh)
+
+    return new Texture(texture.name, nw, nh, data)
+  } else {
+    return texture
+  }
 }

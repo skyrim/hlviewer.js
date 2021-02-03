@@ -1,5 +1,5 @@
-import { EventEmitter } from 'events'
 import { Bsp } from './Bsp'
+import { evt } from './Util'
 import * as Time from './Time'
 import { Sound } from './Sound'
 import { Loader } from './Loader'
@@ -25,7 +25,7 @@ type GameInitSuccess = { status: 'success'; game: Game }
 type GameInitError = { status: 'error'; message: string }
 type GameInit = GameInitSuccess | GameInitError
 
-export class Game {
+export class Game extends EventTarget {
   public static init(config: Config): GameInit {
     const status = Context.checkWebGLSupport()
     if (!status.hasSupport) {
@@ -110,7 +110,6 @@ export class Game {
   entities: any[] = []
   sounds: Sound[]
   soundSystem: SoundSystem
-  events: EventEmitter
   player: ReplayPlayer
 
   canvas: HTMLCanvasElement
@@ -129,12 +128,16 @@ export class Game {
     worldScene: WorldScene
     skyScene: SkyScene
   }) {
+    super();
     this.sounds = []
     this.soundSystem = new SoundSystem()
 
     this.config = params.config
     this.loader = new Loader(this.config)
-    this.loader.events.addListener('loadall', this.onLoadAll)
+
+    this.loader.addEventListener('loadAll', (event) => {
+      this.onLoadAll((<CustomEvent>event).detail.loader)
+    })
 
     document.addEventListener('touchstart', this.onTouchStart, false)
     document.addEventListener('touchend', this.onTouchEnd, false)
@@ -156,7 +159,6 @@ export class Game {
     this.mode = PlayerMode.FREE
 
     this.player = new ReplayPlayer(this)
-    this.events = new EventEmitter()
 
     this.mapName = ''
   }
@@ -166,7 +168,7 @@ export class Game {
   }
 
   load(name: string) {
-    this.events.emit('loadstart')
+    this.dispatchEvent(evt('loadstart'));
     this.loader.load(name)
   }
 
@@ -200,21 +202,22 @@ export class Game {
   }
 
   changeReplay(replay: Replay) {
-    this.events.emit('prereplaychange', this, replay)
+    //this.events.emit('prereplaychange', this, replay)
 
     this.player.changeReplay(replay)
 
-    this.events.emit('postreplaychange', this, replay)
+    //this.events.emit('postreplaychange', this, replay)
   }
 
   changeMode(mode: PlayerMode) {
     this.mode = mode
-    this.events.emit('modechange', mode)
+    this.dispatchEvent(evt('modechange'));
   }
 
   setTitle(title: string) {
     this.title = title
-    this.events.emit('titlechange', title)
+
+    this.dispatchEvent(evt('titlechange', { detail: { item: title }}));
   }
 
   getTitle() {
@@ -258,7 +261,7 @@ export class Game {
 
     this.changeMap(map)
 
-    this.events.emit('load', loader)
+    this.dispatchEvent(evt('load', { detail: { item: loader } }));
   }
 
   draw = () => {
@@ -318,7 +321,7 @@ export class Game {
   }
 
   update(dt: number) {
-    this.events.emit('preupdate', this)
+    this.dispatchEvent(evt('preupdate', { detail: { item: this } }));
 
     const camera = this.camera
     const keyboard = this.keyboard
@@ -382,15 +385,15 @@ export class Game {
     mouse.delta[0] = 0
     mouse.delta[1] = 0
 
-    this.events.emit('postupdate', this)
+    this.dispatchEvent(evt('postupdate', { detail: { item: this } }));
   }
 
   on(eventName: string, callback: (...args: any[]) => void) {
-    return this.events.addListener(eventName, callback)
+    return this.addEventListener(eventName, callback)
   }
 
   off(eventName: string, callback: (...args: any[]) => void) {
-    this.events.removeListener(eventName, callback)
+    return this.removeEventListener(eventName, callback)
   }
 
   onTouchStart = (e: TouchEvent) => {

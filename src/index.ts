@@ -2,7 +2,7 @@ import { Game } from './Game'
 import { Config } from './Config'
 import { PlayerInterface } from './PlayerInterface/index'
 
-declare var VERSION: string
+const VERSION = '1'
 
 class HLV {
   public static readonly VERSION = VERSION
@@ -27,7 +27,7 @@ class HLV {
 }
 
 namespace HLViewer {
-  export function init(rootSelector: string, params: Config | string) {
+  export function init(rootSelector: string, params: { paths: { replays: string; maps: string; sounds: string; skies: string; wads: string; base: string } }) {
     const node = document.querySelector(rootSelector)
     if (!node) {
       return null
@@ -49,4 +49,4 @@ namespace HLViewer {
   }
 }
 
-export = HLViewer
+export default HLViewer

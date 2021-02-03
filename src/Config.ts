@@ -24,7 +24,7 @@ export class Config {
       return new Config({
         paths: {
           base: (params && params.paths && params.paths.base) || '',
-          replays: (params && params.paths && params.paths.replays) || '/replays',
+          replays: (params && params.paths && params.paths.replays) || '/demos',
           maps: (params && params.paths && params.paths.maps) || '/maps',
           wads: (params && params.paths && params.paths.wads) || '/wads',
           skies: (params && params.paths && params.paths.skies) || '/skies',

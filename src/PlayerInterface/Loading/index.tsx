@@ -33,14 +33,22 @@ export class Loading extends Component<LoadingProps, LoadingState> {
 
   componentDidMount() {
     const loader = this.props.game.loader
-    loader.addLoadStartListener(this.onItemLoad)
-    loader.addProgressListener(this.onItemProgress)
+    // loader.addLoadStartListener(this.onItemLoad)
+    loader.addEventListener('loadstart', (event: any) => {
+      this.onItemLoad(event.detail.item)
+    })
+    // loader.addProgressListener(this.onItemProgress)
+    loader.addEventListener('progress', (event: any) => {
+      this.onItemProgress(event.detail.item)
+    })
   }
 
   componentWillUnmount() {
     const loader = this.props.game.loader
-    loader.removeLoadStartListener(this.onItemLoad)
-    loader.removeProgressListener(this.onItemProgress)
+    // loader.removeLoadStartListener(this.onItemLoad)
+    loader.removeEventListener('loadstart', this.onItemLoad as any)
+    // loader.removeProgressListener(this.onItemProgress)
+    loader.removeEventListener('progress', this.onItemProgress)
   }
 
   onItemLoad = (item: LoadItem) => {

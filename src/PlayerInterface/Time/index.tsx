@@ -13,15 +13,15 @@ interface TimeState {
 
 export class Time extends Component<TimeProps, TimeState> {
   componentDidMount() {
-    this.props.player.events.on('play', this.onPlay)
-    this.props.player.events.on('pause', this.onPauseOrStop)
-    this.props.player.events.on('stop', this.onPauseOrStop)
+    this.props.player.on('play', this.onPlay)
+    this.props.player.on('pause', this.onPauseOrStop)
+    this.props.player.on('stop', this.onPauseOrStop)
   }
 
   componentWillUnmount() {
-    this.props.player.events.removeListener('play', this.onPlay)
-    this.props.player.events.removeListener('pause', this.onPauseOrStop)
-    this.props.player.events.removeListener('stop', this.onPauseOrStop)
+    this.props.player.off('play', this.onPlay)
+    this.props.player.off('pause', this.onPauseOrStop)
+    this.props.player.off('stop', this.onPauseOrStop)
   }
 
   onPlay = () => {

@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import { evt } from './Util'
 import { Sound } from './Sound'
 
 const wnd: any = window
@@ -6,17 +6,15 @@ const wnd: any = window
 const polyfillAudioContext = wnd.AudioContext || wnd.webkitAudioContext
 const audioContext: AudioContext = new polyfillAudioContext()
 
-export class SoundSystem {
+export class SoundSystem extends EventTarget {
   context: AudioContext
   channels: any[]
   masterGain: GainNode
   preMuteVolume: number
-  events: EventEmitter
 
   constructor() {
+    super()
     this.context = audioContext
-
-    this.events = new EventEmitter()
 
     const volume = parseFloat(localStorage.getItem('volume') || '0.3')
     localStorage.setItem('volume', volume.toString())
@@ -75,7 +73,8 @@ export class SoundSystem {
     this.masterGain.gain.value = value
 
     localStorage.setItem('volume', value.toString())
-    this.events.emit('volumeChange', value)
+
+    this.dispatchEvent(evt('volumeChange', { detail: { item: value } }));
   }
 
   toggleMute() {

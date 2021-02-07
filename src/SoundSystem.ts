@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import { createNanoEvents, Emitter as EventEmitter } from 'nanoevents'
 import { Sound } from './Sound'
 
 const wnd: any = window
@@ -16,7 +16,7 @@ export class SoundSystem {
   constructor() {
     this.context = audioContext
 
-    this.events = new EventEmitter()
+    this.events = createNanoEvents()
 
     const volume = parseFloat(localStorage.getItem('volume') || '0.3')
     localStorage.setItem('volume', volume.toString())

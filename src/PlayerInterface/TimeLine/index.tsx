@@ -1,4 +1,5 @@
 import { h, Component } from 'preact'
+import { Unsubscribe } from 'nanoevents'
 import { Game } from '../../Game'
 import { TimeLine as s } from './style'
 
@@ -10,25 +11,31 @@ interface TimeLineState {
   progress: number
   ghostKnobActive: boolean
   ghostKnobPos: string
+  onPostUpdate: (() => void) | null
 }
 
 export class TimeLine extends Component<TimeLineProps, TimeLineState> {
+  private offPostUpdate?: Unsubscribe
+
   constructor(props: TimeLineProps) {
     super(props)
 
     this.state = {
       progress: 0,
       ghostKnobActive: false,
-      ghostKnobPos: '0%'
+      ghostKnobPos: '0%',
+      onPostUpdate: null
     }
   }
 
   componentDidMount() {
-    this.props.game.on('postupdate', this.onPostUpdate)
+    this.offPostUpdate = this.props.game.events.on('postupdate', this.onPostUpdate)
   }
 
   componentWillUnmount() {
-    this.props.game.off('postupdate', this.onPostUpdate)
+    if (this.offPostUpdate) {
+      this.offPostUpdate()
+    }
   }
 
   onPostUpdate = () => {

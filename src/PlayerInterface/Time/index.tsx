@@ -1,4 +1,5 @@
 import { h, Component } from 'preact'
+import { Unsubscribe } from 'nanoevents'
 import { formatTime } from '../../Time'
 import { ReplayPlayer } from '../../ReplayPlayer'
 import { Time as s } from './style'
@@ -12,16 +13,20 @@ interface TimeState {
 }
 
 export class Time extends Component<TimeProps, TimeState> {
+  private offPlay?: Unsubscribe
+  private offPause?: Unsubscribe
+  private offStop?: Unsubscribe
+
   componentDidMount() {
-    this.props.player.events.on('play', this.onPlay)
-    this.props.player.events.on('pause', this.onPauseOrStop)
-    this.props.player.events.on('stop', this.onPauseOrStop)
+    this.offPlay = this.props.player.events.on('play', this.onPlay)
+    this.offPause = this.props.player.events.on('pause', this.onPauseOrStop)
+    this.offStop = this.props.player.events.on('stop', this.onPauseOrStop)
   }
 
   componentWillUnmount() {
-    this.props.player.events.removeListener('play', this.onPlay)
-    this.props.player.events.removeListener('pause', this.onPauseOrStop)
-    this.props.player.events.removeListener('stop', this.onPauseOrStop)
+    this.offPlay && this.offPlay()
+    this.offPause && this.offPause()
+    this.offStop && this.offStop()
   }
 
   onPlay = () => {

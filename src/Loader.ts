@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import { createNanoEvents, Emitter as EventEmitter } from 'nanoevents'
 import { Bsp } from './Bsp'
 import { Sound } from './Sound'
 import { extname } from './Util'
@@ -113,8 +113,8 @@ export class Loader {
     this.wads = []
     this.sounds = []
 
-    this.events = new EventEmitter()
-    this.events.addListener('error', (err: any) => {
+    this.events = createNanoEvents()
+    this.events.on('error', (err: any) => {
       console.error(err)
     })
   }
@@ -436,21 +436,5 @@ export class Loader {
     sound.done(data)
     this.events.emit('load', sound)
     this.checkStatus()
-  }
-
-  addLoadStartListener(listener: (item: LoadItem) => void) {
-    this.events.addListener('loadstart', listener)
-  }
-
-  removeLoadStartListener(listener: (item: LoadItem) => void) {
-    this.events.removeListener('loadstart', listener)
-  }
-
-  addProgressListener(listener: (item: LoadItem) => void) {
-    this.events.addListener('progress', listener)
-  }
-
-  removeProgressListener(listener: (item: LoadItem) => void) {
-    this.events.removeListener('progress', listener)
   }
 }

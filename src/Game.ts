@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import { createNanoEvents, Emitter as EventEmitter } from 'nanoevents'
 import { Bsp } from './Bsp'
 import * as Time from './Time'
 import { Sound } from './Sound'
@@ -134,7 +134,7 @@ export class Game {
 
     this.config = params.config
     this.loader = new Loader(this.config)
-    this.loader.events.addListener('loadall', this.onLoadAll)
+    this.loader.events.on('loadall', this.onLoadAll)
 
     document.addEventListener('touchstart', this.onTouchStart, false)
     document.addEventListener('touchend', this.onTouchEnd, false)
@@ -156,7 +156,7 @@ export class Game {
     this.mode = PlayerMode.FREE
 
     this.player = new ReplayPlayer(this)
-    this.events = new EventEmitter()
+    this.events = createNanoEvents()
 
     this.mapName = ''
   }
@@ -383,14 +383,6 @@ export class Game {
     mouse.delta[1] = 0
 
     this.events.emit('postupdate', this)
-  }
-
-  on(eventName: string, callback: (...args: any[]) => void) {
-    return this.events.addListener(eventName, callback)
-  }
-
-  off(eventName: string, callback: (...args: any[]) => void) {
-    this.events.removeListener(eventName, callback)
   }
 
   onTouchStart = (e: TouchEvent) => {

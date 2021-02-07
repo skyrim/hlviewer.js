@@ -1,4 +1,5 @@
 import { h, Component } from 'preact'
+import { Unsubscribe } from 'nanoevents'
 import { Game } from '../../Game'
 import { VolumeControl as s } from './style'
 
@@ -16,6 +17,8 @@ export class VolumeControl extends Component<
   VolumeControlProps,
   VolumeControlState
 > {
+  private offVolumeChange?: Unsubscribe
+
   constructor(props: VolumeControlProps) {
     super(props)
 
@@ -27,14 +30,11 @@ export class VolumeControl extends Component<
   }
 
   componentDidMount() {
-    this.props.game.soundSystem.events.on('volumeChange', this.onVolumeChange)
+    this.offVolumeChange = this.props.game.soundSystem.events.on('volumeChange', this.onVolumeChange)
   }
 
   componentWillUnmount() {
-    this.props.game.soundSystem.events.removeListener(
-      'volumeChange',
-      this.onVolumeChange
-    )
+    this.offVolumeChange && this.offVolumeChange()
   }
 
   onVolumeChange = () => {

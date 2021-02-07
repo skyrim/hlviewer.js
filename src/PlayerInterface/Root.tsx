@@ -1,4 +1,5 @@
 import { h, Component } from 'preact'
+import { Unsubscribe } from 'nanoevents'
 import { Loading } from './Loading'
 import { FreeMode } from './FreeMode'
 import { ReplayMode } from './ReplayMode'
@@ -22,6 +23,10 @@ interface RootState {
 export class Root extends Component<RootProps, RootState> {
   private node: HTMLDivElement | null = null
   private fadeOut: any = 0
+  private offLoadStart?: Unsubscribe
+  private offLoad?: Unsubscribe
+  private offModeChange?: Unsubscribe
+  private offTitleChange?: Unsubscribe
 
   constructor(props: RootProps) {
     super(props)
@@ -45,10 +50,10 @@ export class Root extends Component<RootProps, RootState> {
 
     this.node.appendChild(game.getCanvas())
 
-    game.on('loadstart', this.onLoadStart)
-    game.on('load', this.onLoadEnd)
-    game.on('modechange', this.onModeChange)
-    game.on('titlechange', this.onTitleChange)
+    this.offLoadStart = game.events.on('loadstart', this.onLoadStart)
+    this.offLoad = game.events.on('load', this.onLoadEnd)
+    this.offModeChange = game.events.on('modechange', this.onModeChange)
+    this.offTitleChange = game.events.on('titlechange', this.onTitleChange)
 
     root.addEventListener('click', this.onRootClick)
     window.addEventListener('click', this.onWindowClick)
@@ -66,13 +71,12 @@ export class Root extends Component<RootProps, RootState> {
   }
 
   componentWillUnmount() {
-    const game = this.props.game
     const root = this.props.root
 
-    game.off('loadstart', this.onLoadStart)
-    game.off('load', this.onLoadEnd)
-    game.off('modechange', this.onModeChange)
-    game.off('titlechange', this.onTitleChange)
+    this.offLoadStart && this.offLoadStart()
+    this.offLoad && this.offLoad()
+    this.offModeChange && this.onModeChange()
+    this.offTitleChange && this.offTitleChange()
 
     root.removeEventListener('click', this.onRootClick)
     window.removeEventListener('click', this.onWindowClick)

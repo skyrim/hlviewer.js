@@ -1,4 +1,5 @@
 import { h, Component } from 'preact'
+import { Unsubscribe } from 'nanoevents'
 import { Time } from '../Time'
 import { Game } from '../../Game'
 import { TimeLine } from '../TimeLine'
@@ -20,16 +21,20 @@ interface ReplayModeProps {
 }
 
 export class ReplayMode extends Component<ReplayModeProps> {
+  private offPlay?: Unsubscribe
+  private offPause?: Unsubscribe
+  private offStop?: Unsubscribe
+
   componentDidMount() {
-    this.props.game.player.on('play', this.onPlayStateChange)
-    this.props.game.player.on('pause', this.onPlayStateChange)
-    this.props.game.player.on('stop', this.onPlayStateChange)
+    this.offPlay = this.props.game.player.events.on('play', this.onPlayStateChange)
+    this.offPause = this.props.game.player.events.on('pause', this.onPlayStateChange)
+    this.offStop = this.props.game.player.events.on('stop', this.onPlayStateChange)
   }
 
   componentWillUnmount() {
-    this.props.game.player.off('play', this.onPlayStateChange)
-    this.props.game.player.off('pause', this.onPlayStateChange)
-    this.props.game.player.off('stop', this.onPlayStateChange)
+    this.offPlay && this.offPlay()
+    this.offPause && this.offPause()
+    this.offStop && this.offStop()
   }
 
   onPlayClick = () => {

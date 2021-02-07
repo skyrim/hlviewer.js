@@ -6,10 +6,11 @@ import { TimeLine } from '../TimeLine'
 import { VolumeControl } from '../VolumeControl'
 import { PlayButton } from '../Buttons/PlayButton'
 import { PauseButton } from '../Buttons/PauseButton'
+import { RecordButton } from '../Buttons/RecordButton'
 import { VolumeButton } from '../Buttons/VolumeButton'
 import { SpeedUpButton } from '../Buttons/SpeedUpButton'
-import { SpeedDownButton } from '../Buttons/SpeedDownButton'
 import { SettingsButton } from '../Buttons/SettingsButton'
+import { SpeedDownButton } from '../Buttons/SpeedDownButton'
 import { FullscreenButton } from '../Buttons/FullscreenButton'
 import { ControlsStyle as cs } from '../Controls.style'
 
@@ -61,6 +62,42 @@ export class ReplayMode extends Component<ReplayModeProps> {
     this.forceUpdate()
   }
 
+  onRecord = () => {
+    const canvas = this.props.game.canvas
+    const stream = (canvas as any).captureStream(60) // record at 60fps
+    this.props.game.soundSystem.stream.stream.getAudioTracks().forEach((a) => stream.addTrack(a))
+
+    const chunks: Blob[] = []
+    const recorder = new MediaRecorder(stream, {
+      audioBitsPerSecond: 128000,
+      videoBitsPerSecond: 30720000,
+      mimeType: 'video/webm'
+    })
+    recorder.addEventListener('dataavailable', (e) => {
+      chunks.push(e.data)
+    })
+    recorder.addEventListener('stop', () => {
+      exportVid(new Blob(chunks, { type: 'video/webm' }))
+    })
+
+    recorder.start()
+    setTimeout(() => {
+      recorder.stop()
+    }, 3000)
+
+    function exportVid(blob: any) {
+      const vid = document.createElement('video')
+      vid.src = URL.createObjectURL(blob)
+      vid.controls = true
+      document.body.appendChild(vid)
+      const a = document.createElement('a')
+      a.download = 'output.webm'
+      a.href = vid.src
+      a.textContent = 'Download the clip'
+      document.body.appendChild(a)
+    }
+  }
+
   render() {
     const game = this.props.game
     const player = game.player
@@ -80,6 +117,7 @@ export class ReplayMode extends Component<ReplayModeProps> {
               <PauseButton onClick={this.onPauseClick} />
             )}
             <SpeedUpButton onClick={this.onSpeedUp} />
+            <RecordButton onClick={this.onRecord} />
             <VolumeButton onClick={this.onVolumeClick} />
             <VolumeControl game={game} />
             <Time player={player} />

@@ -2,7 +2,7 @@ const wnd: any = window
 
 let _now
 if (typeof performance !== 'undefined') {
-  if (performance.now) {
+  if ((performance as any).now) {
     _now = () => wnd.performance.now()
   } else if (wnd.performance.mozNow) {
     _now = () => wnd.performance.mozNow()

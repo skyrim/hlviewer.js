@@ -1,4 +1,5 @@
 import { h, Component } from 'preact'
+import { Unsubscribe } from 'nanoevents'
 import { Game } from '../../Game'
 import { LoadItem } from '../../Loader'
 import { LoadingStyle as s } from './style'
@@ -27,20 +28,22 @@ const itemTypeGroupName: { [name: string]: string } = {
 }
 
 export class Loading extends Component<LoadingProps, LoadingState> {
+  private offLoadStart?: Unsubscribe
+  private offProgress?: Unsubscribe
+
   state: LoadingState = {
     items: {}
   }
 
   componentDidMount() {
-    const loader = this.props.game.loader
-    loader.addLoadStartListener(this.onItemLoad)
-    loader.addProgressListener(this.onItemProgress)
+    const loaderEvents = this.props.game.loader.events
+    this.offLoadStart = loaderEvents.on('loadstart', this.onItemLoad)
+    this.offProgress = loaderEvents.on('progress', this.onItemProgress)
   }
 
   componentWillUnmount() {
-    const loader = this.props.game.loader
-    loader.removeLoadStartListener(this.onItemLoad)
-    loader.removeProgressListener(this.onItemProgress)
+    this.offLoadStart && this.offLoadStart()
+    this.offProgress && this.offProgress()
   }
 
   onItemLoad = (item: LoadItem) => {

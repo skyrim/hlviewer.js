@@ -1,4 +1,4 @@
-import * as Path from 'path'
+import { basename } from '../Util'
 import { ReplayChunk } from './ReplayChunk'
 
 export class ReplayMap {
@@ -7,7 +7,7 @@ export class ReplayMap {
   resources: any
 
   constructor(mapFilePath: string) {
-    this.name = Path.basename(mapFilePath, '.bsp')
+    this.name = basename(mapFilePath, '.bsp')
     this.chunks = []
     this.resources = {
       sounds: [],

@@ -1,5 +1,5 @@
 import { glMatrix } from 'gl-matrix'
-import { EventEmitter } from 'events'
+import { createNanoEvents, Emitter as EventEmitter } from 'nanoevents'
 import { Game } from './Game'
 import { Replay } from './Replay/Replay'
 import { ReplayState } from './Replay/ReplayState'
@@ -32,7 +32,7 @@ export class ReplayPlayer {
     this.game = game
     this.state = new ReplayState()
     this.replay = null
-    this.events = new EventEmitter()
+    this.events = createNanoEvents()
   }
 
   reset() {
@@ -50,14 +50,6 @@ export class ReplayPlayer {
       firstChunk.reader.seek(0)
       this.state = firstChunk.state.clone()
     }
-  }
-
-  on(eventName: string, callback: any) {
-    return this.events.on(eventName, callback)
-  }
-
-  off(eventName: string, callback: any) {
-    this.events.removeListener(eventName, callback)
   }
 
   changeReplay(replay: Replay) {

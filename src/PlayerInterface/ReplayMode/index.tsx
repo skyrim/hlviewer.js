@@ -1,7 +1,7 @@
 import { h, Component } from 'preact'
-import { Unsubscribe } from 'nanoevents'
+import type { Unsubscribe } from 'nanoevents'
 import { Time } from '../Time'
-import { Game } from '../../Game'
+import type { Game } from '../../Game'
 import { TimeLine } from '../TimeLine'
 import { VolumeControl } from '../VolumeControl'
 import { PlayButton } from '../Buttons/PlayButton'
@@ -32,9 +32,9 @@ export class ReplayMode extends Component<ReplayModeProps> {
   }
 
   componentWillUnmount() {
-    this.offPlay && this.offPlay()
-    this.offPause && this.offPause()
-    this.offStop && this.offStop()
+    this.offPlay?.()
+    this.offPause?.()
+    this.offStop?.()
   }
 
   onPlayClick = () => {

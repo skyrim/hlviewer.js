@@ -2,7 +2,7 @@ import { stylesheet } from 'typestyle'
 
 const menuStyle = () => ({
   display: 'none',
-  position: 'absolute' as 'absolute',
+  position: 'absolute' as const,
   left: '-38px',
   bottom: '48px',
   padding: '2px 6px',
@@ -16,6 +16,10 @@ const menuItemStyle = () => ({
   cursor: 'pointer',
   margin: '4px 0',
   padding: '4px',
+  textAlign: 'left' as const,
+  color: '#fff',
+  border: 'none' as const,
+  background: 'none' as const,
   $nest: {
     '&:last-child': {
       marginTop: 0

@@ -18,7 +18,7 @@ export class Sound {
         (buffer: AudioBuffer) => {
           resolve(new Sound(buffer))
         },
-        (err: any) => {
+        (err) => {
           reject(err)
         }
       )

@@ -33,12 +33,12 @@ export enum WorldSpawnDefaultTeam {
 export interface AiScriptedSequence {
   classname: 'aiscripted_sequence'
   m_iszEntity: string
-	m_iszPlay: string
-	m_flRadius: number
-	m_flRepeat: number
-	m_fMoveTo: AiScriptedSequenceMoveTo
-	m_iFinishSchedule: AiScriptedSequenceFinishSchedule
-	spawnflags: AiScriptedSequenceSpawnflags
+  m_iszPlay: string
+  m_flRadius: number
+  m_flRepeat: number
+  m_fMoveTo: AiScriptedSequenceMoveTo
+  m_iFinishSchedule: AiScriptedSequenceFinishSchedule
+  spawnflags: AiScriptedSequenceSpawnflags
 }
 export enum AiScriptedSequenceMoveTo {
   No = 0,
@@ -90,22 +90,22 @@ export enum AmbientGenericPreset {
   QuickPulse = 9,
   SlowOscillator = 10,
   Oscillator = 11,
-	QuickOscillator = 12,
-	GrungePitch = 13,
-	VeryLowPitch = 14,
-	LowPitch = 15,
-	HighPitch = 16,
-	VeryHighPitch = 17,
-	ScreamingPitch = 18,
-	OscillateSpinUpDown = 19,
-	PulseSpinUpDown = 20,
-	RandomPitch = 21,
-	RandomPitchFast = 22,
-	IncrementalSpinup = 23,
-	Alien = 24,
-	Bizzare = 25,
-	PlanetX = 26,
-	Haunted = 27
+  QuickOscillator = 12,
+  GrungePitch = 13,
+  VeryLowPitch = 14,
+  LowPitch = 15,
+  HighPitch = 16,
+  VeryHighPitch = 17,
+  ScreamingPitch = 18,
+  OscillateSpinUpDown = 19,
+  PulseSpinUpDown = 20,
+  RandomPitch = 21,
+  RandomPitchFast = 22,
+  IncrementalSpinup = 23,
+  Alien = 24,
+  Bizzare = 25,
+  PlanetX = 26,
+  Haunted = 27
 }
 export enum AmbientGenericSpawnFlags {
   PlayEverywhere = 1,
@@ -302,22 +302,22 @@ export interface CyclerWreckage {
 }
 
 export interface EnvBeam {
-  classname: 'env_beam',
+  classname: 'env_beam'
   renderEffect: RenderEffect
   renderMode: RenderMode
   renderAmmount: number
   renderColor: number[]
   radius: number
-	life: number
-	boltWidth: number
-	noiseAmplitude: number
-	texture: string
-	textureScroll: number
-	frameRate: number
-	frameStart: number
-	strikeTime: number
-	damage: number
-	spawnFlags: EnvBeamSpawnFlags
+  life: number
+  boltWidth: number
+  noiseAmplitude: number
+  texture: string
+  textureScroll: number
+  frameRate: number
+  frameStart: number
+  strikeTime: number
+  damage: number
+  spawnFlags: EnvBeamSpawnFlags
 }
 
 export enum EnvBeamSpawnFlags {
@@ -342,12 +342,12 @@ export enum ZHLTLightFlags {
 
 export enum RenderEffect {
   Normal = 0,
-	SlowPulse = 1, //* Additive or Texture mode only.
+  SlowPulse = 1, //* Additive or Texture mode only.
   FastPulse = 2, //* Additive or Texture mode only.
   SlowWidePulse = 3, //* Additive or Texture mode only.
-  FastWidePulse = 4,  //* Additive or Texture mode only.
+  FastWidePulse = 4, //* Additive or Texture mode only.
   SlowFadeAway = 5,
-	FastFadeAway = 6,
+  FastFadeAway = 6,
   SlowBecomeSolid = 7,
   FastBecomeSolid = 8,
   SlowStrobe = 9,
@@ -372,27 +372,27 @@ export enum RenderMode {
   Additive = 5
 }
 
-const parseNumberArray = (a: string) => a.split(' ').map(b => parseFloat(b))
+const parseNumberArray = (a: string) => a.split(' ').map((b) => Number.Number.parseFloat(b))
 
 const parsers: {
-  worldspawn: (entityData: {[name: string]: any}) => WorldSpawn
-  aiscripted_sequence: (entityData: {[name: string]: any}) => AiScriptedSequence
-  ambient_generic: (entityData: {[name: string]: any}) => AmbientGeneric
-  ammo_357: (entityData: {[name: string]: any}) => Ammo357
-  ammo_9mmAR: (entityData: {[name: string]: any}) => Ammo9mmAR
-  ammo_9mmbox: (entityData: {[name: string]: any}) => Ammo9mmBox
-  ammo_9mmclip: (entityData: {[name: string]: any}) => Ammo9mmClip
-  ammo_ARgrenades: (entityData: {[name: string]: any}) => AmmoARGrenades
-  ammo_buckshot: (entityData: {[name: string]: any}) => AmmoBuckShot
-  ammo_crossbow: (entityData: {[name: string]: any}) => AmmoCrossBox
-  ammo_gaussclip: (entityData: {[name: string]: any}) => AmmoGaussClip
-  ammo_rpgclip: (entityData: {[name: string]: any}) => AmmoRPGClip
-  button_target: (entityData: {[name: string]: any}) => ButtonTarget
-  cycler: (entityData: {[name: string]: any}) => Cycler
-  cycler_sprite: (entityData: {[name: string]: any}) => CyclerSprite
-  cyclear_weapon: (entityData: {[name: string]: any}) => CyclerWeapon
-  cyclear_wreckage: (entityData: {[name: string]: any}) => CyclerWreckage
-  env_beam: (entityData: {[name: string]: any}) => EnvBeam
+  worldspawn: (entityData: { [name: string]: any }) => WorldSpawn
+  aiscripted_sequence: (entityData: { [name: string]: any }) => AiScriptedSequence
+  ambient_generic: (entityData: { [name: string]: any }) => AmbientGeneric
+  ammo_357: (entityData: { [name: string]: any }) => Ammo357
+  ammo_9mmAR: (entityData: { [name: string]: any }) => Ammo9mmAR
+  ammo_9mmbox: (entityData: { [name: string]: any }) => Ammo9mmBox
+  ammo_9mmclip: (entityData: { [name: string]: any }) => Ammo9mmClip
+  ammo_ARgrenades: (entityData: { [name: string]: any }) => AmmoARGrenades
+  ammo_buckshot: (entityData: { [name: string]: any }) => AmmoBuckShot
+  ammo_crossbow: (entityData: { [name: string]: any }) => AmmoCrossBox
+  ammo_gaussclip: (entityData: { [name: string]: any }) => AmmoGaussClip
+  ammo_rpgclip: (entityData: { [name: string]: any }) => AmmoRPGClip
+  button_target: (entityData: { [name: string]: any }) => ButtonTarget
+  cycler: (entityData: { [name: string]: any }) => Cycler
+  cycler_sprite: (entityData: { [name: string]: any }) => CyclerSprite
+  cyclear_weapon: (entityData: { [name: string]: any }) => CyclerWeapon
+  cyclear_wreckage: (entityData: { [name: string]: any }) => CyclerWreckage
+  env_beam: (entityData: { [name: string]: any }) => EnvBeam
 } = {
   worldspawn: (e) => ({
     classname: 'worldspawn',
@@ -400,48 +400,48 @@ const parsers: {
       .split(';')
       .filter((a: string) => a.length)
       .map((w: string) => w.replace(/\\/g, '/')),
-    mapversion: parseInt(e.mapversion),
+    mapversion: Number.parseInt(e.mapversion),
     skyname: e.skyname,
-    maxRange: parseFloat(e.MaxRange) || 8192,
+    maxRange: Number.parseFloat(e.MaxRange) || 8192,
     message: e.message || '',
-    sounds: parseInt(e.sounds) || 0,
-    light: parseInt(e.light) || 0,
-    waveHeight: parseFloat(e.WaveHeight) || 0,
-    startDark: parseInt(e.startdark) || 0,
-    newUnit: parseInt(e.newunit) || 0,
-    defaultTeam: parseInt(e.defaultteam) || 0,
-    gameTitle: parseInt(e.gametitle) || 0
+    sounds: Number.parseInt(e.sounds) || 0,
+    light: Number.parseInt(e.light) || 0,
+    waveHeight: Number.parseFloat(e.WaveHeight) || 0,
+    startDark: Number.parseInt(e.startdark) || 0,
+    newUnit: Number.parseInt(e.newunit) || 0,
+    defaultTeam: Number.parseInt(e.defaultteam) || 0,
+    gameTitle: Number.parseInt(e.gametitle) || 0
   }),
   aiscripted_sequence: (e) => ({
     classname: 'aiscripted_sequence',
-    spawnflags: parseInt(e.spawnflags),
+    spawnflags: Number.parseInt(e.spawnflags),
     m_iszEntity: e.m_iszEntity,
     m_iszPlay: e.m_iszPlay || '',
-    m_flRadius: parseInt(e.m_flRadius) || 512,
-    m_flRepeat: parseInt(e.m_flRepeat) || 0,
-    m_fMoveTo: parseInt(e.m_fMoveTo) || 0,
-    m_iFinishSchedule: parseInt(e.m_iFinishSchedule) || 0,
+    m_flRadius: Number.parseInt(e.m_flRadius) || 512,
+    m_flRepeat: Number.parseInt(e.m_flRepeat) || 0,
+    m_fMoveTo: Number.parseInt(e.m_fMoveTo) || 0,
+    m_iFinishSchedule: Number.parseInt(e.m_iFinishSchedule) || 0
   }),
   ambient_generic: (e) => ({
     classname: 'ambient_generic',
     origin: parseNumberArray(e.origin),
     targetName: e.targetname,
     message: e.message,
-    health: parseInt(e.health) || 10,
-    preset: parseInt(e.preset) || 0,
-    startVolume: parseInt(e.volstart) || 0,
-    fadeIn: parseInt(e.fadein),
-    fadeOut: parseInt(e.fadeout),
-    pitch: parseInt(e.pitch),
-    pitchStart: parseInt(e.pitchstart),
-    spinUp: parseInt(e.spinup),
-    spinDown: parseInt(e.spindown),
-    lfoType: parseInt(e.lfotype),
-    lfoRate: parseInt(e.lforate),
-    lfoModPitch: parseInt(e.lfomodpitch),
-    lfoModVolume: parseInt(e.lfomodvolume),
-    cSpinUp: parseInt(e.cspinup),
-    spawnFlags: parseInt(e.spawnflags)
+    health: Number.parseInt(e.health) || 10,
+    preset: Number.parseInt(e.preset) || 0,
+    startVolume: Number.parseInt(e.volstart) || 0,
+    fadeIn: Number.parseInt(e.fadein),
+    fadeOut: Number.parseInt(e.fadeout),
+    pitch: Number.parseInt(e.pitch),
+    pitchStart: Number.parseInt(e.pitchstart),
+    spinUp: Number.parseInt(e.spinup),
+    spinDown: Number.parseInt(e.spindown),
+    lfoType: Number.parseInt(e.lfotype),
+    lfoRate: Number.parseInt(e.lforate),
+    lfoModPitch: Number.parseInt(e.lfomodpitch),
+    lfoModVolume: Number.parseInt(e.lfomodvolume),
+    cSpinUp: Number.parseInt(e.cspinup),
+    spawnFlags: Number.parseInt(e.spawnflags)
   }),
   ammo_357: (e) => ({
     classname: 'ammo_357',
@@ -449,7 +449,7 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     target: e.target,
     targetName: e.targetname || '',
-    delay: parseInt(e.delay) || 0,
+    delay: Number.parseInt(e.delay) || 0,
     killTarget: e.killtarget || '',
     spawnFlags: e.spawnflags || 0
   }),
@@ -459,7 +459,7 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     target: e.target,
     targetName: e.targetname || '',
-    delay: parseInt(e.delay) || 0,
+    delay: Number.parseInt(e.delay) || 0,
     killTarget: e.killtarget || '',
     spawnFlags: e.spawnflags || 0
   }),
@@ -469,7 +469,7 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     target: e.target,
     targetName: e.targetname || '',
-    delay: parseInt(e.delay) || 0,
+    delay: Number.parseInt(e.delay) || 0,
     killTarget: e.killtarget || '',
     spawnFlags: e.spawnflags || 0
   }),
@@ -479,7 +479,7 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     target: e.target,
     targetName: e.targetname || '',
-    delay: parseInt(e.delay) || 0,
+    delay: Number.parseInt(e.delay) || 0,
     killTarget: e.killtarget || '',
     spawnFlags: e.spawnflags || 0
   }),
@@ -489,7 +489,7 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     target: e.target,
     targetName: e.targetname || '',
-    delay: parseInt(e.delay) || 0,
+    delay: Number.parseInt(e.delay) || 0,
     killTarget: e.killtarget || '',
     spawnFlags: e.spawnflags || 0
   }),
@@ -499,7 +499,7 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     target: e.target,
     targetName: e.targetname || '',
-    delay: parseInt(e.delay) || 0,
+    delay: Number.parseInt(e.delay) || 0,
     killTarget: e.killtarget || '',
     spawnFlags: e.spawnflags || 0
   }),
@@ -509,7 +509,7 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     target: e.target,
     targetName: e.targetname || '',
-    delay: parseInt(e.delay) || 0,
+    delay: Number.parseInt(e.delay) || 0,
     killTarget: e.killtarget || '',
     spawnFlags: e.spawnflags || 0
   }),
@@ -519,7 +519,7 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     target: e.target,
     targetName: e.targetname || '',
-    delay: parseInt(e.delay) || 0,
+    delay: Number.parseInt(e.delay) || 0,
     killTarget: e.killtarget || '',
     spawnFlags: e.spawnflags || 0
   }),
@@ -529,7 +529,7 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     target: e.target,
     targetName: e.targetname || '',
-    delay: parseInt(e.delay) || 0,
+    delay: Number.parseInt(e.delay) || 0,
     killTarget: e.killtarget || '',
     spawnFlags: e.spawnflags || 0
   }),
@@ -537,13 +537,13 @@ const parsers: {
     classname: 'button_target',
     target: e.target,
     master: e.master,
-    renderEffect: parseInt(e.renderfx) || 0,
-    renderMode: parseInt(e.rendermode) || 0,
-    renderAmmount: parseInt(e.renderamt) || 255,
+    renderEffect: Number.parseInt(e.renderfx) || 0,
+    renderMode: Number.parseInt(e.rendermode) || 0,
+    renderAmmount: Number.parseInt(e.renderamt) || 255,
     renderColor: parseNumberArray(e.rendercolor || '0 0 0'),
-    zhltLightFlags: parseInt(e.zhlt_lightflags) || 0,
+    zhltLightFlags: Number.parseInt(e.zhlt_lightflags) || 0,
     lightOrigin: e.light_origin,
-    spawnFlags: parseInt(e.spawnflags) || 1
+    spawnFlags: Number.parseInt(e.spawnflags) || 1
   }),
   cycler: (e) => ({
     classname: 'cycler',
@@ -552,9 +552,9 @@ const parsers: {
     targetName: e.targetname,
     model: e.model,
     sequence: e.sequence || '',
-    renderEffect: parseInt(e.renderfx) || 0,
-    renderMode: parseInt(e.rendermode) || 0,
-    renderAmmount: parseInt(e.renderamt) || 255,
+    renderEffect: Number.parseInt(e.renderfx) || 0,
+    renderMode: Number.parseInt(e.rendermode) || 0,
+    renderAmmount: Number.parseInt(e.renderamt) || 255,
     renderColor: parseNumberArray(e.rendercolor || '0 0 0')
   }),
   cycler_sprite: (e) => ({
@@ -563,10 +563,10 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     targetName: e.targetname,
     model: e.model,
-    framerate: parseInt(e.framerate || '10'),
-    renderEffect: parseInt(e.renderfx) || 0,
-    renderMode: parseInt(e.rendermode) || 0,
-    renderAmmount: parseInt(e.renderamt) || 255,
+    framerate: Number.parseInt(e.framerate || '10'),
+    renderEffect: Number.parseInt(e.renderfx) || 0,
+    renderMode: Number.parseInt(e.rendermode) || 0,
+    renderAmmount: Number.parseInt(e.renderamt) || 255,
     renderColor: parseNumberArray(e.rendercolor || '0 0 0')
   }),
   cyclear_weapon: (e) => ({
@@ -576,12 +576,12 @@ const parsers: {
     target: e.target,
     targetName: e.targetname,
     triggerTarget: e.TriggerTarget || '',
-    triggerCondition: parseInt(e.TriggerCondition) || 0,
+    triggerCondition: Number.parseInt(e.TriggerCondition) || 0,
     model: e.model,
     sequence: e.sequence,
-    renderEffect: parseInt(e.renderfx) || 0,
-    renderMode: parseInt(e.rendermode) || 0,
-    renderAmmount: parseInt(e.renderamt) || 255,
+    renderEffect: Number.parseInt(e.renderfx) || 0,
+    renderMode: Number.parseInt(e.rendermode) || 0,
+    renderAmmount: Number.parseInt(e.renderamt) || 255,
     renderColor: parseNumberArray(e.rendercolor || '0 0 0')
   }),
   cyclear_wreckage: (e) => ({
@@ -590,30 +590,30 @@ const parsers: {
     angles: parseNumberArray(e.angles),
     targetName: e.targetname,
     model: e.model,
-    framerate: parseInt(e.framerate) || 10,
-    scale: parseFloat(e.scale) || 1.0,
-    renderEffect: parseInt(e.renderfx) || 0,
-    renderMode: parseInt(e.rendermode) || 0,
-    renderAmmount: parseInt(e.renderamt) || 255,
+    framerate: Number.parseInt(e.framerate) || 10,
+    scale: Number.parseFloat(e.scale) || 1.0,
+    renderEffect: Number.parseInt(e.renderfx) || 0,
+    renderMode: Number.parseInt(e.rendermode) || 0,
+    renderAmmount: Number.parseInt(e.renderamt) || 255,
     renderColor: parseNumberArray(e.rendercolor || '0 0 0')
   }),
   env_beam: (e) => ({
     classname: 'env_beam',
-    renderEffect: parseInt(e.renderfx) || 0,
-    renderMode: parseInt(e.rendermode) || 0,
-    renderAmmount: parseInt(e.renderamt) || 255,
+    renderEffect: Number.parseInt(e.renderfx) || 0,
+    renderMode: Number.parseInt(e.rendermode) || 0,
+    renderAmmount: Number.parseInt(e.renderamt) || 255,
     renderColor: parseNumberArray(e.rendercolor || '0 0 0'),
-    radius: parseFloat(e.Radius) || 256,
-    life: parseInt(e.life) || 1,
-    boltWidth: parseInt(e.BoltWidth) || 20,
-    noiseAmplitude: parseInt(e.NoiseAmplitude) || 0,
+    radius: Number.parseFloat(e.Radius) || 256,
+    life: Number.parseInt(e.life) || 1,
+    boltWidth: Number.parseInt(e.BoltWidth) || 20,
+    noiseAmplitude: Number.parseInt(e.NoiseAmplitude) || 0,
     texture: e.texture || 'sprites/laserbeam.spr',
-    textureScroll: parseInt(e.TextureScroll) || 35,
-    frameRate: parseInt(e.framerate) || 0,
-    frameStart: parseInt(e.framestart) || 0,
-    strikeTime: parseInt(e.StrikeTime) || 1,
-    damage: parseInt(e.damage) || 1,
-    spawnFlags: parseInt(e.spawnflags)
+    textureScroll: Number.parseInt(e.TextureScroll) || 35,
+    frameRate: Number.parseInt(e.framerate) || 0,
+    frameStart: Number.parseInt(e.framestart) || 0,
+    strikeTime: Number.parseInt(e.StrikeTime) || 1,
+    damage: Number.parseInt(e.damage) || 1,
+    spawnFlags: Number.parseInt(e.spawnflags)
   })
 }
 
@@ -814,8 +814,8 @@ export interface UnknownEntity {
 
 export type Entity = WorldSpawn | FuncBreakable | BadEntity | UnknownEntity
 
-export class BspEntityParser {
-  static parse(entities: any[]): Entity[] {
+export const BspEntityParser = {
+  parse(entities: any[]): Entity[] {
     const arr: Entity[] = []
 
     for (let i = 0; i < entities.length; ++i) {

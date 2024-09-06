@@ -95,7 +95,8 @@ export class Reader {
     return r
   }
 
-  nstr(n: number) {
+  nstr(length: number) {
+    let n = length
     if (n < 0) {
       return ''
     }
@@ -118,7 +119,8 @@ export class Reader {
     return r
   }
 
-  arr(n: number, f: () => any) {
+  arr(length: number, f: () => any) {
+    let n = length
     f.bind(this)
     const r = []
     while (n-- > 0) {
@@ -128,7 +130,8 @@ export class Reader {
     return r
   }
 
-  arrx(n: number, type: ReaderDataType, nstrlen = 0) {
+  arrx(length: number, type: ReaderDataType, nstrlen = 0) {
+    let n = length
     let r: any
 
     switch (type) {

@@ -1,7 +1,7 @@
 import { h, Component } from 'preact'
-import { Unsubscribe } from 'nanoevents'
-import { Game } from '../../Game'
-import { LoadItem } from '../../Loader'
+import type { Unsubscribe } from 'nanoevents'
+import type { Game } from '../../Game'
+import type { LoadItem } from '../../Loader'
 import { LoadingStyle as s } from './style'
 
 interface LoadingProps {
@@ -42,8 +42,8 @@ export class Loading extends Component<LoadingProps, LoadingState> {
   }
 
   componentWillUnmount() {
-    this.offLoadStart && this.offLoadStart()
-    this.offProgress && this.offProgress()
+    this.offLoadStart?.()
+    this.offProgress?.()
   }
 
   onItemLoad = (item: LoadItem) => {
@@ -68,7 +68,7 @@ export class Loading extends Component<LoadingProps, LoadingState> {
     })
   }
 
-  onItemProgress = (item: any) => {
+  onItemProgress = (item: LoadItem) => {
     if (!this.state.items[item.type]) {
       return
     }
@@ -85,9 +85,10 @@ export class Loading extends Component<LoadingProps, LoadingState> {
     this.forceUpdate()
   }
 
-  formatItem(name: string, progress: number) {
+  formatItem(_name: string, progress: number) {
+    let name = _name
     name = itemTypeGroupName[name]
-    const status = Math.round(progress * 100) + '%'
+    const status = `${Math.round(progress * 100)}%`
 
     let length = 29 - name.length - status.length
     if (length < 2) {
@@ -112,6 +113,7 @@ export class Loading extends Component<LoadingProps, LoadingState> {
             viewBox="0 0 80 80"
             xmlSpace="preserve"
           >
+            <title>Loading</title>
             <path
               fill="#ffffff"
               width="10px"
@@ -123,11 +125,7 @@ export class Loading extends Component<LoadingProps, LoadingState> {
         <ul class={s.log}>
           {Object.entries(this.state.items).map(([name, items]) => (
             <li key={name} class={s.logItem}>
-              {this.formatItem(
-                name,
-                items.reduce((prev, cur) => prev + cur.progress, 0) /
-                  items.length
-              )}
+              {this.formatItem(name, items.reduce((prev, cur) => prev + cur.progress, 0) / items.length)}
             </li>
           ))}
         </ul>

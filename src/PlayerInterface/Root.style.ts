@@ -1,16 +1,16 @@
 import { stylesheet } from 'typestyle'
 
 const rootStyle = () => ({
-  position: 'relative' as 'relative',
+  position: 'relative' as const,
   color: 'white',
   width: '100%',
   height: '100%',
   cursor: 'none',
-  userSelect: 'none' as 'none'
+  userSelect: 'none' as const
 })
 
 const titleStyle = () => ({
-  position: 'absolute' as 'absolute',
+  position: 'absolute' as const,
   top: '20px',
   left: '0',
   zIndex: 20,
@@ -24,13 +24,13 @@ const titleStyle = () => ({
 
 const controlsStyle = () => ({
   zIndex: 30,
-  position: 'absolute' as 'absolute',
+  position: 'absolute' as const,
   width: '100%',
   bottom: 0,
   padding: '0 16px',
-  boxSizing: 'border-box' as 'border-box',
+  boxSizing: 'border-box' as const,
   backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  userSelect: 'none' as 'none',
+  userSelect: 'none' as const,
   opacity: 0,
   transition: 'opacity 0.2s'
 })
@@ -61,11 +61,14 @@ export const RootStyle = stylesheet({
   },
 
   screen: {
-    position: 'absolute' as 'absolute',
+    position: 'absolute' as const,
     top: 0,
     left: 0,
     width: '100%',
     height: '100%',
-    zIndex: 10
+    padding: '0',
+    zIndex: 10,
+    border: 'none',
+    background: 'none'
   }
 })

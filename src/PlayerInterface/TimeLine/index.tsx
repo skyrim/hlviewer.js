@@ -1,6 +1,6 @@
 import { h, Component } from 'preact'
-import { Unsubscribe } from 'nanoevents'
-import { Game } from '../../Game'
+import type { Unsubscribe } from 'nanoevents'
+import type { Game } from '../../Game'
 import { TimeLine as s } from './style'
 
 interface TimeLineProps {
@@ -45,7 +45,7 @@ export class TimeLine extends Component<TimeLineProps, TimeLineState> {
     })
   }
 
-  onClick = (e: any) => {
+  onClick = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
     const rects = e.currentTarget.getClientRects()[0]
     const progress = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
     this.props.game.player.seekByPercent(progress * 100)
@@ -58,14 +58,14 @@ export class TimeLine extends Component<TimeLineProps, TimeLineState> {
     })
   }
 
-  onMouseMove = (e: any) => {
+  onMouseMove = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
     if (!this.state.ghostKnobActive) {
       return
     }
 
     const rects = e.currentTarget.getClientRects()[0]
     const progressPos = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
-    const pos = progressPos * 100 + '%'
+    const pos = `${progressPos * 100}%`
     this.setState({
       ghostKnobPos: pos
     })
@@ -79,11 +79,12 @@ export class TimeLine extends Component<TimeLineProps, TimeLineState> {
 
   render() {
     const timePos = this.state.progress * 100
-    const knobOff = timePos + '%'
-    const lineOff = 100 - timePos + '%'
+    const knobOff = `${timePos}%`
+    const lineOff = `${100 - timePos}%`
 
     return (
-      <div
+      <button
+        type="button"
         class={s.timeline}
         onClick={this.onClick}
         onMouseEnter={this.onMouseEnter}
@@ -94,7 +95,7 @@ export class TimeLine extends Component<TimeLineProps, TimeLineState> {
         <div class={s.line} style={{ right: lineOff }} />
         <div class={s.knob} style={{ left: knobOff }} />
         <div class={s.ghostKnob} style={{ left: this.state.ghostKnobPos }} />
-      </div>
+      </button>
     )
   }
 }

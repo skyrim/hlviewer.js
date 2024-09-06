@@ -1,10 +1,10 @@
 import { h, Component } from 'preact'
-import { Unsubscribe } from 'nanoevents'
+import type { Unsubscribe } from 'nanoevents'
 import { Loading } from './Loading'
 import { FreeMode } from './FreeMode'
 import { ReplayMode } from './ReplayMode'
 import { Fullscreen } from '../Fullscreen'
-import { Game, PlayerMode } from '../Game'
+import { type Game, PlayerMode } from '../Game'
 import { RootStyle as s } from './Root.style'
 
 interface RootProps {
@@ -21,8 +21,8 @@ interface RootState {
 }
 
 export class Root extends Component<RootProps, RootState> {
-  private node: HTMLDivElement | null = null
-  private fadeOut: any = 0
+  private node: HTMLButtonElement | null = null
+  private fadeOut: NodeJS.Timeout | undefined
   private offLoadStart?: Unsubscribe
   private offLoad?: Unsubscribe
   private offModeChange?: Unsubscribe
@@ -58,11 +58,7 @@ export class Root extends Component<RootProps, RootState> {
     root.addEventListener('click', this.onRootClick)
     window.addEventListener('click', this.onWindowClick)
     window.addEventListener('keydown', this.onKeyDown)
-    document.addEventListener(
-      'pointerlockchange',
-      this.onPointerLockChange,
-      false
-    )
+    document.addEventListener('pointerlockchange', this.onPointerLockChange, false)
 
     root.addEventListener('mouseover', this.onMouseEnter)
     root.addEventListener('mousemove', this.onMouseMove)
@@ -73,19 +69,15 @@ export class Root extends Component<RootProps, RootState> {
   componentWillUnmount() {
     const root = this.props.root
 
-    this.offLoadStart && this.offLoadStart()
-    this.offLoad && this.offLoad()
-    this.offModeChange && this.onModeChange()
-    this.offTitleChange && this.offTitleChange()
+    this.offLoadStart?.()
+    this.offLoad?.()
+    this.offModeChange?.()
+    this.offTitleChange?.()
 
     root.removeEventListener('click', this.onRootClick)
     window.removeEventListener('click', this.onWindowClick)
     window.removeEventListener('keydown', this.onKeyDown)
-    document.removeEventListener(
-      'pointerlockchange',
-      this.onPointerLockChange,
-      false
-    )
+    document.removeEventListener('pointerlockchange', this.onPointerLockChange, false)
 
     root.removeEventListener('mouseover', this.onMouseEnter)
     root.removeEventListener('mousemove', this.onMouseMove)
@@ -220,7 +212,7 @@ export class Root extends Component<RootProps, RootState> {
     })
 
     clearTimeout(this.fadeOut)
-    this.fadeOut = 0
+    this.fadeOut = undefined
   }
 
   fadeReset = () => {
@@ -231,7 +223,7 @@ export class Root extends Component<RootProps, RootState> {
     clearTimeout(this.fadeOut)
     this.fadeOut = setTimeout(() => {
       this.setState({ isVisible: false })
-      this.fadeOut = 0
+      this.fadeOut = undefined
     }, 5000)
   }
 
@@ -269,25 +261,22 @@ export class Root extends Component<RootProps, RootState> {
 
     return (
       <div class={isVisible ? s.rootVisible : s.root}>
-        <div class={isVisible ? s.titleVisible : s.title}>
-          {this.state.title}
-        </div>
+        <div class={isVisible ? s.titleVisible : s.title}>{this.state.title}</div>
 
         <Loading game={game} visible={this.state.isLoading} />
 
-        <div
+        <button
+          type="button"
           class={s.screen}
-          ref={node => (this.node = node)}
+          ref={(node) => {
+            this.node = node
+          }}
           onClick={this.onScreenClick}
           onDblClick={this.onScreenDblClick}
         />
 
         {game.mode === PlayerMode.FREE ? (
-          <FreeMode
-            class={isVisible ? s.controlsVisible : s.controls}
-            game={game}
-            root={this.props.root}
-          />
+          <FreeMode class={isVisible ? s.controlsVisible : s.controls} game={game} root={this.props.root} />
         ) : (
           <ReplayMode
             class={isVisible ? s.controlsVisible : s.controls}

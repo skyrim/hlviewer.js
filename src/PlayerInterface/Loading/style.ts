@@ -1,7 +1,7 @@
 import { stylesheet, keyframes } from 'typestyle'
 
 const loadingStyle = () => ({
-  position: 'relative' as 'relative',
+  position: 'relative' as const,
   width: '100%',
   height: '100%',
   opacity: 1,

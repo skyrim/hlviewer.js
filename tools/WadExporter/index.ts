@@ -1,23 +1,23 @@
-import { readFile, createWriteStream, existsSync, mkdir } from 'fs'
-import { promisify } from 'util'
+import { resolve } from 'node:path'
+import { promisify } from 'node:util'
+import { readFile, createWriteStream, existsSync, mkdir } from 'node:fs'
 import { PNG } from 'pngjs'
 import { Wad } from '../../src/Parsers/Wad'
-import { resolve } from 'path'
 
 const mkdirP = promisify(mkdir)
 const readFileP = promisify(readFile)
 
 function toArrayBuffer(buf: Buffer): ArrayBuffer {
-  var ab = new ArrayBuffer(buf.length)
-  var view = new Uint8Array(ab)
-  for (var i = 0; i < buf.length; ++i) {
+  const ab = new ArrayBuffer(buf.length)
+  const view = new Uint8Array(ab)
+  for (let i = 0; i < buf.length; ++i) {
     view[i] = buf[i]
   }
   return ab
 }
 
-export class WadExporter {
-  public static async export(path: string, out: string) {
+export const WadExporter = {
+  async export(path: string, out: string) {
     const buffer = await readFileP(path, { flag: 'r' }).catch(() => {
       console.log('File not found or could not be opened')
     })
@@ -53,24 +53,24 @@ export class WadExporter {
 
       png.pack().pipe(createWriteStream(`${out}/${entry.name}.png`))
 
-      const dots = []
+      const dots: string[] = []
       for (let j = 0; j < 30 - msg.length; ++j) {
         dots.push('.')
       }
-      process.stdout.write(dots.join('') + 'DONE\n')
+      process.stdout.write(`${dots.join('')}DONE\n`)
     }
 
     console.log(
-      `\nSuccessfully exported all textures from "${resolve(
+      `\nSuccessfully exported all textures from "${resolve(process.cwd(), path)}"\n into "${resolve(
         process.cwd(),
-        path
-      )}"\n into "${resolve(process.cwd(), out)}" directory\n`
+        out
+      )}" directory\n`
     )
   }
 }
 
-function getParam(params: string[], name: string): string | null {
-  let val = null
+function getParam(params: string[], name: string) {
+  let val: string | null = null
   for (let i = 0; i < params.length; ++i) {
     if (params[i] === name) {
       val = params[i + 1]
@@ -81,7 +81,7 @@ function getParam(params: string[], name: string): string | null {
   return val
 }
 
-;(async function() {
+async function main() {
   const path = getParam(process.argv, '--path')
   const out = getParam(process.argv, '--out')
 
@@ -96,4 +96,6 @@ function getParam(params: string[], name: string): string | null {
   }
 
   await WadExporter.export(path, out)
-})()
+}
+
+main()

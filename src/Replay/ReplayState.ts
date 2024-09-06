@@ -34,15 +34,6 @@ export class ReplayState {
     }
   }
 
-  // TODO
-  // serialize() {
-  //     return JSON.stringify(this)
-  // }
-
-  // deserialize(data: string) {
-  //     return JSON.parse(data)
-  // }
-
   clone() {
     return new ReplayState(this)
   }

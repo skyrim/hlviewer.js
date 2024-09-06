@@ -1,12 +1,12 @@
 import { ReplayMap } from './ReplayMap'
 import { ReplayChunk } from './ReplayChunk'
 import { ReplayState } from './ReplayState'
+import * as FrameData from './FrameDataReader'
 import { Reader, ReaderDataType } from '../Reader'
-import { FrameDataReader } from './FrameDataReader'
 import { getInitialDeltaDecoders } from './readDelta'
 
 const checkType = (r: Reader) => {
-  let magic = r.nstr(8)
+  const magic = r.nstr(8)
   return magic === 'HLDEMO'
 }
 
@@ -22,8 +22,8 @@ const readHeader = (r: Reader) => ({
 const readDirectories = (r: Reader, offset: number) => {
   r.seek(offset)
 
-  let count = r.ui()
-  let directories = []
+  const count = r.ui()
+  const directories = []
   for (let i = 0; i < count; ++i) {
     directories.push({
       id: r.ui(),
@@ -41,14 +41,16 @@ const readDirectories = (r: Reader, offset: number) => {
 }
 
 const readFrameData = (r: Reader, deltaDecoders: any, customMessages: any) => {
-  let length = r.ui()
-  let limit = r.tell() + length
-  let data = []
+  const length = r.ui()
+  const limit = r.tell() + length
+  const data = []
   while (r.tell() < limit) {
-    let type = r.ub()
+    const type = r.ub()
     if (type === 1) {
       continue
-    } else if (type >= 64) {
+    }
+
+    if (type >= 64) {
       if (customMessages[type] && customMessages[type].size > -1) {
         r.skip(customMessages[type].size)
       } else {
@@ -58,7 +60,7 @@ const readFrameData = (r: Reader, deltaDecoders: any, customMessages: any) => {
       continue
     }
 
-    let message = FrameDataReader.read(r, type, deltaDecoders)
+    const message = FrameData.readFrame(r, type, deltaDecoders)
     if (message) {
       if (type === 39) {
         customMessages[message.index] = message
@@ -79,7 +81,7 @@ const readFrameData = (r: Reader, deltaDecoders: any, customMessages: any) => {
 }
 
 const readFrame = (r: Reader, deltaDecoders: any, customMessages: any) => {
-  let frame: any = {
+  const frame: any = {
     type: r.ub(),
     time: r.f(),
     tick: r.ui()
@@ -155,13 +157,13 @@ export class Replay {
   }
 
   static parseFromArrayBuffer(buffer: ArrayBuffer) {
-    let r = new Reader(buffer)
-    let magic = r.nstr(8)
+    const r = new Reader(buffer)
+    const magic = r.nstr(8)
     if (magic !== 'HLDEMO') {
       throw new Error('Invalid replay format')
     }
 
-    let header: any = {}
+    const header: any = {}
     header.demoProtocol = r.ui()
     header.netProtocol = r.ui()
     header.mapName = r.nstr(260)
@@ -170,8 +172,8 @@ export class Replay {
     header.dirOffset = r.ui()
 
     r.seek(header.dirOffset)
-    let directoryCount = r.ui()
-    let directories: any[] = []
+    const directoryCount = r.ui()
+    const directories: any[] = []
     for (let i = 0; i < directoryCount; ++i) {
       directories.push({
         id: r.ui(),
@@ -191,7 +193,7 @@ export class Replay {
 
       let isFinalMacroReached = false
       while (!isFinalMacroReached) {
-        let macro: any = {
+        const macro: any = {
           type: r.b(),
           time: r.f(),
           frame: r.ui()
@@ -255,10 +257,7 @@ export class Replay {
 
           default: {
             const offset = Number(r.tell() - 9).toString(16)
-            const msg = [
-              `Unexpected macro (${macro.type})`,
-              ` at offset = ${offset}.`
-            ].join('')
+            const msg = [`Unexpected macro (${macro.type})`, ` at offset = ${offset}.`].join('')
             throw new Error(msg)
           }
         }
@@ -271,13 +270,13 @@ export class Replay {
   }
 
   static parseFullFromArrayBuffer(buffer: ArrayBuffer) {
-    let r = new Reader(buffer)
-    let magic = r.nstr(8)
+    const r = new Reader(buffer)
+    const magic = r.nstr(8)
     if (magic !== 'HLDEMO') {
       throw new Error('Invalid replay format')
     }
 
-    let header: any = {}
+    const header: any = {}
     header.demoProtocol = r.ui()
     header.netProtocol = r.ui()
     header.mapName = r.nstr(260)
@@ -286,8 +285,8 @@ export class Replay {
     header.dirOffset = r.ui()
 
     r.seek(header.dirOffset)
-    let directoryCount = r.ui()
-    let directories: any[] = []
+    const directoryCount = r.ui()
+    const directories: any[] = []
     for (let i = 0; i < directoryCount; ++i) {
       directories.push({
         id: r.ui(),
@@ -302,16 +301,16 @@ export class Replay {
       })
     }
 
-    let deltaDecoders = getInitialDeltaDecoders()
+    const deltaDecoders = getInitialDeltaDecoders()
 
-    let customMessages = []
+    const customMessages = []
 
     for (let i = 0; i < directories.length; ++i) {
       r.seek(directories[i].offset)
 
       let isFinalMacroReached = false
       while (!isFinalMacroReached) {
-        let macro: any = {
+        const macro: any = {
           type: r.b(),
           time: r.f(),
           frame: r.ui()
@@ -413,14 +412,16 @@ export class Replay {
             macro.reliable_sequence = r.i()
             macro.last_reliable_sequence = r.i()
 
-            let frameDataLength = r.ui()
-            let frameDataEnd = frameDataLength + r.tell()
+            const frameDataLength = r.ui()
+            const frameDataEnd = frameDataLength + r.tell()
             macro.frameData = []
             while (r.tell() < frameDataEnd) {
-              let type = r.ub()
+              const type = r.ub()
               if (type === 1) {
                 continue // skip SVC_NOP
-              } else if (type >= 64) {
+              }
+
+              if (type >= 64) {
                 // TODO: parse custom message
                 if (customMessages[type] && customMessages[type].size > -1) {
                   r.skip(customMessages[type].size)
@@ -431,7 +432,7 @@ export class Replay {
                 continue
               }
 
-              let frameData = FrameDataReader.read(r, type, deltaDecoders)
+              const frameData = FrameData.readFrame(r, type, deltaDecoders)
               if (frameData) {
                 if (type === 39) {
                   customMessages[frameData.index] = frameData
@@ -538,32 +539,30 @@ export class Replay {
   }
 
   static parseIntoChunks(buffer: ArrayBuffer) {
-    let r = new Reader(buffer)
+    const r = new Reader(buffer)
 
     if (!checkType(r)) {
       throw new Error('Invalid replay file format')
     }
 
-    let maps = []
-    let deltaDecoders = getInitialDeltaDecoders()
-    let customMessages: any[] = []
+    const maps = []
+    const deltaDecoders = getInitialDeltaDecoders()
+    const customMessages: any[] = []
 
-    let header = readHeader(r)
-    let directories = readDirectories(r, header.dirOffset)
+    const header = readHeader(r)
+    const directories = readDirectories(r, header.dirOffset)
 
     let currentMap: ReplayMap | undefined
-    let currentChunk
-    let lastFrame
-    let lastFrameOffset
-    let state = new ReplayState()
-
-    let directoryEndOffset
+    let currentChunk: ReplayChunk
+    let lastFrame: any
+    let lastFrameOffset: number
+    const state = new ReplayState()
 
     // read loading segment
-    directoryEndOffset = directories[0].offset + directories[0].length
+    let directoryEndOffset = directories[0].offset + directories[0].length
     r.seek(directories[0].offset)
     while (r.tell() < directoryEndOffset) {
-      let frame = readFrame(r, deltaDecoders, customMessages)
+      const frame = readFrame(r, deltaDecoders, customMessages)
       state.feedFrame(frame)
 
       if (frame.error) {
@@ -571,17 +570,13 @@ export class Replay {
       }
 
       if (frame.type < 2 /* 0 or 1 */) {
-        let serverInfo = frame.data.find(
-          (msg: any) => msg.type === FrameDataReader.SVC.SERVERINFO
-        )
+        const serverInfo = frame.data.find((msg: any) => msg.type === FrameData.SVC.SERVERINFO)
         if (serverInfo) {
           currentMap = new ReplayMap(serverInfo.data.mapFileName)
           maps.push(currentMap)
         }
 
-        let resourceList = frame.data.find(
-          (msg: any) => msg.type === FrameDataReader.SVC.RESOURCELIST
-        )
+        const resourceList = frame.data.find((msg: any) => msg.type === FrameData.SVC.RESOURCELIST)
         if (resourceList && currentMap) {
           currentMap.setResources(resourceList.data)
         }
@@ -600,12 +595,12 @@ export class Replay {
     directoryEndOffset = directories[1].offset + directories[1].length
     r.seek(directories[1].offset)
     while (true) {
-      let offset = r.tell()
+      const offset = r.tell()
       if (offset >= directoryEndOffset) {
         // set last and final chunks data
-        let timeLength = lastFrame.time - currentChunk.startTime
+        const timeLength = lastFrame.time - currentChunk.startTime
         currentChunk.timeLength = timeLength
-        let lastFrameLength = offset - lastFrameOffset
+        const lastFrameLength = offset - lastFrameOffset
         r.seek(lastFrameOffset)
         currentChunk.setData(r.arrx(lastFrameLength, ReaderDataType.UByte))
         r.seek(offset)
@@ -613,7 +608,7 @@ export class Replay {
         break
       }
 
-      let frame = readFrame(r, deltaDecoders, customMessages)
+      const frame = readFrame(r, deltaDecoders, customMessages)
       state.feedFrame(frame)
       lastFrame = frame
 
@@ -622,19 +617,17 @@ export class Replay {
       }
 
       if (frame.type < 2) {
-        let serverInfo = frame.data.find(
-          (msg: any) => msg.type === FrameDataReader.SVC.SERVERINFO
-        )
+        const serverInfo = frame.data.find((msg: any) => msg.type === FrameData.SVC.SERVERINFO)
         if (serverInfo) {
           // create new map
           currentMap = new ReplayMap(serverInfo.data.mapFileName)
           maps.push(currentMap)
 
           // set last chunks data
-          let timeLength = lastFrame.time - currentChunk.startTime
+          const timeLength = lastFrame.time - currentChunk.startTime
           currentChunk.timeLength = timeLength
-          let lastFrameLength = offset - lastFrameOffset
-          let tempOffset = r.tell()
+          const lastFrameLength = offset - lastFrameOffset
+          const tempOffset = r.tell()
           r.seek(lastFrameOffset)
           currentChunk.setData(r.arrx(lastFrameLength, ReaderDataType.UByte))
           r.seek(tempOffset)
@@ -645,9 +638,7 @@ export class Replay {
           currentMap.addChunk(currentChunk)
         }
 
-        let resourceList = frame.data.find(
-          (msg: any) => msg.type === FrameDataReader.SVC.RESOURCELIST
-        )
+        const resourceList = frame.data.find((msg: any) => msg.type === FrameData.SVC.RESOURCELIST)
         if (resourceList) {
           currentMap.setResources(resourceList.data)
         }
@@ -657,31 +648,23 @@ export class Replay {
         }
 
         for (let i = 0; i < frame.data.length; ++i) {
-          let message = frame.data[i]
-          if (
-            message.type === FrameDataReader.SVC.SOUND ||
-            message.type === FrameDataReader.SVC.SPAWNSTATICSOUND
-          ) {
-            let sound = currentMap.resources.sounds.find(
-              (s: any) => s.index === message.data.soundIndex
-            )
+          const message = frame.data[i]
+          if (message.type === FrameData.SVC.SOUND || message.type === FrameData.SVC.SPAWNSTATICSOUND) {
+            const sound = currentMap.resources.sounds.find((s: any) => s.index === message.data.soundIndex)
             if (sound) {
               sound.used = true
             }
-          } else if (message.type === FrameDataReader.SVC.STUFFTEXT) {
-            let sounds = currentMap.resources.sounds
-            let commands = message.data.commands
+          } else if (message.type === FrameData.SVC.STUFFTEXT) {
+            const sounds = currentMap.resources.sounds
+            const commands = message.data.commands
 
             for (let i = 0; i < commands.length; ++i) {
-              let command = commands[i]
+              const command = commands[i]
 
-              let func = command.func
-              if (
-                (func === 'speak' || func === 'spk') &&
-                command.params.length === 1
-              ) {
-                let soundName = command.params[0] + '.wav'
-                let sound = sounds.find((s: any) => s.name === soundName)
+              const func = command.func
+              if ((func === 'speak' || func === 'spk') && command.params.length === 1) {
+                const soundName = `${command.params[0]}.wav`
+                const sound = sounds.find((s: any) => s.name === soundName)
                 if (sound) {
                   sound.used = true
                 }
@@ -690,9 +673,7 @@ export class Replay {
           }
         }
       } else if (frame.type === 8) {
-        let sound = currentMap.resources.sounds.find(
-          (s: any) => s.name === frame.sound.sample
-        )
+        const sound = currentMap.resources.sounds.find((s: any) => s.name === frame.sound.sample)
         if (sound) {
           sound.used = true
         }
@@ -700,8 +681,8 @@ export class Replay {
 
       if (currentChunk.startTime + 10 < frame.time) {
         // set last chunks data
-        let lastFrameLength = offset - lastFrameOffset
-        let tempOffset = r.tell()
+        const lastFrameLength = offset - lastFrameOffset
+        const tempOffset = r.tell()
         r.seek(lastFrameOffset)
         currentChunk.setData(r.arrx(lastFrameLength, ReaderDataType.UByte))
         r.seek(tempOffset)

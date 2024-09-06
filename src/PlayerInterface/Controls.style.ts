@@ -2,13 +2,13 @@ import { stylesheet } from 'typestyle'
 
 const controlsStyle = () => ({
   zIndex: 30,
-  position: 'absolute' as 'absolute',
+  position: 'absolute' as const,
   width: '100%',
   bottom: 0,
   padding: '0 16px',
-  boxSizing: 'border-box' as 'border-box',
+  boxSizing: 'border-box' as const,
   backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  userSelect: 'none' as 'none',
+  userSelect: 'none' as const,
   opacity: 0,
   transition: 'opacity 0.2s'
 })
@@ -33,7 +33,10 @@ export const ControlsStyle = stylesheet({
     height: '32px',
     padding: '7px',
     boxSizing: 'border-box',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    border: 'none',
+    color: '#fff',
+    background: 'none'
   },
   left: {
     display: 'flex',

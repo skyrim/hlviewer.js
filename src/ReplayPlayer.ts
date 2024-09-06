@@ -1,6 +1,6 @@
 import { glMatrix } from 'gl-matrix'
-import { createNanoEvents, Emitter as EventEmitter } from 'nanoevents'
-import { Game } from './Game'
+import { createNanoEvents, type Emitter as EventEmitter } from 'nanoevents'
+import type { Game } from './Game'
 import { Replay } from './Replay/Replay'
 import { ReplayState } from './Replay/ReplayState'
 
@@ -19,13 +19,13 @@ export class ReplayPlayer {
   replay: any
   events: EventEmitter
 
-  currentMap: number = 0
-  currentChunk: number = 0
-  currentTime: number = 0
-  currentTick: number = 0
-  isPlaying: boolean = false
-  isPaused: boolean = false
-  speed: number = 1
+  currentMap = 0
+  currentChunk = 0
+  currentTime = 0
+  currentTick = 0
+  isPlaying = false
+  isPaused = false
+  speed = 1
 
   constructor(game: Game) {
     this.reset()
@@ -46,7 +46,7 @@ export class ReplayPlayer {
     this.speed = 1
 
     if (this.replay) {
-      let firstChunk = this.replay.maps[0].chunks[0]
+      const firstChunk = this.replay.maps[0].chunks[0]
       firstChunk.reader.seek(0)
       this.state = firstChunk.state.clone()
     }
@@ -89,28 +89,28 @@ export class ReplayPlayer {
   }
 
   seek(value: number) {
-    let t = Math.max(0, Math.min(this.replay.length, value))
+    const t = Math.max(0, Math.min(this.replay.length, value))
 
-    let maps = this.replay.maps
+    const maps = this.replay.maps
     for (let i = 0; i < maps.length; ++i) {
-      let chunks = maps[i].chunks
+      const chunks = maps[i].chunks
       for (let j = 0; j < chunks.length; ++j) {
-        let chunk = chunks[j]
-        let startTime = chunk.startTime
-        let timeLimit = startTime + chunk.timeLength
+        const chunk = chunks[j]
+        const startTime = chunk.startTime
+        const timeLimit = startTime + chunk.timeLength
         if (t >= startTime && t < timeLimit) {
           this.currentMap = i
           this.currentChunk = j
           this.currentTime = t
 
           this.state = chunk.state.clone()
-          let deltaDecoders = this.replay.deltaDecoders
-          let customMessages = this.replay.customMessages
-          let r = chunk.reader
+          const deltaDecoders = this.replay.deltaDecoders
+          const customMessages = this.replay.customMessages
+          const r = chunk.reader
           r.seek(0)
           while (true) {
-            let offset = r.tell()
-            let frame = Replay.readFrame(r, deltaDecoders, customMessages)
+            const offset = r.tell()
+            const frame = Replay.readFrame(r, deltaDecoders, customMessages)
             if (frame.time <= t) {
               this.state.feedFrame(frame)
               this.currentTick = frame.tick
@@ -129,9 +129,7 @@ export class ReplayPlayer {
   }
 
   seekByPercent(value: number) {
-    value = Math.max(0, Math.min(value, 100)) / 100
-    value *= this.replay.length
-    this.seek(value)
+    this.seek((Math.max(0, Math.min(value, 100)) / 100) * this.replay.length)
   }
 
   update(dt: number) {
@@ -139,14 +137,14 @@ export class ReplayPlayer {
       return
     }
 
-    let deltaDecoders = this.replay.deltaDecoders
-    let customMessages = this.replay.customMessages
+    const deltaDecoders = this.replay.deltaDecoders
+    const customMessages = this.replay.customMessages
 
     let map = this.replay.maps[this.currentMap]
     let chunk = map.chunks[this.currentChunk]
     let r = chunk.reader
 
-    let endTime = this.currentTime + dt * this.speed
+    const endTime = this.currentTime + dt * this.speed
 
     let hitStop = false
 
@@ -157,12 +155,11 @@ export class ReplayPlayer {
           if (this.currentMap === this.replay.maps.length - 1) {
             hitStop = true
             break
-          } else {
-            this.currentChunk = 0
-            this.currentMap++
-            map = this.replay.maps[this.currentMap]
-            chunk = map.chunks[this.currentChunk]
           }
+          this.currentChunk = 0
+          this.currentMap++
+          map = this.replay.maps[this.currentMap]
+          chunk = map.chunks[this.currentChunk]
         } else {
           this.currentChunk++
           chunk = map.chunks[this.currentChunk]
@@ -175,38 +172,38 @@ export class ReplayPlayer {
         continue
       }
 
-      let sounds: any[] = this.game.sounds
-      let frame: any = Replay.readFrame(r, deltaDecoders, customMessages)
+      const sounds: any[] = this.game.sounds
+      const frame: any = Replay.readFrame(r, deltaDecoders, customMessages)
       if (frame.type < 2) {
         for (let i = 0; i < frame.data.length; ++i) {
-          let message = frame.data[i]
+          const message = frame.data[i]
           if (message.type === 6) {
             // TODO: Magic number SVC_SOUND
-            let msgSound = message.data
-            let sound = sounds.find((s: any) => s.index === msgSound.soundIndex)
+            const msgSound = message.data
+            const sound = sounds.find((s: any) => s.index === msgSound.soundIndex)
             if (sound && sound.name !== 'common/null.wav') {
-              let channel = msgSound.channel
-              let volume = msgSound.volume
+              const channel = msgSound.channel
+              const volume = msgSound.volume
               // TODO: Positional audio
               this.game.soundSystem.play(sound, channel, volume)
             }
           } else if (message.type === 29) {
             // TODO: Magic number
-            let msgSound = message.data
-            let sound = sounds.find((s: any) => s.index === msgSound.soundIndex)
+            const msgSound = message.data
+            const sound = sounds.find((s: any) => s.index === msgSound.soundIndex)
             if (sound && sound.name !== 'common/null.wav') {
               // TODO: Use after implementing positional audio
               // let volume = msgSound.volume
               // this.game.soundSystem.play(sound, 6, volume)
             }
           } else if (message.type === 9) {
-            message.data.commands.forEach((command: any) => {
+            for (const command of message.data.commands) {
               switch (command.func) {
                 case 'speak':
                 case 'spk':
                 case 'play': {
-                  let soundName = command.params[0] + '.wav'
-                  let sound = sounds.find((s: any) => s.name === soundName)
+                  const soundName = `${command.params[0]}.wav`
+                  const sound = sounds.find((s: any) => s.name === soundName)
                   if (!sound) {
                     return
                   }
@@ -215,14 +212,14 @@ export class ReplayPlayer {
                   break
                 }
                 case 'playvol': {
-                  let soundName = command.params[0] + '.wav'
-                  let volume
-                  if (isNaN(command.params[1])) {
+                  const soundName = `${command.params[0]}.wav`
+                  let volume: number
+                  if (Number.isNaN(command.params[1])) {
                     volume = 1
                   } else {
-                    volume = parseFloat(command.params[1])
+                    volume = Number.parseFloat(command.params[1])
                   }
-                  let sound = sounds.find((s: any) => s.name === soundName)
+                  const sound = sounds.find((s: any) => s.name === soundName)
                   if (!sound) {
                     return
                   }
@@ -231,15 +228,15 @@ export class ReplayPlayer {
                   break
                 }
               }
-            })
+            }
           }
         }
       } else if (frame.type === 8) {
-        let sample = frame.sound.sample
-        let sound = sounds.find(s => s.name === sample)
+        const sample = frame.sound.sample
+        const sound = sounds.find((s) => s.name === sample)
         if (sound && sound.name !== 'common/null.wav') {
-          let channel = frame.sound.channel
-          let volume = frame.sound.volume
+          const channel = frame.sound.channel
+          const volume = frame.sound.volume
           this.game.soundSystem.play(sound, channel, volume)
         }
       }

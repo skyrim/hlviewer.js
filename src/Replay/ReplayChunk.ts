@@ -1,5 +1,5 @@
 import { Reader } from '../Reader'
-import { ReplayState } from './ReplayState'
+import type { ReplayState } from './ReplayState'
 
 export class ReplayChunk {
   state: ReplayState

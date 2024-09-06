@@ -1,4 +1,4 @@
-import { DeltaType } from './DeltaType'
+import type { DeltaType } from './DeltaType'
 
 export type DeltaDecoder = {
   name: string

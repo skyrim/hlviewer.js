@@ -9,7 +9,10 @@ export const VolumeControl = stylesheet({
     height: '26px',
     marginLeft: '6px',
     marginRight: '14px',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    padding: '0',
+    border: 'none',
+    background: 'none'
   },
   line: {
     height: '4px',

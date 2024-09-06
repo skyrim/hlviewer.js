@@ -1,6 +1,6 @@
 import { h } from 'preact'
 import { classes } from 'typestyle'
-import { Game } from '../../Game'
+import type { Game } from '../../Game'
 import { FreeModeStyle as s } from './style'
 import { ControlsStyle as cs } from '../Controls.style'
 import { SettingsButton } from '../Buttons/SettingsButton'

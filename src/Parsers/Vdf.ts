@@ -1,7 +1,7 @@
-export function vdf(input: string): {[name: string]: any}[] {
+export function vdf(input: string): { [name: string]: any }[] {
   let state = 0
-  let key: string = ''
-  let val: string = ''
+  let key = ''
+  let val = ''
   const objects: any[] = []
 
   for (let i = 0; i < input.length; ++i) {
@@ -12,7 +12,9 @@ export function vdf(input: string): {[name: string]: any}[] {
         // ROOT
         if (/\s/.test(c)) {
           continue
-        } else if (c === '{') {
+        }
+
+        if (c === '{') {
           objects.push({})
           state = 1
         } else {
@@ -25,7 +27,9 @@ export function vdf(input: string): {[name: string]: any}[] {
         // OBJECT
         if (/\s/.test(c)) {
           continue
-        } else if (c === '}') {
+        }
+
+        if (c === '}') {
           state = 0
         } else if (c === '"') {
           key = ''
@@ -50,7 +54,9 @@ export function vdf(input: string): {[name: string]: any}[] {
         // BETWEEN KEY AND VALUE
         if (/\s/.test(c)) {
           continue
-        } else if (c === '"') {
+        }
+
+        if (c === '"') {
           val = ''
           state = 4
         }

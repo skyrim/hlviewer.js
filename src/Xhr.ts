@@ -1,6 +1,4 @@
-export interface ProgressCallback {
-  (request: XMLHttpRequest, progress: number): void
-}
+export type ProgressCallback = (request: XMLHttpRequest, progress: number) => void
 
 export interface XhrParams {
   method: string
@@ -8,38 +6,38 @@ export interface XhrParams {
   progressCallback: ProgressCallback
 }
 
-export function xhr(url: string, params: XhrParams): Promise<any> {
-  let method = params.method || 'GET'
-  let isBinary = params.isBinary
-  let progressCallback = params.progressCallback
+export function xhr(url: string, params: XhrParams) {
+  const method = params.method || 'GET'
+  const isBinary = params.isBinary
+  const progressCallback = params.progressCallback
 
   if (!url) {
     throw new Error('Url parameter missing')
   }
 
-  return new Promise<string>((resolve, reject) => {
-    let request = new XMLHttpRequest()
+  return new Promise<any>((resolve, reject) => {
+    const request = new XMLHttpRequest()
 
     if (isBinary) {
       request.responseType = 'arraybuffer'
     }
 
     if (isBinary && progressCallback) {
-      request.addEventListener('progress', event => {
+      request.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
           progressCallback(request, event.loaded / event.total)
         } else {
           // HACK!
-          let totalStr = request.getResponseHeader('content-length')
+          const totalStr = request.getResponseHeader('content-length')
           let total = 0
           if (totalStr) {
-            total = parseFloat(totalStr)
+            total = Number.parseFloat(totalStr)
           }
-          let encoding = request.getResponseHeader('content-encoding')
+          const encoding = request.getResponseHeader('content-encoding')
           if (total && encoding && encoding.indexOf('gzip') > -1) {
             // assuming average gzip compression ratio to be 25%
             total *= 4
-            let loadedPercent = Math.min(0.99, event.loaded / total)
+            const loadedPercent = Math.min(0.99, event.loaded / total)
             progressCallback(request, loadedPercent)
             // END OF HACK
           } else {
@@ -49,20 +47,20 @@ export function xhr(url: string, params: XhrParams): Promise<any> {
       })
     }
 
-    request.addEventListener('readystatechange', (event: any) => {
-      if (event.target.readyState !== 4) {
+    request.addEventListener('readystatechange', () => {
+      if (request.readyState !== 4) {
         return
       }
 
-      if (event.target.status === 200) {
+      if (request.status === 200) {
         if (progressCallback) {
           progressCallback(request, 1)
         }
 
-        resolve(event.target.response)
+        resolve(request.response)
       } else {
         reject({
-          status: event.target.status
+          status: request.status
         })
       }
     })

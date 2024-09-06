@@ -47,36 +47,29 @@ for (let i = 0; i < apis.length; ++i) {
   }
 }
 
-export class Fullscreen {
-  static element() {
+export const Fullscreen = {
+  element() {
     return doc[apis[apiIdx].element]
-  }
-
-  static enabled() {
+  },
+  enabled() {
     return doc[apis[apiIdx].enabled]
-  }
-
-  static isInFullscreen() {
+  },
+  isInFullscreen() {
     return Fullscreen.element() !== null
-  }
-
-  static enter(node: any) {
+  },
+  enter(node: any) {
     node[apis[apiIdx].request]()
-  }
-
-  static exit() {
+  },
+  exit() {
     doc[apis[apiIdx].exit]()
-  }
-
-  static onChange(callback: () => void) {
+  },
+  onChange(callback: () => void) {
     return window.addEventListener(apis[apiIdx].change, callback)
-  }
-
-  static onChangeRemove(callback: () => void) {
+  },
+  onChangeRemove(callback: () => void) {
     window.removeEventListener(apis[apiIdx].change, callback)
-  }
-
-  static onError(callback: () => void) {
+  },
+  onError(callback: () => void) {
     return window.addEventListener(apis[apiIdx].error, callback)
   }
 }

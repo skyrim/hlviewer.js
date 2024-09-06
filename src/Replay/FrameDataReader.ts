@@ -1,28 +1,25 @@
 import { readCoord } from './readCoord'
 import { readDelta } from './readDelta'
 import { BitStream } from '../BitReader'
-import { DeltaDecoderTable } from './DeltaDecoder'
-import { Reader, ReaderDataType } from '../Reader'
+import type { DeltaDecoderTable } from './DeltaDecoder'
+import { type Reader, ReaderDataType } from '../Reader'
 
 type FrameDataHandler = (r: Reader, deltaDecoder: DeltaDecoderTable) => any
 
-export class FrameDataReader {
-  static bad() {
+export const frameReaders = {
+  bad() {
     throw new Error('Invalid message type')
-  }
-
-  static nop(): null {
+  },
+  nop(): null {
     return null
-  }
-
-  static disconnect(r: Reader) {
+  },
+  disconnect(r: Reader) {
     return {
       reason: r.str()
     }
-  }
-
-  static event(r: Reader, deltaDecoders: DeltaDecoderTable) {
-    let bs = new BitStream(r.data.buffer)
+  },
+  event(r: Reader, deltaDecoders: DeltaDecoderTable) {
+    const bs = new BitStream(r.data.buffer)
     bs.index = r.tell() * 8
 
     type Event = {
@@ -32,21 +29,21 @@ export class FrameDataReader {
       delta?: { [name: string]: any }
     }
 
-    let events: Event[] = []
-    let eventCount = bs.readBits(5)
+    const events: Event[] = []
+    const eventCount = bs.readBits(5)
     for (let i = 0; i < eventCount; ++i) {
-      let event: Event = {
+      const event: Event = {
         index: bs.readBits(10)
       }
-      let packetIndexBit = bs.readBits(1)
+      const packetIndexBit = bs.readBits(1)
       if (packetIndexBit) {
         event.packetIndex = bs.readBits(11)
-        let deltaBit = bs.readBits(1)
+        const deltaBit = bs.readBits(1)
         if (deltaBit) {
-          event.delta = readDelta(bs, deltaDecoders['event_t'])
+          event.delta = readDelta(bs, deltaDecoders.event_t)
         }
       }
-      let fireTimeBit = bs.readBits(1)
+      const fireTimeBit = bs.readBits(1)
       if (fireTimeBit) {
         event.fireTime = bs.readBits(16)
       }
@@ -61,25 +58,22 @@ export class FrameDataReader {
     }
 
     return { events }
-  }
-
-  static version(r: Reader) {
+  },
+  version(r: Reader) {
     return {
       version: r.ui()
     }
-  }
-
-  static setView(r: Reader) {
+  },
+  setView(r: Reader) {
     return {
       entityIndex: r.s()
     }
-  }
-
-  static sound(r: Reader) {
-    let bs = new BitStream(r.data.buffer)
+  },
+  sound(r: Reader) {
+    const bs = new BitStream(r.data.buffer)
     bs.index = r.tell() * 8
 
-    let flags = bs.readBits(9)
+    const flags = bs.readBits(9)
 
     let volume = 1
     if ((flags & 1) !== 0) {
@@ -91,22 +85,22 @@ export class FrameDataReader {
       attenuation = bs.readBits(8) / 64
     }
 
-    let channel = bs.readBits(3)
-    let entityIndex = bs.readBits(11)
+    const channel = bs.readBits(3)
+    const entityIndex = bs.readBits(11)
 
-    let soundIndex
+    let soundIndex: number
     if ((flags & 4) !== 0) {
       soundIndex = bs.readBits(16)
     } else {
       soundIndex = bs.readBits(8)
     }
 
-    let xFlag = bs.readBits(1)
-    let yFlag = bs.readBits(1)
-    let zFlag = bs.readBits(1)
-    let xPosition
-    let yPosition
-    let zPosition
+    const xFlag = bs.readBits(1)
+    const yFlag = bs.readBits(1)
+    const zFlag = bs.readBits(1)
+    let xPosition = 0
+    let yPosition = 0
+    let zPosition = 0
     if (xFlag) {
       xPosition = readCoord(bs)
     }
@@ -140,47 +134,42 @@ export class FrameDataReader {
       zPosition,
       pitch
     }
-  }
-
-  static time(r: Reader) {
+  },
+  time(r: Reader) {
     return {
       time: r.f()
     }
-  }
-
-  static print(r: Reader) {
+  },
+  print(r: Reader) {
     return {
       message: r.str()
     }
-  }
-
-  static stuffText(r: Reader) {
-    let message = r.str()
-    let commands = message.split(';').map(command => {
-      let args = command
+  },
+  stuffText(r: Reader) {
+    const message = r.str()
+    const commands = message.split(';').map((command) => {
+      const args = command
         .split(/\s*("[^"]+"|[^\s"]+)/)
-        .map(arg => arg.replace(/^"(.*)"$/, '$1').trim())
-        .filter(arg => arg)
+        .map((arg) => arg.replace(/^"(.*)"$/, '$1').trim())
+        .filter((arg) => arg)
 
-      let func = args[0]
-      let params = args.slice(1)
+      const func = args[0]
+      const params = args.slice(1)
 
       return { func, params }
     })
 
     return { commands }
-  }
-
-  static setAngle(r: Reader) {
+  },
+  setAngle(r: Reader) {
     return {
       pitch: r.s(),
       yaw: r.s(),
       roll: r.s()
     }
-  }
-
-  static serverInfo(r: Reader) {
-    let info = {
+  },
+  serverInfo(r: Reader) {
+    const info = {
       protocol: r.i(),
       spawnCount: r.i(), // map change count
       mapCrc: r.i(),
@@ -196,26 +185,23 @@ export class FrameDataReader {
     r.skip(1) // skip padding
 
     return info
-  }
-
-  static lightStyle(r: Reader) {
+  },
+  lightStyle(r: Reader) {
     return {
       index: r.ub(),
       lightInfo: r.str()
     }
-  }
-
-  static updateUserInfo(r: Reader) {
+  },
+  updateUserInfo(r: Reader) {
     return {
       clientIndex: r.ub(),
       clientUserId: r.ui(),
       clientUserInfo: r.str(),
       clientCdKeyHash: r.arrx(16, ReaderDataType.UByte)
     }
-  }
-
-  static deltaDescription(r: Reader, deltaDecoders: DeltaDecoderTable) {
-    let data: {
+  },
+  deltaDescription(r: Reader, deltaDecoders: DeltaDecoderTable) {
+    const data: {
       name: string
       fields: { [name: string]: any }[]
     } = {
@@ -223,11 +209,11 @@ export class FrameDataReader {
       fields: []
     }
 
-    let bs = new BitStream(r.data.buffer)
-    let fieldCount = r.us()
+    const bs = new BitStream(r.data.buffer)
+    const fieldCount = r.us()
     bs.index = r.tell() * 8
     for (let i = 0; i < fieldCount; ++i) {
-      data.fields.push(readDelta(bs, deltaDecoders['delta_description_t']))
+      data.fields.push(readDelta(bs, deltaDecoders.delta_description_t))
     }
     deltaDecoders[data.name] = data.fields as any
 
@@ -238,23 +224,22 @@ export class FrameDataReader {
     }
 
     return data
-  }
-
-  static clientData(r: Reader, deltaDecoders: DeltaDecoderTable) {
-    let bs = new BitStream(r.data.buffer)
+  },
+  clientData(r: Reader, deltaDecoders: DeltaDecoderTable) {
+    const bs = new BitStream(r.data.buffer)
     bs.index = r.tell() * 8
 
-    let deltaSequence = bs.readBits(1)
+    const deltaSequence = bs.readBits(1)
     if (deltaSequence) {
       // delta update mask
       bs.index += 8
     }
 
-    let clientDataDecoder = deltaDecoders['clientdata_t']
-    let clientData = readDelta(bs, clientDataDecoder)
+    const clientDataDecoder = deltaDecoders.clientdata_t
+    const clientData = readDelta(bs, clientDataDecoder)
 
     // TODO: weapon data
-    let weaponDataDecoder = deltaDecoders['weapon_data_t']
+    const weaponDataDecoder = deltaDecoders.weapon_data_t
     while (bs.readBits(1)) {
       bs.index += 6 // weapon index
       readDelta(bs, weaponDataDecoder) // weapon data
@@ -269,19 +254,17 @@ export class FrameDataReader {
     return {
       clientData
     }
-  }
-
-  static stopSound(r: Reader) {
+  },
+  stopSound(r: Reader) {
     return {
       entityIndex: r.s()
     }
-  }
-
-  static pings(r: Reader) {
-    let bs = new BitStream(r.data.buffer)
+  },
+  pings(r: Reader) {
+    const bs = new BitStream(r.data.buffer)
     bs.index = r.tell() * 8
 
-    let pings = []
+    const pings = []
     while (bs.readBits(1)) {
       pings.push({
         slot: bs.readBits(8),
@@ -297,24 +280,21 @@ export class FrameDataReader {
     }
 
     return pings
-  }
-
-  static particle(r: Reader) {
+  },
+  particle(r: Reader) {
     return {
       position: [r.s() / 8, r.s() / 8, r.s() / 8],
       direction: [r.b(), r.b(), r.b()],
       count: r.ub(),
       color: r.ub()
     }
-  }
-
-  static damage(): null {
+  },
+  damage(): null {
     // unused
     return null
-  }
-
-  static spawnStatic(r: Reader) {
-    let data: any = {
+  },
+  spawnStatic(r: Reader) {
+    const data: any = {
       modelIndex: r.s(),
       sequence: r.b(),
       frame: r.b(),
@@ -337,16 +317,15 @@ export class FrameDataReader {
     }
 
     return data
-  }
-
-  static eventReliable(r: Reader, deltaDecoders: DeltaDecoderTable) {
-    let bs = new BitStream(r.data.buffer)
+  },
+  eventReliable(r: Reader, deltaDecoders: DeltaDecoderTable) {
+    const bs = new BitStream(r.data.buffer)
     bs.index = r.tell() * 8
 
-    let eventIndex = bs.readBits(10)
-    let eventData = readDelta(bs, deltaDecoders['event_t'])
-    let delayBit = bs.readBits(1)
-    let delay
+    const eventIndex = bs.readBits(10)
+    const eventData = readDelta(bs, deltaDecoders['event_t'])
+    const delayBit = bs.readBits(1)
+    let delay = 0
     if (delayBit) {
       delay = bs.readBits(16)
     }
@@ -363,21 +342,20 @@ export class FrameDataReader {
       delayBit,
       delay
     }
-  }
-
-  static spawnBaseLine(r: Reader, deltaDecoders: DeltaDecoderTable) {
-    let bs = new BitStream(r.data.buffer)
+  },
+  spawnBaseLine(r: Reader, deltaDecoders: DeltaDecoderTable) {
+    const bs = new BitStream(r.data.buffer)
     bs.index = r.tell() * 8
 
-    let entities = []
+    const entities = []
     while (true) {
-      let entityIdx = bs.readBits(11)
+      const entityIdx = bs.readBits(11)
       if (entityIdx === (1 << 11) - 1) {
         break
       }
 
-      let entityType = bs.readBits(2)
-      let entityTypeString
+      const entityType = bs.readBits(2)
+      let entityTypeString: string
       if (entityType & 1) {
         if (entityIdx > 0 && entityIdx <= 32) {
           entityTypeString = 'entity_state_player_t'
@@ -391,15 +369,15 @@ export class FrameDataReader {
       entities[entityIdx] = readDelta(bs, deltaDecoders[entityTypeString])
     }
 
-    let footer = bs.readBits(5)
+    const footer = bs.readBits(5)
     if (footer !== (1 << 5) - 1) {
       throw new Error('Bad spawnbaseline')
     }
 
-    let nExtraData = bs.readBits(6)
-    let extraData = []
+    const nExtraData = bs.readBits(6)
+    const extraData = []
     for (let i = 0; i < nExtraData; ++i) {
-      extraData.push(readDelta(bs, deltaDecoders['entity_state_t']))
+      extraData.push(readDelta(bs, deltaDecoders.entity_state_t))
     }
 
     if (bs.index % 8 > 0) {
@@ -412,9 +390,8 @@ export class FrameDataReader {
       entities,
       extraData
     }
-  }
-
-  static tempEntity(r: Reader) {
+  },
+  tempEntity(r: Reader) {
     const TE_BEAMPOINTS = 0 // Beam effect between two points
     const TE_BEAMENTPOINT = 1 // Beam effect between point and entity
     const TE_GUNSHOT = 2 // Particle effect plus ricochet sound
@@ -475,8 +452,8 @@ export class FrameDataReader {
     const TE_MULTIGUNSHOT = 126 // Much more compact shotgun message
     const TE_USERTRACER = 127 // Larger message than the standard tracer, but allows some customization.
 
-    let type = r.ub()
-    let data: any = {}
+    const type = r.ub()
+    const data: any = {}
     switch (type) {
       case TE_BEAMPOINTS: {
         r.skip(24)
@@ -545,7 +522,7 @@ export class FrameDataReader {
 
       case TE_BSPDECAL: {
         r.skip(8)
-        let entityIndex = r.s()
+        const entityIndex = r.s()
         if (entityIndex) {
           r.skip(2)
         }
@@ -795,37 +772,31 @@ export class FrameDataReader {
     }
 
     return data
-  }
-
-  static setPause(r: Reader) {
+  },
+  setPause(r: Reader) {
     return {
       isPaused: r.b()
     }
-  }
-
-  static signOnNum(r: Reader) {
+  },
+  signOnNum(r: Reader) {
     return {
       sign: r.b()
     }
-  }
-
-  static centerPrint(r: Reader) {
+  },
+  centerPrint(r: Reader) {
     return {
       message: r.str()
     }
-  }
-
-  static killedMonster(): null {
+  },
+  killedMonster(): null {
     // unused
     return null
-  }
-
-  static foundSecret(): null {
+  },
+  foundSecret(): null {
     // unused
     return null
-  }
-
-  static spawnStaticSound(r: Reader) {
+  },
+  spawnStaticSound(r: Reader) {
     return {
       position: [r.s() / 8, r.s() / 8, r.s() / 8],
       soundIndex: r.us(),
@@ -835,96 +806,85 @@ export class FrameDataReader {
       pitch: r.ub(),
       flags: r.ub()
     }
-  }
-
-  static intermission(): null {
+  },
+  intermission(): null {
     // has no arguments
     return null
-  }
-
-  static finale(r: Reader) {
+  },
+  finale(r: Reader) {
     return {
       text: r.str()
     }
-  }
-
-  static cdTrack(r: Reader) {
+  },
+  cdTrack(r: Reader) {
     return {
       track: r.b(),
       loopTrack: r.b()
     }
-  }
-
-  static restore(r: Reader) {
-    let saveName = r.str()
-    let mapCount = r.ub()
-    let maps = []
+  },
+  restore(r: Reader) {
+    const saveName = r.str()
+    const mapCount = r.ub()
+    const maps = []
     for (let i = 0; i < mapCount; ++i) {
       maps.push(r.str())
     }
 
     return { saveName, maps }
-  }
-
-  static cutscene(r: Reader) {
+  },
+  cutscene(r: Reader) {
     return {
       text: r.str()
     }
-  }
-
-  static weaponAnim(r: Reader) {
+  },
+  weaponAnim(r: Reader) {
     return {
       sequenceNumber: r.b(),
       weaponModelBodyGroup: r.b()
     }
-  }
-
-  static decalName(r: Reader) {
+  },
+  decalName(r: Reader) {
     return {
       positionIndex: r.ub(),
       decalName: r.str()
     }
-  }
-
-  static roomType(r: Reader) {
+  },
+  roomType(r: Reader) {
     return {
       type: r.us()
     }
-  }
-
-  static addAngle(r: Reader) {
+  },
+  addAngle(r: Reader) {
     // NOTE: not sure if (360/65536) or (65536/360)
     return {
       angleToAdd: r.s() / (360 / 65536)
     }
-  }
-
-  static newUserMsg(r: Reader) {
+  },
+  newUserMsg(r: Reader) {
     return {
       index: r.ub(),
       size: r.b(),
       name: r.nstr(16)
     }
-  }
-
-  static packetEntities(r: Reader, deltaDecoders: DeltaDecoderTable) {
-    let bs = new BitStream(r.data.buffer)
+  },
+  packetEntities(r: Reader, deltaDecoders: DeltaDecoderTable) {
+    const bs = new BitStream(r.data.buffer)
     bs.index = r.tell() * 8
 
-    let entityStates = []
+    const entityStates = []
     bs.readBits(16) // skip entity count (unreliable)
     let entityNumber = 0
     while (true) {
-      let footer = bs.readBits(16)
+      const footer = bs.readBits(16)
       if (footer === 0) {
         break
       }
 
       bs.index -= 16
 
-      let entityNumberIncrement = bs.readBits(1)
+      const entityNumberIncrement = bs.readBits(1)
       if (!entityNumberIncrement) {
-        let absoluteEntityNumber = bs.readBits(1)
+        const absoluteEntityNumber = bs.readBits(1)
         if (absoluteEntityNumber) {
           entityNumber = bs.readBits(11)
         } else {
@@ -934,8 +894,8 @@ export class FrameDataReader {
         entityNumber++
       }
 
-      let custom = bs.readBits(1)
-      let useBaseline = bs.readBits(1)
+      const custom = bs.readBits(1)
+      const useBaseline = bs.readBits(1)
       if (useBaseline) {
         bs.index += 6 // baseline index
       }
@@ -957,27 +917,26 @@ export class FrameDataReader {
     }
 
     return { entityStates }
-  }
-
-  static deltaPacketEntities(r: Reader, deltaDecoders: DeltaDecoderTable) {
-    let bs = new BitStream(r.data.buffer)
+  },
+  deltaPacketEntities(r: Reader, deltaDecoders: DeltaDecoderTable) {
+    const bs = new BitStream(r.data.buffer)
     bs.index = r.tell() * 8
 
     bs.readBits(16) // skip entity count (unreliable)
     bs.index += 8 // either updatemask or delta sequence number
 
-    let entityStates = []
+    const entityStates = []
     let entityIdx = 0
     while (true) {
-      let footer = bs.readBits(16)
+      const footer = bs.readBits(16)
       if (footer === 0) {
         break
       }
 
       bs.index -= 16
 
-      let removeEntity = bs.readBits(1)
-      let absoluteEntityNumber = bs.readBits(1)
+      const removeEntity = bs.readBits(1)
+      const absoluteEntityNumber = bs.readBits(1)
       if (absoluteEntityNumber) {
         entityIdx = bs.readBits(11)
       } else {
@@ -988,7 +947,7 @@ export class FrameDataReader {
         continue
       }
 
-      let custom = bs.readBits(1)
+      const custom = bs.readBits(1)
       let entityType = 'entity_state_t'
       if (entityIdx > 0 && entityIdx < 32) {
         entityType = 'entity_state_player_t'
@@ -1006,29 +965,28 @@ export class FrameDataReader {
     }
 
     return { entityStates }
-  }
-
-  static choke(): null {
+  },
+  choke(): null {
     // no arguments
     return null
-  }
-
-  static resourceList(r: Reader) {
-    let bs = new BitStream(r.data.buffer)
+  },
+  resourceList(r: Reader) {
+    const bs = new BitStream(r.data.buffer)
     bs.index = r.tell() * 8
 
     // TODO: extract more data???
 
-    let entries = []
-    let entryCount = bs.readBits(12)
+    const entries = []
+    const entryCount = bs.readBits(12)
     for (let i = 0; i < entryCount; ++i) {
-      let entry: any = {}
-      entry.type = bs.readBits(4)
-      entry.name = bs.readString()
-      entry.index = bs.readBits(12)
-      entry.size = bs.readBits(24)
+      const entry = {
+        type: bs.readBits(4),
+        name: bs.readString(),
+        index: bs.readBits(12),
+        size: bs.readBits(24)
+      }
 
-      let flags = bs.readBits(3)
+      const flags = bs.readBits(3)
       if (flags & 4) {
         // TODO: entry.md5hash = read 128 bits
         bs.index += 128
@@ -1045,7 +1003,7 @@ export class FrameDataReader {
 
     if (bs.readBits(1)) {
       while (bs.readBits(1)) {
-        let nBits = bs.readBits(1) ? 5 : 10
+        const nBits = bs.readBits(1) ? 5 : 10
         bs.index += nBits
       }
     }
@@ -1057,9 +1015,8 @@ export class FrameDataReader {
     }
 
     return entries
-  }
-
-  static newMoveVars(r: Reader) {
+  },
+  newMoveVars(r: Reader) {
     return {
       gravity: r.f(),
       stopSpeed: r.f(),
@@ -1084,25 +1041,23 @@ export class FrameDataReader {
       skyVec: [r.f(), r.f(), r.f()],
       skyName: r.str()
     }
-  }
-
-  static resourceRequest(r: Reader) {
-    let data = {
+  },
+  resourceRequest(r: Reader) {
+    const data = {
       spawnCount: r.i()
     }
     r.skip(4) // unknown (always 0)
 
     return data
-  }
-
-  static customization(r: Reader) {
-    let playerIndex = r.ub()
-    let type = r.ub()
-    let name = r.str()
-    let index = r.us()
-    let downloadSize = r.ui()
-    let flags = r.ub()
-    let md5hash
+  },
+  customization(r: Reader) {
+    const playerIndex = r.ub()
+    const type = r.ub()
+    const name = r.str()
+    const index = r.us()
+    const downloadSize = r.ui()
+    const flags = r.ub()
+    let md5hash: number[] | null = null
     if (flags & 4) {
       md5hash = [r.i(), r.i(), r.i(), r.i()]
     }
@@ -1116,229 +1071,215 @@ export class FrameDataReader {
       flags,
       md5hash
     }
-  }
-
-  static crosshairAngle(r: Reader) {
+  },
+  crosshairAngle(r: Reader) {
     return {
       pitch: r.b(),
       yaw: r.b()
     }
-  }
-
-  static soundFade(r: Reader) {
+  },
+  soundFade(r: Reader) {
     return {
       initialPercent: r.ub(),
       holdTime: r.ub(),
       fadeOutTime: r.ub(),
       fadeInTime: r.ub()
     }
-  }
-
-  static fileTxferFailed(r: Reader) {
+  },
+  fileTxferFailed(r: Reader) {
     return {
       filename: r.str()
     }
-  }
-
-  static hltv(r: Reader) {
+  },
+  hltv(r: Reader) {
     return {
       mode: r.ub()
     }
-  }
-
-  static director(r: Reader) {
-    let length = r.ub()
+  },
+  director(r: Reader) {
+    const length = r.ub()
     return {
       flag: r.ub(),
       message: r.nstr(length - 1)
     }
-  }
-
-  static voiceInit(r: Reader) {
+  },
+  voiceInit(r: Reader) {
     return {
       codecName: r.str(),
       quality: r.b()
     }
-  }
-
-  static voiceData(r: Reader) {
-    let playerIndex = r.ub()
-    let size = r.us()
-    let data = r.arrx(size, ReaderDataType.UByte)
+  },
+  voiceData(r: Reader) {
+    const playerIndex = r.ub()
+    const size = r.us()
+    const data = r.arrx(size, ReaderDataType.UByte)
     return { playerIndex, data }
-  }
-
-  static sendExtraInfo(r: Reader) {
+  },
+  sendExtraInfo(r: Reader) {
     return {
       fallbackDir: r.str(),
       canCheat: r.ub()
     }
-  }
-
-  static timeScale(r: Reader) {
+  },
+  timeScale(r: Reader) {
     return {
       timeScale: r.f()
     }
-  }
-
-  static resourceLocation(r: Reader) {
+  },
+  resourceLocation(r: Reader) {
     return {
       url: r.str()
     }
-  }
-
-  static sendCvarValue(r: Reader) {
+  },
+  sendCvarValue(r: Reader) {
     // deprecated
     return {
       name: r.str()
     }
-  }
-
-  static sendCvarValue2(r: Reader) {
+  },
+  sendCvarValue2(r: Reader) {
     return {
       requestId: r.ui(),
       name: r.str()
     }
   }
-
-  static read(r: Reader, type: number, deltaDecoders: DeltaDecoderTable) {
-    if (type === 0) {
-      // SVC_BAD shouldn't happen
-      return null
-    }
-
-    const handler = FrameDataReader.handlers[type]
-    if (handler) {
-      return handler(r, deltaDecoders)
-    } else {
-      return null
-    }
-  }
-
-  // prettier-ignore
-  static readonly handlers: FrameDataHandler[] = [
-    FrameDataReader.bad,                 // SVC_BAD                      0
-    FrameDataReader.nop,                 // SVC_NOP                      1
-    FrameDataReader.disconnect,          // SVC_DISCONNECT               2
-    FrameDataReader.event,               // SVC_EVENT                    3
-    FrameDataReader.version,             // SVC_VERSION                  4
-    FrameDataReader.setView,             // SVC_SETVIEW                  5
-    FrameDataReader.sound,               // SVC_SOUND                    6
-    FrameDataReader.time,                // SVC_TIME                     7
-    FrameDataReader.print,               // SVC_PRINT                    8
-    FrameDataReader.stuffText,           // SVC_STUFFTEXT                9
-    FrameDataReader.setAngle,            // SVC_SETANGLE                10
-    FrameDataReader.serverInfo,          // SVC_SERVERINFO              11
-    FrameDataReader.lightStyle,          // SVC_LIGHTSTYLE              12
-    FrameDataReader.updateUserInfo,      // SVC_UPDATEUSERINFO          13
-    FrameDataReader.deltaDescription,    // SVC_DELTADESCRIPTION        14
-    FrameDataReader.clientData,          // SVC_CLIENTDATA              15
-    FrameDataReader.stopSound,           // SVC_STOPSOUND               16
-    FrameDataReader.pings,               // SVC_PINGS                   17
-    FrameDataReader.particle,            // SVC_PARTICLE                18
-    FrameDataReader.damage,              // SVC_DAMAGE                  19
-    FrameDataReader.spawnStatic,         // SVC_SPAWNSTATIC             20
-    FrameDataReader.eventReliable,       // SVC_EVENT_RELIABLE          21
-    FrameDataReader.spawnBaseLine,       // SVC_SPAWNBASELINE           22
-    FrameDataReader.tempEntity,          // SVC_TEMPENTITY              23
-    FrameDataReader.setPause,            // SVC_SETPAUSE                24
-    FrameDataReader.signOnNum,           // SVC_SIGNONNUM               25
-    FrameDataReader.centerPrint,         // SVC_CENTERPRINT             26
-    FrameDataReader.killedMonster,       // SVC_KILLEDMONSTER           27
-    FrameDataReader.foundSecret,         // SVC_FOUNDSECRET             28
-    FrameDataReader.spawnStaticSound,    // SVC_SPAWNSTATICSOUND        29
-    FrameDataReader.intermission,        // SVC_INTERMISSION            30
-    FrameDataReader.finale,              // SVC_FINALE                  31
-    FrameDataReader.cdTrack,             // SVC_CDTRACK                 32
-    FrameDataReader.restore,             // SVC_RESTORE                 33
-    FrameDataReader.cutscene,            // SVC_CUTSCENE                34
-    FrameDataReader.weaponAnim,          // SVC_WEAPONANIM              35
-    FrameDataReader.decalName,           // SVC_DECALNAME               36
-    FrameDataReader.roomType,            // SVC_ROOMTYPE                37
-    FrameDataReader.addAngle,            // SVC_ADDANGLE                38
-    FrameDataReader.newUserMsg,          // SVC_NEWUSERMSG              39
-    FrameDataReader.packetEntities,      // SVC_PACKETENTITIES          40
-    FrameDataReader.deltaPacketEntities, // SVC_DELTAPACKETENTITIES     41
-    FrameDataReader.choke,               // SVC_CHOKE                   42
-    FrameDataReader.resourceList,        // SVC_RESOURCELIST            43
-    FrameDataReader.newMoveVars,         // SVC_NEWMOVEVARS             44
-    FrameDataReader.resourceRequest,     // SVC_RESOURCEREQUEST         45
-    FrameDataReader.customization,       // SVC_CUSTOMIZATION           46
-    FrameDataReader.crosshairAngle,      // SVC_CROSSHAIRANGLE          47
-    FrameDataReader.soundFade,           // SVC_SOUNDFADE               48
-    FrameDataReader.fileTxferFailed,     // SVC_FILETXFERFAILED         49
-    FrameDataReader.hltv,                // SVC_HLTV                    50
-    FrameDataReader.director,            // SVC_DIRECTOR                51
-    FrameDataReader.voiceInit,           // SVC_VOICEINIT               52
-    FrameDataReader.voiceData,           // SVC_VOICEDATA               53
-    FrameDataReader.sendExtraInfo,       // SVC_SENDEXTRAINFO           54
-    FrameDataReader.timeScale,           // SVC_TIMESCALE               55
-    FrameDataReader.resourceLocation,    // SVC_RESOURCELOCATION        56
-    FrameDataReader.sendCvarValue,       // SVC_SENDCVARVALUE           57
-    FrameDataReader.sendCvarValue2       // SVC_SENDCVARVALUE2          58
-  ]
 }
 
-export namespace FrameDataReader {
-  export enum SVC {
-    BAD = 0,
-    NOP = 1,
-    DISCONNECT = 2,
-    EVENT = 3,
-    VERSION = 4,
-    SETVIEW = 5,
-    SOUND = 6,
-    TIME = 7,
-    PRINT = 8,
-    STUFFTEXT = 9,
-    SETANGLE = 10,
-    SERVERINFO = 11,
-    LIGHTSTYLE = 12,
-    UPDATEUSERINFO = 13,
-    DELTADESCRIPTION = 14,
-    CLIENTDATA = 15,
-    STOPSOUND = 16,
-    PINGS = 17,
-    PARTICLE = 18,
-    DAMAGE = 19,
-    SPAWNSTATIC = 20,
-    EVENT_RELIABLE = 21,
-    SPAWNBASELINE = 22,
-    TEMPENTITY = 23,
-    SETPAUSE = 24,
-    SIGNONNUM = 25,
-    CENTERPRINT = 26,
-    KILLEDMONSTER = 27,
-    FOUNDSECRET = 28,
-    SPAWNSTATICSOUND = 29,
-    INTERMISSION = 30,
-    FINALE = 31,
-    CDTRACK = 32,
-    RESTORE = 33,
-    CUTSCENE = 34,
-    WEAPONANIM = 35,
-    DECALNAME = 36,
-    ROOMTYPE = 37,
-    ADDANGLE = 38,
-    NEWUSERMSG = 39,
-    PACKETENTITIES = 40,
-    DELTAPACKETENTITIES = 41,
-    CHOKE = 42,
-    RESOURCELIST = 43,
-    NEWMOVEVARS = 44,
-    RESOURCEREQUEST = 45,
-    CUSTOMIZATION = 46,
-    CROSSHAIRANGLE = 47,
-    SOUNDFADE = 48,
-    FILETXFERFAILED = 49,
-    HLTV = 50,
-    DIRECTOR = 51,
-    VOICEINIT = 52,
-    VOICEDATA = 53,
-    SENDEXTRAINFO = 54,
-    TIMESCALE = 55,
-    RESOURCELOCATION = 56,
-    SENDCVARVALUE = 57,
-    SENDCVARVALUE2 = 58
+// prettier-ignore
+const frameReadHandlers = [
+  frameReaders.bad,                 // SVC_BAD                      0
+  frameReaders.nop,                 // SVC_NOP                      1
+  frameReaders.disconnect,          // SVC_DISCONNECT               2
+  frameReaders.event,               // SVC_EVENT                    3
+  frameReaders.version,             // SVC_VERSION                  4
+  frameReaders.setView,             // SVC_SETVIEW                  5
+  frameReaders.sound,               // SVC_SOUND                    6
+  frameReaders.time,                // SVC_TIME                     7
+  frameReaders.print,               // SVC_PRINT                    8
+  frameReaders.stuffText,           // SVC_STUFFTEXT                9
+  frameReaders.setAngle,            // SVC_SETANGLE                10
+  frameReaders.serverInfo,          // SVC_SERVERINFO              11
+  frameReaders.lightStyle,          // SVC_LIGHTSTYLE              12
+  frameReaders.updateUserInfo,      // SVC_UPDATEUSERINFO          13
+  frameReaders.deltaDescription,    // SVC_DELTADESCRIPTION        14
+  frameReaders.clientData,          // SVC_CLIENTDATA              15
+  frameReaders.stopSound,           // SVC_STOPSOUND               16
+  frameReaders.pings,               // SVC_PINGS                   17
+  frameReaders.particle,            // SVC_PARTICLE                18
+  frameReaders.damage,              // SVC_DAMAGE                  19
+  frameReaders.spawnStatic,         // SVC_SPAWN            20
+  frameReaders.eventReliable,       // SVC_EVENT_RELIABLE          21
+  frameReaders.spawnBaseLine,       // SVC_SPAWNBASELINE           22
+  frameReaders.tempEntity,          // SVC_TEMPENTITY              23
+  frameReaders.setPause,            // SVC_SETPAUSE                24
+  frameReaders.signOnNum,           // SVC_SIGNONNUM               25
+  frameReaders.centerPrint,         // SVC_CENTERPRINT             26
+  frameReaders.killedMonster,       // SVC_KILLEDMONSTER           27
+  frameReaders.foundSecret,         // SVC_FOUNDSECRET             28
+  frameReaders.spawnStaticSound,    // SVC_SPAWNSTATICSOUND        29
+  frameReaders.intermission,        // SVC_INTERMISSION            30
+  frameReaders.finale,              // SVC_FINALE                  31
+  frameReaders.cdTrack,             // SVC_CDTRACK                 32
+  frameReaders.restore,             // SVC_RESTORE                 33
+  frameReaders.cutscene,            // SVC_CUTSCENE                34
+  frameReaders.weaponAnim,          // SVC_WEAPONANIM              35
+  frameReaders.decalName,           // SVC_DECALNAME               36
+  frameReaders.roomType,            // SVC_ROOMTYPE                37
+  frameReaders.addAngle,            // SVC_ADDANGLE                38
+  frameReaders.newUserMsg,          // SVC_NEWUSERMSG              39
+  frameReaders.packetEntities,      // SVC_PACKETENTITIES          40
+  frameReaders.deltaPacketEntities, // SVC_DELTAPACKETENTITIES     41
+  frameReaders.choke,               // SVC_CHOKE                   42
+  frameReaders.resourceList,        // SVC_RESOURCELIST            43
+  frameReaders.newMoveVars,         // SVC_NEWMOVEVARS             44
+  frameReaders.resourceRequest,     // SVC_RESOURCEREQUEST         45
+  frameReaders.customization,       // SVC_CUSTOMIZATION           46
+  frameReaders.crosshairAngle,      // SVC_CROSSHAIRANGLE          47
+  frameReaders.soundFade,           // SVC_SOUNDFADE               48
+  frameReaders.fileTxferFailed,     // SVC_FILETXFERFAILED         49
+  frameReaders.hltv,                // SVC_HLTV                    50
+  frameReaders.director,            // SVC_DIRECTOR                51
+  frameReaders.voiceInit,           // SVC_VOICEINIT               52
+  frameReaders.voiceData,           // SVC_VOICEDATA               53
+  frameReaders.sendExtraInfo,       // SVC_SENDEXTRAINFO           54
+  frameReaders.timeScale,           // SVC_TIMESCALE               55
+  frameReaders.resourceLocation,    // SVC_RESOURCELOCATION        56
+  frameReaders.sendCvarValue,       // SVC_SENDCVARVALUE           57
+  frameReaders.sendCvarValue2       // SVC_SENDCVARVALUE2          58
+] as FrameDataHandler[]
+
+export function readFrame(r: Reader, type: number, deltaDecoders: DeltaDecoderTable) {
+  if (type === 0) {
+    // SVC_BAD shouldn't happen
+    return null
   }
+
+  const handler = frameReadHandlers[type]
+  if (handler) {
+    return handler(r, deltaDecoders)
+  }
+
+  return null
+}
+
+export enum SVC {
+  BAD = 0,
+  NOP = 1,
+  DISCONNECT = 2,
+  EVENT = 3,
+  VERSION = 4,
+  SETVIEW = 5,
+  SOUND = 6,
+  TIME = 7,
+  PRINT = 8,
+  STUFFTEXT = 9,
+  SETANGLE = 10,
+  SERVERINFO = 11,
+  LIGHTSTYLE = 12,
+  UPDATEUSERINFO = 13,
+  DELTADESCRIPTION = 14,
+  CLIENTDATA = 15,
+  STOPSOUND = 16,
+  PINGS = 17,
+  PARTICLE = 18,
+  DAMAGE = 19,
+  SPAWN = 20,
+  EVENT_RELIABLE = 21,
+  SPAWNBASELINE = 22,
+  TEMPENTITY = 23,
+  SETPAUSE = 24,
+  SIGNONNUM = 25,
+  CENTERPRINT = 26,
+  KILLEDMONSTER = 27,
+  FOUNDSECRET = 28,
+  SPAWNSTATICSOUND = 29,
+  INTERMISSION = 30,
+  FINALE = 31,
+  CDTRACK = 32,
+  RESTORE = 33,
+  CUTSCENE = 34,
+  WEAPONANIM = 35,
+  DECALNAME = 36,
+  ROOMTYPE = 37,
+  ADDANGLE = 38,
+  NEWUSERMSG = 39,
+  PACKETENTITIES = 40,
+  DELTAPACKETENTITIES = 41,
+  CHOKE = 42,
+  RESOURCELIST = 43,
+  NEWMOVEVARS = 44,
+  RESOURCEREQUEST = 45,
+  CUSTOMIZATION = 46,
+  CROSSHAIRANGLE = 47,
+  SOUNDFADE = 48,
+  FILETXFERFAILED = 49,
+  HLTV = 50,
+  DIRECTOR = 51,
+  VOICEINIT = 52,
+  VOICEDATA = 53,
+  SENDEXTRAINFO = 54,
+  TIMESCALE = 55,
+  RESOURCELOCATION = 56,
+  SENDCVARVALUE = 57,
+  SENDCVARVALUE2 = 58
 }

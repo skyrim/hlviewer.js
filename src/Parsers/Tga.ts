@@ -14,9 +14,9 @@ export class Tga {
   }
 
   static parse(buffer: ArrayBuffer, name: string) {
-    let r = new Reader(buffer)
+    const r = new Reader(buffer)
 
-    let header = {
+    const header = {
       idLength: r.ub(),
       colorMapType: r.ub(),
       imageType: r.ub(),
@@ -45,19 +45,19 @@ export class Tga {
       throw new Error('Not implemented')
     }
 
-    let w = header.image.width
-    let h = header.image.height
-    let pixelCount = w * h
-    let imageData
+    const w = header.image.width
+    const h = header.image.height
+    const pixelCount = w * h
+    let imageData: Uint8Array = new Uint8Array(0)
 
     if (header.imageType === 0x02) {
-      let byteCount = (pixelCount * header.image.depth) / 8
+      const byteCount = (pixelCount * header.image.depth) / 8
       imageData = r.arrx(byteCount, ReaderDataType.UByte)
       if (header.image.depth === 24) {
-        let temp = new Uint8Array(pixelCount * 4)
+        const temp = new Uint8Array(pixelCount * 4)
         for (let i = 0; i < h; ++i) {
           for (let j = 0; j < w; ++j) {
-            let dst = (h - 1 - i) * w + j
+            const dst = (h - 1 - i) * w + j
             temp[dst * 4] = imageData[(i * w + j) * 3 + 2]
             temp[dst * 4 + 1] = imageData[(i * w + j) * 3 + 1]
             temp[dst * 4 + 2] = imageData[(i * w + j) * 3]
@@ -66,10 +66,10 @@ export class Tga {
         }
         imageData = temp
       } else if (header.image.depth === 32) {
-        let temp = new Uint8Array(pixelCount * 4)
+        const temp = new Uint8Array(pixelCount * 4)
         for (let i = 0; i < h; ++i) {
           for (let j = 0; j < w; ++j) {
-            let dst = (h - 1 - i) * w + j
+            const dst = (h - 1 - i) * w + j
             temp[dst * 4] = imageData[(i * w + j) * 4 + 2]
             temp[dst * 4 + 1] = imageData[(i * w + j) * 4 + 1]
             temp[dst * 4 + 2] = imageData[(i * w + j) * 4]
@@ -86,11 +86,11 @@ export class Tga {
             let repCount = r.ub()
             if (repCount & 0x80) {
               repCount = (repCount & 0x7f) + 1
-              let bl = r.ub()
-              let gr = r.ub()
-              let rd = r.ub()
+              const bl = r.ub()
+              const gr = r.ub()
+              const rd = r.ub()
               while (j < w && repCount) {
-                let dst = (h - 1 - i) * w + j
+                const dst = (h - 1 - i) * w + j
                 imageData[dst * 4] = rd
                 imageData[dst * 4 + 1] = gr
                 imageData[dst * 4 + 2] = bl
@@ -101,7 +101,7 @@ export class Tga {
             } else {
               repCount = (repCount & 0x7f) + 1
               while (j < w && repCount) {
-                let dst = (h - 1 - i) * w + j
+                const dst = (h - 1 - i) * w + j
                 imageData[dst * 4 + 2] = r.ub()
                 imageData[dst * 4 + 1] = r.ub()
                 imageData[dst * 4] = r.ub()

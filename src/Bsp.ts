@@ -1,6 +1,6 @@
-import { Tga } from './Parsers/Tga'
-import { Sprite } from './Parsers/Sprite'
-import { BspLightmap } from './BspLightmap'
+import type { Tga } from './Parsers/Tga'
+import type { Sprite } from './Parsers/Sprite'
+import type { BspLightmap } from './BspLightmap'
 
 export interface BspTexture {
   name: string

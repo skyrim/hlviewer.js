@@ -1,5 +1,5 @@
 import { basename } from '../Util'
-import { ReplayChunk } from './ReplayChunk'
+import type { ReplayChunk } from './ReplayChunk'
 
 export class ReplayMap {
   name: string
@@ -20,7 +20,7 @@ export class ReplayMap {
   }
 
   setResources(resources: any[]) {
-    resources.forEach(res => {
+    for (const res of resources) {
       switch (res.type) {
         case 0: {
           res.used = false
@@ -48,7 +48,7 @@ export class ReplayMap {
           break
         }
       }
-    })
+    }
   }
 
   addChunk(chunk: ReplayChunk) {

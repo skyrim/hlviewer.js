@@ -6,7 +6,11 @@ export const TimeLine = stylesheet({
     alignItems: 'center',
     position: 'relative',
     height: '26px',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    padding: '0',
+    border: 'none',
+    background: 'none',
+    width: '100%'
   },
   line: {
     height: '4px',

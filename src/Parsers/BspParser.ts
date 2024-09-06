@@ -1,6 +1,6 @@
 import { basename } from '../Util'
 import { vdf } from '../Parsers/Vdf'
-import { BspTexture, Bsp } from '../Bsp'
+import { Bsp, type BspTexture } from '../Bsp'
 import { Reader, ReaderDataType } from '../Reader'
 import { BspLightmapParser } from '../Parsers/BspLightmapParser'
 import { paletteWithLastTransToRGBA, paletteToRGBA } from './Util'
@@ -35,12 +35,7 @@ export function parseModels(
     const luv1 = new Float32Array(2)
     const luv2 = new Float32Array(2)
 
-    let origin =
-      i === 0
-        ? [0, 0, 0]
-        : [0, 0, 0].map(
-            (_, i) => (model.maxs[i] - model.mins[i]) / 2 + model.mins[i]
-          )
+    const origin = i === 0 ? [0, 0, 0] : [0, 0, 0].map((_, i) => (model.maxs[i] - model.mins[i]) / 2 + model.mins[i])
 
     for (let i = model.firstFace; i < model.firstFace + model.faceCount; ++i) {
       const faceData = {
@@ -51,67 +46,37 @@ export function parseModels(
 
       const faceTexInfo = texinfo[faces[i].textureInfo]
       const faceTexture = textures[faceTexInfo.textureIndex]
-      const faceSurfEdges = surfEdges.slice(
-        faces[i].firstEdge,
-        faces[i].firstEdge + faces[i].edgeCount
-      )
+      const faceSurfEdges = surfEdges.slice(faces[i].firstEdge, faces[i].firstEdge + faces[i].edgeCount)
 
-      const v0idx =
-        edges[Math.abs(faceSurfEdges[0])][faceSurfEdges[0] > 0 ? 0 : 1]
+      const v0idx = edges[Math.abs(faceSurfEdges[0])][faceSurfEdges[0] > 0 ? 0 : 1]
       v0[0] = vertices[v0idx][0]
       v0[1] = vertices[v0idx][1]
       v0[2] = vertices[v0idx][2]
 
-      uv0[0] =
-        v0[0] * faceTexInfo.s[0] +
-        v0[1] * faceTexInfo.s[1] +
-        v0[2] * faceTexInfo.s[2] +
-        faceTexInfo.sShift
-      uv0[1] =
-        v0[0] * faceTexInfo.t[0] +
-        v0[1] * faceTexInfo.t[1] +
-        v0[2] * faceTexInfo.t[2] +
-        faceTexInfo.tShift
+      uv0[0] = v0[0] * faceTexInfo.s[0] + v0[1] * faceTexInfo.s[1] + v0[2] * faceTexInfo.s[2] + faceTexInfo.sShift
+      uv0[1] = v0[0] * faceTexInfo.t[0] + v0[1] * faceTexInfo.t[1] + v0[2] * faceTexInfo.t[2] + faceTexInfo.tShift
 
       luv0[0] = 0
       luv0[1] = 0
 
-      const v1idx =
-        edges[Math.abs(faceSurfEdges[1])][faceSurfEdges[1] > 0 ? 0 : 1]
+      const v1idx = edges[Math.abs(faceSurfEdges[1])][faceSurfEdges[1] > 0 ? 0 : 1]
       v1[0] = vertices[v1idx][0]
       v1[1] = vertices[v1idx][1]
       v1[2] = vertices[v1idx][2]
 
-      uv1[0] =
-        v1[0] * faceTexInfo.s[0] +
-        v1[1] * faceTexInfo.s[1] +
-        v1[2] * faceTexInfo.s[2] +
-        faceTexInfo.sShift
-      uv1[1] =
-        v1[0] * faceTexInfo.t[0] +
-        v1[1] * faceTexInfo.t[1] +
-        v1[2] * faceTexInfo.t[2] +
-        faceTexInfo.tShift
+      uv1[0] = v1[0] * faceTexInfo.s[0] + v1[1] * faceTexInfo.s[1] + v1[2] * faceTexInfo.s[2] + faceTexInfo.sShift
+      uv1[1] = v1[0] * faceTexInfo.t[0] + v1[1] * faceTexInfo.t[1] + v1[2] * faceTexInfo.t[2] + faceTexInfo.tShift
       luv1[0] = 0
       luv1[1] = 0.999
 
       let compIndex = 0
       for (let j = 2; j < faces[i].edgeCount; ++j) {
-        const v2idx =
-          edges[Math.abs(faceSurfEdges[j])][faceSurfEdges[j] > 0 ? 0 : 1]
+        const v2idx = edges[Math.abs(faceSurfEdges[j])][faceSurfEdges[j] > 0 ? 0 : 1]
         v2[0] = vertices[v2idx][0]
         v2[1] = vertices[v2idx][1]
         v2[2] = vertices[v2idx][2]
-        uv2[0] =
-          v2[0] * faceTexInfo.s[0] +
-          v2[1] * faceTexInfo.s[1] +
-          v2[2] * faceTexInfo.s[2] +
-          faceTexInfo.sShift
-        uv2[1] =
-          v2[0] * faceTexInfo.t[0] +
-          v2[1] * faceTexInfo.t[1] +
-          v2[2] * faceTexInfo.t[2] +
-          faceTexInfo.tShift
+        uv2[0] = v2[0] * faceTexInfo.s[0] + v2[1] * faceTexInfo.s[1] + v2[2] * faceTexInfo.s[2] + faceTexInfo.sShift
+        uv2[1] = v2[0] * faceTexInfo.t[0] + v2[1] * faceTexInfo.t[1] + v2[2] * faceTexInfo.t[2] + faceTexInfo.tShift
         luv2[0] = 0.999
         luv2[1] = 0.999
 
@@ -153,11 +118,7 @@ export function parseModels(
 
       // face has a lightmap if flag is equal to 0
       if (faceTexInfo.flags === 0 || faceTexInfo.flags === -65536) {
-        lightmap.processFace(
-          faceData.buffer,
-          faceTexInfo,
-          faces[i].lightmapOffset
-        )
+        lightmap.processFace(faceData.buffer, faceTexInfo, faces[i].lightmapOffset)
       }
 
       faceData.textureIndex = faceTexInfo.textureIndex
@@ -242,8 +203,8 @@ export interface BspLumpTexInfo {
 
 export type BspLumpLightmap = Uint8Array
 
-export class BspParser {
-  static parse(name: string, buffer: ArrayBuffer): Bsp {
+export const BspParser = {
+  parse(name: string, buffer: ArrayBuffer): Bsp {
     const r = new Reader(buffer)
     const version = r.ui()
     if (version !== 30) {
@@ -258,81 +219,35 @@ export class BspParser {
       })
     }
 
-    const entities = this.loadEntities(
-      r,
-      lumps[BspLumpIndex.Entities].offset,
-      lumps[BspLumpIndex.Entities].length
-    )
+    const entities = this.loadEntities(r, lumps[BspLumpIndex.Entities].offset, lumps[BspLumpIndex.Entities].length)
 
     const textures = this.loadTextures(r, lumps[BspLumpIndex.Textures].offset)
 
-    const models = this.loadModels(
-      r,
-      lumps[BspLumpIndex.Models].offset,
-      lumps[BspLumpIndex.Models].length
-    )
+    const models = this.loadModels(r, lumps[BspLumpIndex.Models].offset, lumps[BspLumpIndex.Models].length)
 
-    const faces = this.loadFaces(
-      r,
-      lumps[BspLumpIndex.Faces].offset,
-      lumps[BspLumpIndex.Faces].length
-    )
+    const faces = this.loadFaces(r, lumps[BspLumpIndex.Faces].offset, lumps[BspLumpIndex.Faces].length)
 
-    const edges = this.loadEdges(
-      r,
-      lumps[BspLumpIndex.Edges].offset,
-      lumps[BspLumpIndex.Edges].length
-    )
+    const edges = this.loadEdges(r, lumps[BspLumpIndex.Edges].offset, lumps[BspLumpIndex.Edges].length)
 
-    const surfEdges = this.loadSurfEdges(
-      r,
-      lumps[BspLumpIndex.SurfEdges].offset,
-      lumps[BspLumpIndex.SurfEdges].length
-    )
+    const surfEdges = this.loadSurfEdges(r, lumps[BspLumpIndex.SurfEdges].offset, lumps[BspLumpIndex.SurfEdges].length)
 
-    const vertices = this.loadVertices(
-      r,
-      lumps[BspLumpIndex.Vertices].offset,
-      lumps[BspLumpIndex.Vertices].length
-    )
+    const vertices = this.loadVertices(r, lumps[BspLumpIndex.Vertices].offset, lumps[BspLumpIndex.Vertices].length)
 
-    const texinfo = this.loadTexInfo(
-      r,
-      lumps[BspLumpIndex.TexInfo].offset,
-      lumps[BspLumpIndex.TexInfo].length
-    )
+    const texinfo = this.loadTexInfo(r, lumps[BspLumpIndex.TexInfo].offset, lumps[BspLumpIndex.TexInfo].length)
 
-    const lightmap = this.loadLightmap(
-      r,
-      lumps[BspLumpIndex.Lighting].offset,
-      lumps[BspLumpIndex.Lighting].length
-    )
+    const lightmap = this.loadLightmap(r, lumps[BspLumpIndex.Lighting].offset, lumps[BspLumpIndex.Lighting].length)
 
     const parsedLightmap = BspLightmapParser.init(lightmap)
 
-    const parsedModels = parseModels(
-      models,
-      faces,
-      edges,
-      surfEdges,
-      vertices,
-      texinfo,
-      textures,
-      parsedLightmap
-    )
+    const parsedModels = parseModels(models, faces, edges, surfEdges, vertices, texinfo, textures, parsedLightmap)
 
     return new Bsp(name, entities, textures, parsedModels, {
       width: BspLightmapParser.TEXTURE_SIZE,
       height: BspLightmapParser.TEXTURE_SIZE,
       data: parsedLightmap.getTexture()
     })
-  }
-
-  private static loadFaces(
-    r: Reader,
-    offset: number,
-    length: number
-  ): BspLumpFace[] {
+  },
+  loadFaces(r: Reader, offset: number, length: number): BspLumpFace[] {
     r.seek(offset)
 
     const faces = []
@@ -348,13 +263,8 @@ export class BspParser {
       })
     }
     return faces
-  }
-
-  private static loadModels(
-    r: Reader,
-    offset: number,
-    length: number
-  ): BspLumpModel[] {
+  },
+  loadModels(r: Reader, offset: number, length: number): BspLumpModel[] {
     r.seek(offset)
 
     const models = []
@@ -370,13 +280,8 @@ export class BspParser {
       })
     }
     return models
-  }
-
-  private static loadEdges(
-    r: Reader,
-    offset: number,
-    length: number
-  ): BspLumpEdge[] {
+  },
+  loadEdges(r: Reader, offset: number, length: number): BspLumpEdge[] {
     r.seek(offset)
 
     const edges = []
@@ -384,13 +289,8 @@ export class BspParser {
       edges.push([r.us(), r.us()])
     }
     return edges
-  }
-
-  private static loadSurfEdges(
-    r: Reader,
-    offset: number,
-    length: number
-  ): BspLumpSurfedge[] {
+  },
+  loadSurfEdges(r: Reader, offset: number, length: number): BspLumpSurfedge[] {
     r.seek(offset)
 
     const surfEdges = []
@@ -398,13 +298,8 @@ export class BspParser {
       surfEdges.push(r.i())
     }
     return surfEdges
-  }
-
-  private static loadVertices(
-    r: Reader,
-    offset: number,
-    length: number
-  ): BspLumpVertex[] {
+  },
+  loadVertices(r: Reader, offset: number, length: number): BspLumpVertex[] {
     r.seek(offset)
 
     const vertices = []
@@ -412,13 +307,8 @@ export class BspParser {
       vertices.push([r.f(), r.f(), r.f()])
     }
     return vertices
-  }
-
-  private static loadTexInfo(
-    r: Reader,
-    offset: number,
-    length: number
-  ): BspLumpTexInfo[] {
+  },
+  loadTexInfo(r: Reader, offset: number, length: number): BspLumpTexInfo[] {
     r.seek(offset)
 
     const texinfo: BspLumpTexInfo[] = []
@@ -433,18 +323,12 @@ export class BspParser {
       })
     }
     return texinfo
-  }
-
-  private static loadLightmap(
-    r: Reader,
-    offset: number,
-    length: number
-  ): BspLumpLightmap {
+  },
+  loadLightmap(r: Reader, offset: number, length: number): BspLumpLightmap {
     r.seek(offset)
     return r.arrx(length, ReaderDataType.UByte)
-  }
-
-  private static loadTextureData(r: Reader) {
+  },
+  loadTextureData(r: Reader) {
     const name = r.nstr(16)
     const width = r.ui()
     const height = r.ui()
@@ -455,30 +339,26 @@ export class BspParser {
       data[0] = data[1] = data[2] = data[3] = 255
 
       return { name, width, height, data, isExternal }
-    } else {
-      r.skip(3 * 4) // skip mipmap offsets
-
-      // read largest mipmap data
-      const pixelCount = width * height
-      const pixels = r.arrx(pixelCount, ReaderDataType.UByte)
-
-      // skip other 3 mipmaps
-      r.skip(21 * (pixelCount / 64))
-
-      r.skip(2) // skip padding bytes
-
-      const palette = r.arrx(768, ReaderDataType.UByte)
-
-      const data =
-        name[0] === '{'
-          ? paletteWithLastTransToRGBA(pixels, palette)
-          : paletteToRGBA(pixels, palette)
-
-      return { name, width, height, data, isExternal }
     }
-  }
 
-  private static loadTextures(r: Reader, offset: number) {
+    r.skip(3 * 4) // skip mipmap offsets
+
+    // read largest mipmap data
+    const pixelCount = width * height
+    const pixels = r.arrx(pixelCount, ReaderDataType.UByte)
+
+    // skip other 3 mipmaps
+    r.skip(21 * (pixelCount / 64))
+
+    r.skip(2) // skip padding bytes
+
+    const palette = r.arrx(768, ReaderDataType.UByte)
+
+    const data = name[0] === '{' ? paletteWithLastTransToRGBA(pixels, palette) : paletteToRGBA(pixels, palette)
+
+    return { name, width, height, data, isExternal }
+  },
+  loadTextures(r: Reader, offset: number) {
     r.seek(offset)
 
     const count = r.ui()
@@ -504,20 +384,12 @@ export class BspParser {
     }
 
     return textures
-  }
-
-  private static loadEntities(r: Reader, offset: number, length: number) {
+  },
+  loadEntities(r: Reader, offset: number, length: number) {
     r.seek(offset)
-    const entities: any[] = vdf(r.nstr(length)) as any
+    const entities = vdf(r.nstr(length))
 
-    const VECTOR_ATTRS = [
-      'origin',
-      'angles',
-      '_diffuse_light',
-      '_light',
-      'rendercolor',
-      'avelocity'
-    ]
+    const VECTOR_ATTRS = ['origin', 'angles', '_diffuse_light', '_light', 'rendercolor', 'avelocity']
     const NUMBER_ATTRS = ['renderamt', 'rendermode', 'scale']
 
     const worldSpawn = entities[0]
@@ -531,7 +403,7 @@ export class BspParser {
         .map((w: string) => basename(w))
     }
 
-    entities.forEach(e => {
+    for (const e of entities) {
       if (e.model) {
         if (typeof e.renderamt === 'undefined') {
           e.renderamt = 0
@@ -550,18 +422,18 @@ export class BspParser {
         }
       }
 
-      VECTOR_ATTRS.forEach(attr => {
+      for (const attr of VECTOR_ATTRS) {
         if (e[attr]) {
           e[attr] = e[attr].split(' ').map((v: string) => Number.parseFloat(v))
         }
-      })
+      }
 
-      NUMBER_ATTRS.forEach(attr => {
+      for (const attr of NUMBER_ATTRS) {
         if (e[attr]) {
           e[attr] = Number.parseFloat(e[attr])
         }
-      })
-    })
+      }
+    }
 
     return entities
   }

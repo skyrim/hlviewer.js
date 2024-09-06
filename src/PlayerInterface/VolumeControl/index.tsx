@@ -1,6 +1,6 @@
 import { h, Component } from 'preact'
-import { Unsubscribe } from 'nanoevents'
-import { Game } from '../../Game'
+import type { Unsubscribe } from 'nanoevents'
+import type { Game } from '../../Game'
 import { VolumeControl as s } from './style'
 
 interface VolumeControlProps {
@@ -13,10 +13,7 @@ interface VolumeControlState {
   ghostKnobPos: string
 }
 
-export class VolumeControl extends Component<
-  VolumeControlProps,
-  VolumeControlState
-> {
+export class VolumeControl extends Component<VolumeControlProps, VolumeControlState> {
   private offVolumeChange?: Unsubscribe
 
   constructor(props: VolumeControlProps) {
@@ -34,7 +31,7 @@ export class VolumeControl extends Component<
   }
 
   componentWillUnmount() {
-    this.offVolumeChange && this.offVolumeChange()
+    this.offVolumeChange?.()
   }
 
   onVolumeChange = () => {
@@ -43,7 +40,7 @@ export class VolumeControl extends Component<
     })
   }
 
-  onClick = (e: any) => {
+  onClick = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
     const rects = e.currentTarget.getClientRects()[0]
     const volume = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
     this.props.game.soundSystem.setVolume(volume)
@@ -55,14 +52,14 @@ export class VolumeControl extends Component<
     })
   }
 
-  onMouseMove = (e: any) => {
+  onMouseMove = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
     if (!this.state.ghostKnobActive) {
       return
     }
 
     const rects = e.currentTarget.getClientRects()[0]
     const volumePos = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
-    const pos = Math.min(95, Math.max(5, volumePos * 100)) + '%'
+    const pos = `${Math.min(95, Math.max(5, volumePos * 100))}%`
     this.setState({
       ghostKnobPos: pos
     })
@@ -76,11 +73,12 @@ export class VolumeControl extends Component<
 
   render() {
     const volumePos = this.state.volume * 100
-    const knobOff = Math.min(95, Math.max(5, volumePos)) + '%'
-    const lineOff = Math.min(95, Math.max(5, 100 - volumePos)) + '%'
+    const knobOff = `${Math.min(95, Math.max(5, volumePos))}%`
+    const lineOff = `${Math.min(95, Math.max(5, 100 - volumePos))}%`
 
     return (
-      <div
+      <button
+        type="button"
         class={s.control}
         onClick={this.onClick}
         onMouseEnter={this.onMouseEnter}
@@ -91,7 +89,7 @@ export class VolumeControl extends Component<
         <div class={s.line} style={{ right: lineOff }} />
         <div class={s.knob} style={{ left: knobOff }} />
         <div class={s.ghostKnob} style={{ left: this.state.ghostKnobPos }} />
-      </div>
+      </button>
     )
   }
 }

@@ -1,7 +1,7 @@
 import { h, Component } from 'preact'
-import { Unsubscribe } from 'nanoevents'
+import type { Unsubscribe } from 'nanoevents'
 import { formatTime } from '../../Time'
-import { ReplayPlayer } from '../../ReplayPlayer'
+import type { ReplayPlayer } from '../../ReplayPlayer'
 import { Time as s } from './style'
 
 interface TimeProps {
@@ -24,9 +24,9 @@ export class Time extends Component<TimeProps, TimeState> {
   }
 
   componentWillUnmount() {
-    this.offPlay && this.offPlay()
-    this.offPause && this.offPause()
-    this.offStop && this.offStop()
+    this.offPlay?.()
+    this.offPause?.()
+    this.offStop?.()
   }
 
   onPlay = () => {

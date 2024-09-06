@@ -20,18 +20,18 @@ export class Config {
           sounds: `${params}/sounds`
         }
       })
-    } else {
-      return new Config({
-        paths: {
-          base: (params && params.paths && params.paths.base) || '',
-          replays: (params && params.paths && params.paths.replays) || '/replays',
-          maps: (params && params.paths && params.paths.maps) || '/maps',
-          wads: (params && params.paths && params.paths.wads) || '/wads',
-          skies: (params && params.paths && params.paths.skies) || '/skies',
-          sounds: (params && params.paths && params.paths.sounds) || '/sounds'
-        }
-      })
     }
+
+    return new Config({
+      paths: {
+        base: (params?.paths?.base) || '',
+        replays: (params?.paths?.replays) || '/replays',
+        maps: (params?.paths?.maps) || '/maps',
+        wads: (params?.paths?.wads) || '/wads',
+        skies: (params?.paths?.skies) || '/skies',
+        sounds: (params?.paths?.sounds) || '/sounds'
+      }
+    })
   }
 
   private paths: ConfigPaths

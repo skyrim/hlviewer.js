@@ -7,7 +7,6 @@ export function extname(path: string) {
   const dotPos = path.lastIndexOf('.')
   if (slashPos < dotPos) {
     return path.slice(dotPos)
-  } else {
-    return ''
   }
+  return ''
 }

@@ -7,7 +7,8 @@ export class BitView {
     this.view = new Uint8Array(buffer, 0, buffer.byteLength)
   }
 
-  getBits(offset: number, bits: number, signed = false) {
+  getBits(_offset: number, bits: number, signed = false) {
+    let offset = _offset
     const available = this.view.length * 8 - offset
 
     if (bits > available) {

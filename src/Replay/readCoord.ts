@@ -1,14 +1,14 @@
-import { BitStream } from '../BitReader'
+import type { BitStream } from '../BitReader'
 
 export function readCoord(bs: BitStream) {
-  let intFlag = bs.readBits(1)
-  let fractionFlag = bs.readBits(1)
+  const intFlag = bs.readBits(1)
+  const fractionFlag = bs.readBits(1)
 
   if (!intFlag && !fractionFlag) {
     return 0
   }
 
-  let sign = bs.readBits(1)
+  const sign = bs.readBits(1)
   let intValue = 0
   let fractionValue = 0
   if (intFlag) {

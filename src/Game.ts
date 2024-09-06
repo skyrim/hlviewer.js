@@ -1,12 +1,12 @@
-import { createNanoEvents, Emitter as EventEmitter } from 'nanoevents'
-import { Bsp } from './Bsp'
+import { createNanoEvents, type Emitter as EventEmitter } from 'nanoevents'
+import type { Bsp } from './Bsp'
+import type { Sound } from './Sound'
+import type { Config } from './Config'
+import type { Replay } from './Replay/Replay'
 import * as Time from './Time'
-import { Sound } from './Sound'
 import { Loader } from './Loader'
-import { Config } from './Config'
 import { Mouse } from './Input/Mouse'
 import { Touch } from './Input/Touch'
-import { Replay } from './Replay/Replay'
 import { Camera } from './Graphics/Camera'
 import { Keyboard } from './Input/Keyboard'
 import { SoundSystem } from './SoundSystem'
@@ -17,8 +17,8 @@ import { SkyScene } from './Graphics/SkyScene'
 import { WorldScene } from './Graphics/WorldScene'
 
 export enum PlayerMode {
-  FREE,
-  REPLAY
+  FREE = 0,
+  REPLAY = 1
 }
 
 type GameInitSuccess = { status: 'success'; game: Game }
@@ -92,15 +92,15 @@ export class Game {
 
   config: Config
 
-  pauseTime: number = 0
-  isPaused: boolean = false
-  lastTime: number = 0
-  accumTime: number = 0
+  pauseTime = 0
+  isPaused = false
+  lastTime = 0
+  accumTime = 0
   readonly timeStep: number = 1 / 60
 
-  title: string = ''
+  title = ''
   mode: PlayerMode
-  pointerLocked: boolean = false
+  pointerLocked = false
 
   touch: Touch = new Touch()
   mouse: Mouse = new Mouse()
@@ -182,7 +182,7 @@ export class Game {
 
     this.entities = map.entities
 
-    const spawn = map.entities.find(e => e['classname'] === 'info_player_start')
+    const spawn = map.entities.find((e) => e.classname === 'info_player_start')
 
     if (spawn) {
       this.camera.position[0] = spawn.origin[0]
@@ -222,7 +222,7 @@ export class Game {
   }
 
   onLoadAll = (loader: Loader) => {
-    if (loader && loader.replay) {
+    if (loader?.replay) {
       this.changeReplay(loader.replay.data)
       this.changeMode(PlayerMode.REPLAY)
     }
@@ -234,26 +234,30 @@ export class Game {
     const map = loader.map.data
     const skies = loader.skies
     let skiesValid = true
-    skies.forEach(sky => {
+    for (const sky of skies) {
       skiesValid = skiesValid && sky.isDone()
-    })
+    }
     if (skiesValid) {
-      skies.forEach(sky => (sky.data ? map.skies.push(sky.data) : 0))
+      for (const sky of skies) {
+        if (sky.data) {
+          map.skies.push(sky.data)
+        }
+      }
     }
 
     // add sprites
-    Object.entries(loader.sprites).forEach(([name, item]) => {
+    for (const [name, item] of Object.entries(loader.sprites)) {
       if (item.data) {
         map.sprites[name] = item.data
       }
-    })
+    }
 
     if (loader.sounds.length > 0) {
-      loader.sounds.forEach(sound => {
+      for (const sound of loader.sounds) {
         if (sound.data) {
           this.sounds.push(sound.data)
         }
-      })
+      }
     }
 
     this.changeMap(map)
@@ -274,28 +278,15 @@ export class Game {
         canvas.height = ph
         this.camera.aspect = canvas.clientWidth / canvas.clientHeight
         this.camera.updateProjectionMatrix()
-        this.context.gl.viewport(
-          0,
-          0,
-          this.context.gl.drawingBufferWidth,
-          this.context.gl.drawingBufferHeight
-        )
+        this.context.gl.viewport(0, 0, this.context.gl.drawingBufferWidth, this.context.gl.drawingBufferHeight)
       }
 
-      if (
-        canvas.clientWidth !== canvas.width ||
-        canvas.clientHeight !== canvas.height
-      ) {
+      if (canvas.clientWidth !== canvas.width || canvas.clientHeight !== canvas.height) {
         canvas.width = canvas.clientWidth
         canvas.height = canvas.clientHeight
         this.camera.aspect = canvas.clientWidth / canvas.clientHeight
         this.camera.updateProjectionMatrix()
-        this.context.gl.viewport(
-          0,
-          0,
-          this.context.gl.drawingBufferWidth,
-          this.context.gl.drawingBufferHeight
-        )
+        this.context.gl.viewport(0, 0, this.context.gl.drawingBufferWidth, this.context.gl.drawingBufferHeight)
       }
     }
 
@@ -333,16 +324,10 @@ export class Game {
       this.player.update(dt)
     } else if (this.mode === PlayerMode.FREE) {
       if (this.touch.pressed) {
-        camera.rotation[0] = Math.min(
-          Math.max(camera.rotation[0] + touch.delta[1] / 100, -Math.PI / 2),
-          Math.PI / 2
-        )
+        camera.rotation[0] = Math.min(Math.max(camera.rotation[0] + touch.delta[1] / 100, -Math.PI / 2), Math.PI / 2)
         camera.rotation[1] -= touch.delta[0] / 100
       } else {
-        camera.rotation[0] = Math.min(
-          Math.max(camera.rotation[0] + mouse.delta[1] / 100, -Math.PI / 2),
-          Math.PI / 2
-        )
+        camera.rotation[0] = Math.min(Math.max(camera.rotation[0] + mouse.delta[1] / 100, -Math.PI / 2), Math.PI / 2)
         camera.rotation[1] -= mouse.delta[0] / 100
       }
 

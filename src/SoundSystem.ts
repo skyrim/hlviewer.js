@@ -1,14 +1,14 @@
-import { createNanoEvents, Emitter as EventEmitter } from 'nanoevents'
-import { Sound } from './Sound'
+import { createNanoEvents, type Emitter as EventEmitter } from 'nanoevents'
+import type { Sound } from './Sound'
 
-const wnd: any = window
-
-const polyfillAudioContext = wnd.AudioContext || wnd.webkitAudioContext
-const audioContext: AudioContext = new polyfillAudioContext()
+const audioContext = new AudioContext()
 
 export class SoundSystem {
   context: AudioContext
-  channels: any[]
+  channels: {
+    source: AudioBufferSourceNode | null
+    gain: GainNode
+  }[]
   masterGain: GainNode
   preMuteVolume: number
   events: EventEmitter
@@ -18,7 +18,7 @@ export class SoundSystem {
 
     this.events = createNanoEvents()
 
-    const volume = parseFloat(localStorage.getItem('volume') || '0.3')
+    const volume = Number.parseFloat(localStorage.getItem('volume') || '0.3')
     localStorage.setItem('volume', volume.toString())
 
     this.channels = []

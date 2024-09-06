@@ -21,9 +21,7 @@ export class BspLightmapParser {
   private constructor(lightmap: Uint8Array) {
     this.lightmap = lightmap
 
-    this.texture = new Uint8Array(
-      BspLightmapParser.TEXTURE_SIZE * BspLightmapParser.TEXTURE_SIZE * 4
-    )
+    this.texture = new Uint8Array(BspLightmapParser.TEXTURE_SIZE * BspLightmapParser.TEXTURE_SIZE * 4)
     this.texture[this.texture.length - 4] = 255
     this.texture[this.texture.length - 3] = 255
     this.texture[this.texture.length - 2] = 255
@@ -107,11 +105,7 @@ export class BspLightmapParser {
     }
   }
 
-  private readLightmap(
-    offset: number,
-    width: number,
-    height: number
-  ): {x: number, y: number} | null {
+  private readLightmap(offset: number, width: number, height: number): { x: number; y: number } | null {
     if (height <= 0 || width <= 0) {
       return null
     }
@@ -126,14 +120,8 @@ export class BspLightmapParser {
       for (let i = 0; i < count; ++i) {
         const p = o[1] * d[0] + o[0] + d[0] * Math.floor(i / s[0]) + (i % s[0])
         this.texture[p * 4] = Math.min(255, this.lightmap[offset + i * 3] * 2)
-        this.texture[p * 4 + 1] = Math.min(
-          255,
-          this.lightmap[offset + i * 3 + 1] * 2
-        )
-        this.texture[p * 4 + 2] = Math.min(
-          255,
-          this.lightmap[offset + i * 3 + 2] * 2
-        )
+        this.texture[p * 4 + 1] = Math.min(255, this.lightmap[offset + i * 3 + 1] * 2)
+        this.texture[p * 4 + 2] = Math.min(255, this.lightmap[offset + i * 3 + 2] * 2)
         this.texture[p * 4 + 3] = 255
       }
     }
@@ -149,8 +137,8 @@ export class BspLightmapParser {
     for (let i = 0; i < this.block.length - w; ++i) {
       let tentativeHeight = 0
 
-      let j
-      for (j = 0; j < w; ++j) {
+      let j = 0
+      for (; j < w; ++j) {
         if (this.block[i + j] >= bestHeight) {
           break
         }

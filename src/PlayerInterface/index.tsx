@@ -1,5 +1,5 @@
 import { h, render } from 'preact'
-import { Game } from '../Game'
+import type { Game } from '../Game'
 import { Root } from './Root'
 
 export class PlayerInterface {

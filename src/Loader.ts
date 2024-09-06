@@ -1,13 +1,13 @@
-import { createNanoEvents, Emitter as EventEmitter } from 'nanoevents'
-import { Bsp } from './Bsp'
+import { createNanoEvents, type Emitter as EventEmitter } from 'nanoevents'
+import type { Bsp } from './Bsp'
 import { Sound } from './Sound'
 import { extname } from './Util'
-import { Config } from './Config'
+import type { Config } from './Config'
 import { Tga } from './Parsers/Tga'
 import { Wad } from './Parsers/Wad'
 import { Replay } from './Replay/Replay'
 import { Sprite } from './Parsers/Sprite'
-import { ProgressCallback, xhr } from './Xhr'
+import { xhr, type ProgressCallback } from './Xhr'
 import { BspParser } from './Parsers/BspParser'
 
 enum LoadItemStatus {
@@ -62,36 +62,30 @@ class LoadItemBase<T> {
 }
 
 class LoadItemReplay extends LoadItemBase<any> {
-  type: 'replay' = 'replay'
+  type = 'replay' as const
 }
 
 class LoadItemBsp extends LoadItemBase<Bsp> {
-  type: 'bsp' = 'bsp'
+  type = 'bsp' as const
 }
 
 class LoadItemSky extends LoadItemBase<Tga> {
-  type: 'sky' = 'sky'
+  type = 'sky' as const
 }
 
 class LoadItemWad extends LoadItemBase<Wad> {
-  type: 'wad' = 'wad'
+  type = 'wad' as const
 }
 
 class LoadItemSound extends LoadItemBase<Sound> {
-  type: 'sound' = 'sound'
+  type = 'sound' as const
 }
 
 class LoadItemSprite extends LoadItemBase<Sprite> {
-  type: 'sprite' = 'sprite'
+  type = 'sprite' as const
 }
 
-export type LoadItem =
-  | LoadItemReplay
-  | LoadItemBsp
-  | LoadItemSky
-  | LoadItemWad
-  | LoadItemSound
-  | LoadItemSprite
+export type LoadItem = LoadItemReplay | LoadItemBsp | LoadItemSky | LoadItemWad | LoadItemSound | LoadItemSprite
 
 export class Loader {
   config: Config
@@ -207,14 +201,14 @@ export class Loader {
     const replay = await Replay.parseIntoChunks(buffer)
     this.replay.done(replay)
 
-    this.loadMap(replay.maps[0].name + '.bsp')
+    this.loadMap(`${replay.maps[0].name}.bsp`)
 
     const sounds = replay.maps[0].resources.sounds
-    sounds.forEach((sound: any) => {
+    for (const sound of sounds) {
       if (sound.used) {
         this.loadSound(sound.name, sound.index)
       }
-    })
+    }
 
     this.events.emit('load', this.replay)
     this.checkStatus()
@@ -237,7 +231,7 @@ export class Loader {
       method: 'GET',
       isBinary: true,
       progressCallback
-    }).catch(err => {
+    }).catch((err) => {
       if (this.map) {
         this.map.error()
       }
@@ -259,21 +253,18 @@ export class Loader {
         }
         return undefined
       })
-      .filter(
-        (a: string | undefined, pos: number, arr: (string | undefined)[]) =>
-          a && arr.indexOf(a) === pos
-      )
-      .forEach(a => a && this.loadSprite(a))
+      .filter((a: string | undefined, pos: number, arr: (string | undefined)[]) => a && arr.indexOf(a) === pos)
+      .map((a) => a && this.loadSprite(a))
 
     const skyname = map.entities[0].skyname
     if (skyname) {
       const sides = ['bk', 'dn', 'ft', 'lf', 'rt', 'up']
-      sides.map(a => `${skyname}${a}`).forEach(a => this.loadSky(a))
+      sides.map((a) => `${skyname}${a}`).map((a) => this.loadSky(a))
     }
 
     // check if there is at least one missing texture
     // if yes then load wad files (textures should be there)
-    if (map.textures.find(a => a.isExternal)) {
+    if (map.textures.find((a) => a.isExternal)) {
       const wads = map.entities[0].wad
       const wadPromises = wads.map((w: string) => this.loadWad(w))
       await Promise.all(wadPromises)
@@ -378,19 +369,19 @@ export class Loader {
 
     const map = this.map.data
     const cmp = (a: any, b: any) => a.toLowerCase() === b.toLowerCase()
-    wad.entries.forEach(entry => {
+    for (const entry of wad.entries) {
       if (entry.type !== 'texture') {
         return
       }
 
-      map.textures.forEach(texture => {
+      for (const texture of map.textures) {
         if (cmp(entry.name, texture.name)) {
           texture.width = entry.width
           texture.height = entry.height
           texture.data = entry.data
         }
-      })
-    })
+      }
+    }
 
     this.events.emit('load', wadItem)
     this.checkStatus()

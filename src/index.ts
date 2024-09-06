@@ -2,7 +2,7 @@ import { Game } from './Game'
 import { Config } from './Config'
 import { PlayerInterface } from './PlayerInterface/index'
 
-declare var VERSION: string
+declare const VERSION: string
 
 class HLV {
   public static readonly VERSION = VERSION
@@ -26,7 +26,7 @@ class HLV {
   }
 }
 
-namespace HLViewer {
+export namespace HLViewer {
   export function init(rootSelector: string, params: Config | string) {
     const node = document.querySelector(rootSelector)
     if (!node) {
@@ -49,4 +49,8 @@ namespace HLViewer {
   }
 }
 
-export = HLViewer
+if (typeof window !== 'undefined') {
+  Object.assign(window, { HLViewer })
+}
+
+export default HLViewer

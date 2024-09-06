@@ -11,8 +11,8 @@
   ],
   "main": "dist/hlviewer.js",
   "scripts": {
-    "build": "cross-env NODE_ENV=production webpack",
-    "build:dev": "webpack -w"
+    "dev": "vite",
+    "build": "tsc && vite build"
   },
   "repository": {
     "type": "git",
@@ -23,29 +23,23 @@
   "bugs": {
     "url": "https://github.com/skyrim/hlviewer.js/issues"
   },
-  "homepage": "https://skyrim.github.io/hlviewer.js",
-  "devDependencies": {
-    "@types/gl-matrix": "^2.4.1",
-    "@types/node": "^10.5.4",
-    "@types/pngjs": "^3.3.2",
-    "awesome-typescript-loader": "^5.2.0",
-    "babel-minify-webpack-plugin": "^0.3.1",
-    "chai": "3.5.0",
-    "cross-env": "^5.2.0",
-    "mocha": "^5.2.0",
-    "pngjs": "^3.3.3",
-    "typescript": "^2.9.2",
-    "webpack": "^4.16.3",
-    "webpack-cli": "^3.1.0",
-    "webpack-node-externals": "^1.7.2"
-  },
+  "type": "module",
   "files": [
     "dist/hlviewer.js"
   ],
+  "homepage": "https://skyrim.github.io/hlviewer.js",
   "dependencies": {
     "gl-matrix": "^2.7.1",
-    "nanoevents": "^5.1.10",
-    "preact": "^8.5.2",
+    "nanoevents": "^9.0.0",
+    "preact": "^10.23.2",
     "typestyle": "^2.0.4"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.9.0",
+    "@types/gl-matrix": "^2.4.1",
+    "@types/pngjs": "^6.0.5",
+    "pngjs": "^7.0.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.3"
   }
 }

@@ -29,14 +29,14 @@
   ],
   "homepage": "https://skyrim.github.io/hlviewer.js",
   "dependencies": {
-    "gl-matrix": "^2.7.1",
+    "gl-matrix": "^3.4.3",
     "nanoevents": "^9.0.0",
     "preact": "^10.23.2",
     "typestyle": "^2.0.4"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.9.0",
-    "@types/gl-matrix": "^2.4.1",
+    "@types/gl-matrix": "^3.2.0",
     "@types/pngjs": "^6.0.5",
     "pngjs": "^7.0.0",
     "typescript": "^5.5.4",

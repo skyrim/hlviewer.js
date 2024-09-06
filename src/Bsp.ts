@@ -1,3 +1,4 @@
+import type { vec3 } from 'gl-matrix'
 import type { Tga } from './Parsers/Tga'
 import type { Sprite } from './Parsers/Sprite'
 import type { BspLightmap } from './BspLightmap'
@@ -11,7 +12,7 @@ export interface BspTexture {
 }
 
 export interface BspModel {
-  origin: number[]
+  origin: vec3
   faces: {
     buffer: Float32Array
     textureIndex: number
@@ -27,13 +28,7 @@ export class Bsp {
   skies: Tga[] = []
   sprites: { [name: string]: Sprite } = {}
 
-  constructor(
-    name: string,
-    entities: any[],
-    textures: BspTexture[],
-    models: BspModel[],
-    lightmap: BspLightmap
-  ) {
+  constructor(name: string, entities: any[], textures: BspTexture[], models: BspModel[], lightmap: BspLightmap) {
     this.name = name
     this.entities = entities
     this.textures = textures

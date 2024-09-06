@@ -1,4 +1,4 @@
-import { Context } from './Context'
+import type { Context } from './Context'
 
 export class Renderer {
   static init(context: Context): Renderer | null {

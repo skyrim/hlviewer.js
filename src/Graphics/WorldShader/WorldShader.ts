@@ -1,5 +1,5 @@
-import { mat4 } from 'gl-matrix'
-import { Context, Program } from '../Context'
+import type { mat4 } from 'gl-matrix'
+import type { Context, Program } from '../Context'
 
 const fragmentSrc = `#ifdef GL_ES
 precision highp float;
@@ -79,15 +79,15 @@ export class MainShader {
 
   private constructor(program: Program) {
     this.program = program.handle
-    this.aPosition = program.attributes['position']
-    this.aTexCoord = program.attributes['texCoord']
-    this.aTexCoord2 = program.attributes['texCoord2']
-    this.uModelMx = program.uniforms['modelMatrix']
-    this.uViewMx = program.uniforms['viewMatrix']
-    this.uProjectionMx = program.uniforms['projectionMatrix']
-    this.uDiffuse = program.uniforms['diffuse']
-    this.uLightmap = program.uniforms['lightmap']
-    this.uOpacity = program.uniforms['opacity']
+    this.aPosition = program.attributes.position
+    this.aTexCoord = program.attributes.texCoord
+    this.aTexCoord2 = program.attributes.texCoord2
+    this.uModelMx = program.uniforms.modelMatrix
+    this.uViewMx = program.uniforms.viewMatrix
+    this.uProjectionMx = program.uniforms.projectionMatrix
+    this.uDiffuse = program.uniforms.diffuse
+    this.uLightmap = program.uniforms.lightmap
+    this.uOpacity = program.uniforms.opacity
   }
 
   useProgram(gl: WebGLRenderingContext) {

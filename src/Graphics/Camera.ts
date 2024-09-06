@@ -8,8 +8,8 @@ export class Camera {
   projectionMatrix: mat4 = mat4.create()
   aspect: number
   fov: number = glMatrix.toRadian(60)
-  near: number = 1.0
-  far: number = 8192.0
+  near = 1.0
+  far = 8192.0
 
   viewMatrix: mat4 = mat4.create()
   position = vec3.create()

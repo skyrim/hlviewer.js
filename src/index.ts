@@ -52,5 +52,3 @@ export namespace HLViewer {
 if (typeof window !== 'undefined') {
   Object.assign(window, { HLViewer })
 }
-
-export default HLViewer

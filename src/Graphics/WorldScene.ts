@@ -1,10 +1,10 @@
 import { mat4, vec3 } from 'gl-matrix'
-import { Bsp } from '../Bsp'
-import { Camera } from './Camera'
-import { Context } from './Context'
+import type { Bsp } from '../Bsp'
+import type { Camera } from './Camera'
+import type { Context } from './Context'
+import { type Sprite, SpriteType } from '../Parsers/Sprite'
 import { MainShader } from './WorldShader/WorldShader'
 import { RenderMode } from '../Parsers/BspEntityParser'
-import { Sprite, SpriteType } from '../Parsers/Sprite'
 import { isPowerOfTwo, nextPowerOfTwo, resizeTexture } from './Util'
 
 type FaceInfo = {
@@ -13,7 +13,7 @@ type FaceInfo = {
   textureIndex: number
 }
 type ModelInfo = {
-  origin: number[]
+  origin: vec3
   offset: number
   length: number
   isTransparent: boolean
@@ -67,11 +67,7 @@ export class WorldScene {
     data: Uint8Array
     handle: WebGLTexture
   } | null = null
-  private constructor(params: {
-    context: Context
-    buffer: WebGLBuffer
-    shader: MainShader
-  }) {
+  private constructor(params: { context: Context; buffer: WebGLBuffer; shader: MainShader }) {
     this.buffer = params.buffer
     this.context = params.context
     this.shader = params.shader
@@ -154,10 +150,7 @@ export class WorldScene {
           sceneInfo.data[currentVertex++] = model.faces[j].buffer[k]
         }
 
-        if (
-          !modelInfo.isTransparent &&
-          bsp.textures[model.faces[j].textureIndex].name[0] === '{'
-        ) {
+        if (!modelInfo.isTransparent && bsp.textures[model.faces[j].textureIndex].name[0] === '{') {
           modelInfo.isTransparent = true
         }
 
@@ -238,12 +231,12 @@ export class WorldScene {
     const sortedSceneInfo: SceneInfo = {
       data: new Float32Array(sceneInfo.data),
       length: sceneInfo.length,
-      models: sceneInfo.models.map(model => ({
-        origin: [...model.origin],
+      models: sceneInfo.models.map((model) => ({
+        origin: vec3.clone(model.origin),
         offset: model.offset,
         length: model.length,
         isTransparent: model.isTransparent,
-        faces: model.faces.map(face => ({
+        faces: model.faces.map((face) => ({
           offset: face.offset,
           length: face.length,
           textureIndex: face.textureIndex
@@ -326,11 +319,7 @@ export class WorldScene {
         texture.data
       )
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-      gl.texParameteri(
-        gl.TEXTURE_2D,
-        gl.TEXTURE_MIN_FILTER,
-        gl.LINEAR_MIPMAP_LINEAR
-      )
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
       gl.generateMipmap(gl.TEXTURE_2D)
@@ -389,11 +378,7 @@ export class WorldScene {
         texture.data
       )
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-      gl.texParameteri(
-        gl.TEXTURE_2D,
-        gl.TEXTURE_MIN_FILTER,
-        gl.LINEAR_MIPMAP_LINEAR
-      )
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
       gl.generateMipmap(gl.TEXTURE_2D)
@@ -442,11 +427,7 @@ export class WorldScene {
     )
     gl.generateMipmap(gl.TEXTURE_2D)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-    gl.texParameteri(
-      gl.TEXTURE_2D,
-      gl.TEXTURE_MIN_FILTER,
-      gl.LINEAR_MIPMAP_LINEAR
-    )
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
 
     this.lightmap = {
       data: bsp.lightmap.data,
@@ -487,13 +468,9 @@ export class WorldScene {
     for (let i = 1; i < entities.length; ++i) {
       const e = entities[i]
       if (e.model) {
-        if (
-          !e.rendermode ||
-          e.rendermode == RenderMode.Normal ||
-          e.rendermode == RenderMode.Solid
-        ) {
+        if (!e.rendermode || e.rendermode === RenderMode.Normal || e.rendermode === RenderMode.Solid) {
           if (e.model[0] === '*') {
-            const model = this.sceneInfo.models[parseInt(e.model.substr(1))]
+            const model = this.sceneInfo.models[Number.parseInt(e.model.substr(1))]
             if (model.isTransparent) {
               transparentEntities.push(e)
               continue
@@ -504,7 +481,7 @@ export class WorldScene {
           }
 
           opaqueEntities.push(e)
-        } else if (e.rendermode == RenderMode.Additive) {
+        } else if (e.rendermode === RenderMode.Additive) {
           transparentEntities.push(e)
         } else {
           transparentEntities.push(e)
@@ -544,16 +521,12 @@ export class WorldScene {
 
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
-      const modelIndex = parseInt(entity.model.substr(1))
+      const modelIndex = Number.parseInt(entity.model.substr(1))
       const model = this.sceneInfo.models[modelIndex]
       if (model) {
         const angles = entity.angles || [0, 0, 0]
         const origin = entity.origin
-          ? vec3.fromValues(
-              entity.origin[0],
-              entity.origin[1],
-              entity.origin[2]
-            )
+          ? vec3.fromValues(entity.origin[0], entity.origin[1], entity.origin[2])
           : vec3.create()
         vec3.add(origin, origin, model.origin)
 
@@ -562,11 +535,7 @@ export class WorldScene {
         mat4.translate(mmx, mmx, origin)
         // mat4.rotateY(mmx, mmx, (angles[0] * Math.PI) / 180) // dunno this
         mat4.rotateZ(mmx, mmx, (angles[1] * Math.PI) / 180)
-        mat4.rotateX(
-          this.modelMatrix,
-          this.modelMatrix,
-          (angles[2] * Math.PI) / 180
-        )
+        mat4.rotateX(this.modelMatrix, this.modelMatrix, (angles[2] * Math.PI) / 180)
         shader.setModelMatrix(gl, this.modelMatrix)
 
         for (let j = 0; j < model.faces.length; ++j) {
@@ -575,23 +544,15 @@ export class WorldScene {
           gl.drawArrays(gl.TRIANGLES, face.offset / 7, face.length / 7)
         }
       } else if (entity.model.indexOf('.spr') > -1) {
-        const texture = this.textures.find(a => a.name === entity.model)
+        const texture = this.textures.find((a) => a.name === entity.model)
         const sprite = this.sprites[entity.model]
         if (texture && sprite) {
           const origin = entity.origin
-            ? vec3.fromValues(
-                entity.origin[0],
-                entity.origin[1],
-                entity.origin[2]
-              )
+            ? vec3.fromValues(entity.origin[0], entity.origin[1], entity.origin[2])
             : vec3.create()
           const scale = vec3.fromValues(texture.width, 1, texture.height)
           const angles = entity.angles
-            ? vec3.fromValues(
-                entity.angles[0],
-                entity.angles[2],
-                entity.angles[1]
-              )
+            ? vec3.fromValues(entity.angles[0], entity.angles[2], entity.angles[1])
             : vec3.create()
           vec3.scale(scale, scale, entity.scale || 1)
 
@@ -613,21 +574,14 @@ export class WorldScene {
               mat4.rotateZ(
                 mmx,
                 mmx,
-                Math.atan2(
-                  origin[1] - camera.position[1],
-                  origin[0] - camera.position[0]
-                ) +
-                  Math.PI / 2
+                Math.atan2(origin[1] - camera.position[1], origin[0] - camera.position[0]) + Math.PI / 2
               )
               mat4.rotateX(
                 mmx,
                 mmx,
                 Math.atan2(
                   camera.position[2] - origin[2],
-                  Math.sqrt(
-                    Math.pow(camera.position[0] - origin[0], 2) +
-                      Math.pow(camera.position[1] - origin[1], 2)
-                  )
+                  Math.sqrt((camera.position[0] - origin[0]) ** 2 + (camera.position[1] - origin[1]) ** 2)
                 )
               )
 
@@ -658,35 +612,20 @@ export class WorldScene {
             case RenderMode.Normal: {
               shader.setOpacity(gl, 1)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               break
             }
             case RenderMode.Color: {
               // TODO: not properly implemented
               shader.setOpacity(gl, (entity.renderamt || 255) / 255)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               break
             }
             case RenderMode.Texture: {
               shader.setOpacity(gl, (entity.renderamt || 255) / 255)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               break
             }
             case RenderMode.Glow: {
@@ -694,12 +633,7 @@ export class WorldScene {
               gl.blendFunc(gl.SRC_ALPHA, gl.DST_ALPHA)
               shader.setOpacity(gl, (entity.renderamt || 255) / 255)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
               break
             }
@@ -707,24 +641,14 @@ export class WorldScene {
               // TODO: not properly implemented
               shader.setOpacity(gl, (entity.renderamt || 255) / 255)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               break
             }
             case RenderMode.Additive: {
               gl.blendFunc(gl.SRC_ALPHA, gl.DST_ALPHA)
               shader.setOpacity(gl, (entity.renderamt || 255) / 255)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
               break
             }
@@ -753,7 +677,7 @@ export class WorldScene {
     for (let i = 0; i < entityDistances.length; ++i) {
       const entity = entities[entityDistances[i].index]
 
-      const modelIndex = parseInt(entity.model.substr(1))
+      const modelIndex = Number.parseInt(entity.model.substr(1))
       const model = this.sceneInfo.models[modelIndex]
       if (model) {
         const angles = entity.angles || [0, 0, 0]
@@ -767,11 +691,7 @@ export class WorldScene {
         mat4.translate(mmx, mmx, origin)
         mat4.rotateZ(mmx, mmx, (angles[1] * Math.PI) / 180)
         // mat4.rotateY(mmx, mmx, (angles[2] * Math.PI) / 180) // dunno this
-        mat4.rotateX(
-          this.modelMatrix,
-          this.modelMatrix,
-          (angles[2] * Math.PI) / 180
-        )
+        mat4.rotateX(this.modelMatrix, this.modelMatrix, (angles[2] * Math.PI) / 180)
         shader.setModelMatrix(gl, this.modelMatrix)
 
         const renderMode = entity.rendermode || RenderMode.Normal
@@ -780,10 +700,7 @@ export class WorldScene {
             shader.setOpacity(gl, 1)
             for (let j = 0; j < model.faces.length; ++j) {
               const face = model.faces[j]
-              gl.bindTexture(
-                gl.TEXTURE_2D,
-                this.textures[face.textureIndex].handle
-              )
+              gl.bindTexture(gl.TEXTURE_2D, this.textures[face.textureIndex].handle)
               gl.drawArrays(gl.TRIANGLES, face.offset / 7, face.length / 7)
             }
             break
@@ -793,10 +710,7 @@ export class WorldScene {
             shader.setOpacity(gl, (entity.renderamt || 255) / 255)
             for (let j = 0; j < model.faces.length; ++j) {
               const face = model.faces[j]
-              gl.bindTexture(
-                gl.TEXTURE_2D,
-                this.textures[face.textureIndex].handle
-              )
+              gl.bindTexture(gl.TEXTURE_2D, this.textures[face.textureIndex].handle)
               gl.drawArrays(gl.TRIANGLES, face.offset / 7, face.length / 7)
             }
             break
@@ -805,10 +719,7 @@ export class WorldScene {
             shader.setOpacity(gl, (entity.renderamt || 255) / 255)
             for (let j = 0; j < model.faces.length; ++j) {
               const face = model.faces[j]
-              gl.bindTexture(
-                gl.TEXTURE_2D,
-                this.textures[face.textureIndex].handle
-              )
+              gl.bindTexture(gl.TEXTURE_2D, this.textures[face.textureIndex].handle)
               gl.drawArrays(gl.TRIANGLES, face.offset / 7, face.length / 7)
             }
             break
@@ -818,10 +729,7 @@ export class WorldScene {
             shader.setOpacity(gl, (entity.renderamt || 255) / 255)
             for (let j = 0; j < model.faces.length; ++j) {
               const face = model.faces[j]
-              gl.bindTexture(
-                gl.TEXTURE_2D,
-                this.textures[face.textureIndex].handle
-              )
+              gl.bindTexture(gl.TEXTURE_2D, this.textures[face.textureIndex].handle)
               gl.drawArrays(gl.TRIANGLES, face.offset / 7, face.length / 7)
             }
             break
@@ -831,10 +739,7 @@ export class WorldScene {
             shader.setOpacity(gl, (entity.renderamt || 255) / 255)
             for (let j = 0; j < model.faces.length; ++j) {
               const face = model.faces[j]
-              gl.bindTexture(
-                gl.TEXTURE_2D,
-                this.textures[face.textureIndex].handle
-              )
+              gl.bindTexture(gl.TEXTURE_2D, this.textures[face.textureIndex].handle)
               gl.drawArrays(gl.TRIANGLES, face.offset / 7, face.length / 7)
             }
             break
@@ -844,10 +749,7 @@ export class WorldScene {
             shader.setOpacity(gl, (entity.renderamt || 255) / 255)
             for (let j = 0; j < model.faces.length; ++j) {
               const face = model.faces[j]
-              gl.bindTexture(
-                gl.TEXTURE_2D,
-                this.textures[face.textureIndex].handle
-              )
+              gl.bindTexture(gl.TEXTURE_2D, this.textures[face.textureIndex].handle)
               gl.drawArrays(gl.TRIANGLES, face.offset / 7, face.length / 7)
             }
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -855,23 +757,15 @@ export class WorldScene {
           }
         }
       } else if (entity.model.indexOf('.spr') > -1) {
-        const texture = this.textures.find(a => a.name === entity.model)
+        const texture = this.textures.find((a) => a.name === entity.model)
         const sprite = this.sprites[entity.model]
         if (texture && sprite) {
           const origin = entity.origin
-            ? vec3.fromValues(
-                entity.origin[0],
-                entity.origin[1],
-                entity.origin[2]
-              )
+            ? vec3.fromValues(entity.origin[0], entity.origin[1], entity.origin[2])
             : vec3.create()
           const scale = vec3.fromValues(texture.width, 1, texture.height)
           const angles = entity.angles
-            ? vec3.fromValues(
-                entity.angles[0],
-                entity.angles[2],
-                entity.angles[1]
-              )
+            ? vec3.fromValues(entity.angles[0], entity.angles[2], entity.angles[1])
             : vec3.create()
           vec3.scale(scale, scale, entity.scale || 1)
 
@@ -893,21 +787,14 @@ export class WorldScene {
               mat4.rotateZ(
                 mmx,
                 mmx,
-                Math.atan2(
-                  origin[1] - camera.position[1],
-                  origin[0] - camera.position[0]
-                ) +
-                  Math.PI / 2
+                Math.atan2(origin[1] - camera.position[1], origin[0] - camera.position[0]) + Math.PI / 2
               )
               mat4.rotateX(
                 mmx,
                 mmx,
                 Math.atan2(
                   camera.position[2] - origin[2],
-                  Math.sqrt(
-                    Math.pow(camera.position[0] - origin[0], 2) +
-                      Math.pow(camera.position[1] - origin[1], 2)
-                  )
+                  Math.sqrt((camera.position[0] - origin[0]) ** 2 + (camera.position[1] - origin[1]) ** 2)
                 )
               )
 
@@ -938,35 +825,20 @@ export class WorldScene {
             case RenderMode.Normal: {
               shader.setOpacity(gl, 1)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               break
             }
             case RenderMode.Color: {
               // TODO: not properly implemented
               shader.setOpacity(gl, (entity.renderamt || 255) / 255)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               break
             }
             case RenderMode.Texture: {
               shader.setOpacity(gl, (entity.renderamt || 255) / 255)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               break
             }
             case RenderMode.Glow: {
@@ -974,12 +846,7 @@ export class WorldScene {
               gl.blendFunc(gl.SRC_ALPHA, gl.DST_ALPHA)
               shader.setOpacity(gl, (entity.renderamt || 255) / 255)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
               break
             }
@@ -987,24 +854,14 @@ export class WorldScene {
               // TODO: not properly implemented
               shader.setOpacity(gl, (entity.renderamt || 255) / 255)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               break
             }
             case RenderMode.Additive: {
               gl.blendFunc(gl.SRC_ALPHA, gl.DST_ALPHA)
               shader.setOpacity(gl, (entity.renderamt || 255) / 255)
               gl.bindTexture(gl.TEXTURE_2D, texture.handle)
-              gl.drawArrays(
-                gl.TRIANGLES,
-                this.sceneInfo.models[this.sceneInfo.models.length - 1].offset /
-                  7,
-                6
-              )
+              gl.drawArrays(gl.TRIANGLES, this.sceneInfo.models[this.sceneInfo.models.length - 1].offset / 7, 6)
               gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
               break
             }

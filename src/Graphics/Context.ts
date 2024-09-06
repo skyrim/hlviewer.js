@@ -5,8 +5,8 @@ export interface Program {
 }
 
 export enum ShaderType {
-  VERTEX,
-  FRAGMENT
+  VERTEX = 0,
+  FRAGMENT = 1
 }
 
 export class Context {
@@ -27,8 +27,7 @@ export class Context {
       BAD_GPU: 'Your graphics card does not seem to support WebGL'
     }
 
-    const wnd: any = window
-    if (!wnd.WebGLRenderingContext) {
+    if (!window.WebGLRenderingContext) {
       return {
         hasSupport: false,
         message: MESSAGES.BAD_BROWSER
@@ -43,11 +42,10 @@ export class Context {
           hasSupport: true,
           message: ''
         }
-      } else {
-        return {
-          hasSupport: false,
-          message: MESSAGES.BAD_GPU
-        }
+      }
+      return {
+        hasSupport: false,
+        message: MESSAGES.BAD_GPU
       }
     } catch (e) {
       return {
@@ -70,7 +68,7 @@ export class Context {
     uniformNames: string[]
   }): Program | null {
     const gl = this.gl
-    var program = gl.createProgram()
+    const program = gl.createProgram()
     if (!program) {
       console.error('Failed to create WebGL program')
       return null
@@ -137,9 +135,7 @@ export class Context {
       const name = params.uniformNames[i]
       const uniform = gl.getUniformLocation(program, name)
       if (uniform === null) {
-        console.error(
-          `gl.getUniformLocation failed for uniform named "${name}"`
-        )
+        console.error(`gl.getUniformLocation failed for uniform named "${name}"`)
         gl.deleteProgram(program)
         return null
       }
@@ -156,9 +152,7 @@ export class Context {
   createShader(params: { source: string; type: ShaderType }) {
     const gl = this.gl
     const shader =
-      params.type === ShaderType.VERTEX
-        ? gl.createShader(gl.VERTEX_SHADER)
-        : gl.createShader(gl.FRAGMENT_SHADER)
+      params.type === ShaderType.VERTEX ? gl.createShader(gl.VERTEX_SHADER) : gl.createShader(gl.FRAGMENT_SHADER)
     if (!shader) {
       console.error('Failed to create shader program')
       return null

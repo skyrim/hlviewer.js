@@ -37,7 +37,8 @@ export const resizeTexture = (
 
 export const isPowerOfTwo = (n: number) => (n & (n - 1)) === 0
 
-export const nextPowerOfTwo = (n: number) => {
+export const nextPowerOfTwo = (_n: number) => {
+  let n = _n
   --n
   for (let i = 1; i < 32; i <<= 1) {
     n = n | (n >> i)

@@ -1,7 +1,6 @@
-import { Bsp } from '../Bsp'
-import { Tga } from '../Parsers/Tga'
-import { Camera } from './Camera'
-import { Context } from './Context'
+import type { Bsp } from '../Bsp'
+import type { Camera } from './Camera'
+import type { Context } from './Context'
 import { SkyShader } from './SkyShader/SkyShader'
 
 export class SkyScene {
@@ -20,7 +19,7 @@ export class SkyScene {
   private vertexBuffer: WebGLBuffer | null = null
   private indexBuffer: WebGLBuffer | null = null
   private texture: WebGLTexture | null = null
-  private isReady: boolean = false
+  private isReady = false
 
   private constructor(params: { context: Context; shader: SkyShader }) {
     this.context = params.context
@@ -114,7 +113,7 @@ export class SkyScene {
       bk: [256, 512]
     }
 
-    bsp.skies.forEach((sky: Tga) => {
+    for (const sky of bsp.skies) {
       const smc = document.createElement('canvas')
       const smctx = smc.getContext('2d')
       if (!smctx) {
@@ -136,7 +135,7 @@ export class SkyScene {
         throw new Error('Runtime error.')
       }
       ctx.drawImage(smc, c[0], c[1])
-    })
+    }
 
     const pixelData = ctx.getImageData(0, 0, 512, 1024).data
     gl.bindTexture(gl.TEXTURE_2D, texture)

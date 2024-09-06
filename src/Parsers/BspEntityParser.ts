@@ -372,7 +372,7 @@ export enum RenderMode {
   Additive = 5
 }
 
-const parseNumberArray = (a: string) => a.split(' ').map((b) => Number.Number.parseFloat(b))
+const parseNumberArray = (a: string) => a.split(' ').map((b) => Number.parseFloat(b))
 
 const parsers: {
   worldspawn: (entityData: { [name: string]: any }) => WorldSpawn

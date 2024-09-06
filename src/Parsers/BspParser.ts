@@ -1,3 +1,4 @@
+import { vec3 } from 'gl-matrix'
 import { basename } from '../Util'
 import { vdf } from '../Parsers/Vdf'
 import { Bsp, type BspTexture } from '../Bsp'
@@ -35,7 +36,8 @@ export function parseModels(
     const luv1 = new Float32Array(2)
     const luv2 = new Float32Array(2)
 
-    const origin = i === 0 ? [0, 0, 0] : [0, 0, 0].map((_, i) => (model.maxs[i] - model.mins[i]) / 2 + model.mins[i])
+    const _origin = i === 0 ? [0, 0, 0] : [0, 0, 0].map((_, i) => (model.maxs[i] - model.mins[i]) / 2 + model.mins[i])
+    const origin = vec3.fromValues(_origin[0], _origin[1], _origin[2])
 
     for (let i = model.firstFace; i < model.firstFace + model.faceCount; ++i) {
       const faceData = {
@@ -179,7 +181,7 @@ export interface BspLumpFace {
 export interface BspLumpModel {
   mins: number[]
   maxs: number[]
-  origin: number[]
+  origin: vec3
   headNodes: number[]
   visLeaves: number
   firstFace: number
@@ -272,7 +274,7 @@ export const BspParser = {
       models.push({
         mins: [r.f(), r.f(), r.f()],
         maxs: [r.f(), r.f(), r.f()],
-        origin: [r.f(), r.f(), r.f()],
+        origin: vec3.fromValues(r.f(), r.f(), r.f()),
         headNodes: [r.i(), r.i(), r.i(), r.i()],
         visLeaves: r.i(),
         firstFace: r.i(),

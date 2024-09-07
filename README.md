@@ -15,7 +15,13 @@ You can check out the live demo [here](http://skyrim.github.io/hlviewer.js)
 
 Download the library from __dist__ directory and include it in your html.
 ```html
+<link rel="stylesheet" src="your/path/to/hlviewer.style">
 <script src="your/path/to/hlviewer.min.js"></script>
+```
+or use a CDN
+```html
+<link rel="stylesheet" src="https://unpkg.com/hlviewer.js@0.8.0/dist/hlviewer.css">
+<script src="https://unpkg.com/hlviewer.js@0.8.0/dist/hlviewer.min.js"></script>
 ```
 
 Create a target element where viewer will later be created.  

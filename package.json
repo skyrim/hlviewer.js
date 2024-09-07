@@ -1,6 +1,6 @@
 {
   "name": "hlviewer.js",
-  "version": "0.7.5",
+  "version": "0.8.0",
   "description": "View GoldSrc maps and replays in browser",
   "keywords": [
     "hlviewer",
@@ -9,7 +9,18 @@
     "goldsrc",
     "kreedz"
   ],
-  "main": "dist/hlviewer.js",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/hlviewer.min.js",
+  "module": "dist/hlviewer.js",
+  "exports": {
+    ".": {
+      "import": "./dist/hlviewer.js",
+      "require": "./dist/hlviewer.min.js"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build"
@@ -23,10 +34,6 @@
   "bugs": {
     "url": "https://github.com/skyrim/hlviewer.js/issues"
   },
-  "type": "module",
-  "files": [
-    "dist/hlviewer.js"
-  ],
   "homepage": "https://skyrim.github.io/hlviewer.js",
   "dependencies": {
     "gl-matrix": "^3.4.3",

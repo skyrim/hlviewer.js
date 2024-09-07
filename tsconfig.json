@@ -12,8 +12,8 @@
     "allowImportingTsExtensions": true,
 
     "jsx": "preserve",
-    "jsxFactory": "h",
-    "jsxFragmentFactory": "Fragment",
+    "jsxImportSource": "solid-js",
+    "types": ["vite/client"],
 
     "strict": true,
     "noImplicitAny": true,

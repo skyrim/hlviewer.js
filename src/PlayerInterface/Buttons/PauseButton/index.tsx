@@ -1,4 +1,3 @@
-import { h } from 'preact'
 import { ControlsStyle as cs } from '../../Controls.style'
 
 export function PauseButton(props: { onClick(): void }) {

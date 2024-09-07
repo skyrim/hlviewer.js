@@ -1,4 +1,4 @@
-import { h, render } from 'preact'
+import { render } from 'solid-js/web'
 import type { Game } from '../Game'
 import { Root } from './Root'
 
@@ -16,6 +16,6 @@ export class PlayerInterface {
   }
 
   draw() {
-    render(<Root game={this.game} root={this.rootNode} />, this.rootNode)
+    render(() => <Root game={this.game} root={this.rootNode} />, this.rootNode)
   }
 }

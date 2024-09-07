@@ -1,101 +1,74 @@
-import { h, Component } from 'preact'
+import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { Unsubscribe } from 'nanoevents'
 import type { Game } from '../../Game'
 import { TimeLine as s } from './style'
 
-interface TimeLineProps {
-  game: Game
-}
+export function TimeLine(props: { game: Game }) {
+  let offPostUpdate: Unsubscribe | undefined = undefined
 
-interface TimeLineState {
-  progress: number
-  ghostKnobActive: boolean
-  ghostKnobPos: string
-  onPostUpdate: (() => void) | null
-}
+  const [progress, setProgress] = createSignal(0)
+  const [ghostKnobActive, setGhostKnobActive] = createSignal(false)
+  const [ghostKnobPos, setGhostKnobPos] = createSignal('0%')
+  // const [onPostUpdate, setOnPostUpdate] = createSignal(null)
 
-export class TimeLine extends Component<TimeLineProps, TimeLineState> {
-  private offPostUpdate?: Unsubscribe
-
-  constructor(props: TimeLineProps) {
-    super(props)
-
-    this.state = {
-      progress: 0,
-      ghostKnobActive: false,
-      ghostKnobPos: '0%',
-      onPostUpdate: null
-    }
-  }
-
-  componentDidMount() {
-    this.offPostUpdate = this.props.game.events.on('postupdate', this.onPostUpdate)
-  }
-
-  componentWillUnmount() {
-    if (this.offPostUpdate) {
-      this.offPostUpdate()
-    }
-  }
-
-  onPostUpdate = () => {
-    const player = this.props.game.player
-    this.setState({
-      progress: player.currentTime / player.replay.length
+  onMount(() => {
+    offPostUpdate = props.game.events.on('postupdate', () => {
+      setProgress(props.game.player.currentTime / props.game.player.replay.length)
     })
-  }
+  })
 
-  onClick = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
+  onCleanup(() => {
+    offPostUpdate?.()
+  })
+
+  const onClick = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
     const rects = e.currentTarget.getClientRects()[0]
     const progress = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
-    this.props.game.player.seekByPercent(progress * 100)
-    this.props.game.player.pause()
+    props.game.player.seekByPercent(progress * 100)
+    props.game.player.pause()
   }
 
-  onMouseEnter = () => {
-    this.setState({
-      ghostKnobActive: true
-    })
+  const onMouseEnter = () => {
+    setGhostKnobActive(true)
   }
 
-  onMouseMove = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
-    if (!this.state.ghostKnobActive) {
+  const onMouseMove = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
+    if (!ghostKnobActive()) {
       return
     }
 
     const rects = e.currentTarget.getClientRects()[0]
     const progressPos = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
-    const pos = `${progressPos * 100}%`
-    this.setState({
-      ghostKnobPos: pos
-    })
+    setGhostKnobPos(`${progressPos * 100}%`)
   }
 
-  onMouseLeave = () => {
-    this.setState({
-      ghostKnobActive: false
-    })
+  const onMouseLeave = () => {
+    setGhostKnobActive(false)
   }
 
-  render() {
-    const timePos = this.state.progress * 100
-    const knobOff = `${timePos}%`
-    const lineOff = `${100 - timePos}%`
-
-    return (
-      <button
-        type="button"
-        class={s.timeline}
-        onClick={this.onClick}
-        onMouseEnter={this.onMouseEnter}
-        onMouseMove={this.onMouseMove}
-        onMouseLeave={this.onMouseLeave}
-      >
-        <div class={s.ghostLine} />
-        <div class={s.line} style={{ right: lineOff }} />
-        <div class={s.knob} style={{ left: knobOff }} />
-        <div class={s.ghostKnob} style={{ left: this.state.ghostKnobPos }} />
-      </button>
-    )
+  const knobOffset = () => {
+    const timePos = progress() * 100
+    return `${timePos}%`
   }
+
+  const lineOffset = () => {
+    const timePos = progress() * 100
+    return `${100 - timePos}%`
+  }
+
+  return (
+    <button
+      type="button"
+      class={s.timeline}
+      onClick={(e) => onClick(e)}
+      onMouseEnter={() => onMouseEnter()}
+      onMouseMove={(e) => onMouseMove(e)}
+      onMouseLeave={() => onMouseLeave()}
+    >
+      <div class={s.ghostLine} />
+      <div class={s.line} style={{ right: lineOffset() }} />
+      <div class={s.knob} style={{ left: knobOffset() }} />
+      <div class={s.ghostKnob} style={{ left: ghostKnobPos() }} />
+    </button>
+  )
 }

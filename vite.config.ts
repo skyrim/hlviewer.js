@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
-import preact from '@preact/preset-vite'
+import solid from 'vite-plugin-solid'
 
 export default defineConfig({
-  plugins: [preact()],
+  plugins: [solid()],
   build: {
     sourcemap: true,
     lib: {

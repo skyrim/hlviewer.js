@@ -1,95 +1,69 @@
-import { h, Component } from 'preact'
+import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { Unsubscribe } from 'nanoevents'
 import type { Game } from '../../Game'
 import { VolumeControl as s } from './style'
 
-interface VolumeControlProps {
-  game: Game
-}
+export function VolumeControl(props: { game: Game }) {
+  let offVolumeChange: Unsubscribe | undefined = undefined
 
-interface VolumeControlState {
-  volume: number
-  ghostKnobActive: boolean
-  ghostKnobPos: string
-}
+  const [volume, setVolume] = createSignal(props.game.soundSystem.getVolume())
+  const [ghostKnobActive, setGhostKnobActive] = createSignal(false)
+  const [ghostKnobPos, setGhostKnobPos] = createSignal('5%')
 
-export class VolumeControl extends Component<VolumeControlProps, VolumeControlState> {
-  private offVolumeChange?: Unsubscribe
+  onMount(() => {
+    offVolumeChange = props.game.soundSystem.events.on('volumeChange', onVolumeChange)
+  })
 
-  constructor(props: VolumeControlProps) {
-    super(props)
+  onCleanup(() => {
+    offVolumeChange?.()
+  })
 
-    this.state = {
-      volume: props.game.soundSystem.getVolume(),
-      ghostKnobActive: false,
-      ghostKnobPos: '5%'
-    }
+  const onVolumeChange = () => {
+    setVolume(props.game.soundSystem.getVolume())
   }
 
-  componentDidMount() {
-    this.offVolumeChange = this.props.game.soundSystem.events.on('volumeChange', this.onVolumeChange)
-  }
-
-  componentWillUnmount() {
-    this.offVolumeChange?.()
-  }
-
-  onVolumeChange = () => {
-    this.setState({
-      volume: this.props.game.soundSystem.getVolume()
-    })
-  }
-
-  onClick = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
+  const onClick = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
     const rects = e.currentTarget.getClientRects()[0]
     const volume = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
-    this.props.game.soundSystem.setVolume(volume)
+    props.game.soundSystem.setVolume(volume)
   }
 
-  onMouseEnter = () => {
-    this.setState({
-      ghostKnobActive: true
-    })
+  const onMouseEnter = () => {
+    setGhostKnobActive(true)
   }
 
-  onMouseMove = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
-    if (!this.state.ghostKnobActive) {
+  const onMouseMove = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
+    if (!ghostKnobActive()) {
       return
     }
 
     const rects = e.currentTarget.getClientRects()[0]
     const volumePos = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
     const pos = `${Math.min(95, Math.max(5, volumePos * 100))}%`
-    this.setState({
-      ghostKnobPos: pos
-    })
+    setGhostKnobPos(pos)
   }
 
-  onMouseLeave = () => {
-    this.setState({
-      ghostKnobActive: false
-    })
+  const onMouseLeave = () => {
+    setGhostKnobActive(false)
   }
 
-  render() {
-    const volumePos = this.state.volume * 100
-    const knobOff = `${Math.min(95, Math.max(5, volumePos))}%`
-    const lineOff = `${Math.min(95, Math.max(5, 100 - volumePos))}%`
+  const volumePos = () => volume() * 100
+  const knobOffset = () => `${Math.min(95, Math.max(5, volumePos()))}%`
+  const lineOffset = () => `${Math.min(95, Math.max(5, 100 - volumePos()))}%`
 
-    return (
-      <button
-        type="button"
-        class={s.control}
-        onClick={this.onClick}
-        onMouseEnter={this.onMouseEnter}
-        onMouseMove={this.onMouseMove}
-        onMouseLeave={this.onMouseLeave}
-      >
-        <div class={s.ghostLine} />
-        <div class={s.line} style={{ right: lineOff }} />
-        <div class={s.knob} style={{ left: knobOff }} />
-        <div class={s.ghostKnob} style={{ left: this.state.ghostKnobPos }} />
-      </button>
-    )
-  }
+  return (
+    <button
+      type="button"
+      class={s.control}
+      onClick={(e) => onClick(e)}
+      onMouseEnter={() => onMouseEnter()}
+      onMouseMove={(e) => onMouseMove(e)}
+      onMouseLeave={() => onMouseLeave()}
+    >
+      <div class={s.ghostLine} />
+      <div class={s.line} style={{ right: lineOffset() }} />
+      <div class={s.knob} style={{ left: knobOffset() }} />
+      <div class={s.ghostKnob} style={{ left: ghostKnobPos() }} />
+    </button>
+  )
 }

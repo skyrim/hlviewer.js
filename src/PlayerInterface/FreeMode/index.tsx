@@ -1,4 +1,3 @@
-import { h } from 'preact'
 import { classes } from 'typestyle'
 import type { Game } from '../../Game'
 import { FreeModeStyle as s } from './style'

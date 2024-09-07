@@ -1,8 +1,7 @@
-import { h, Component } from 'preact'
-import type { Unsubscribe } from 'nanoevents'
 import { Time } from '../Time'
 import type { Game } from '../../Game'
 import { TimeLine } from '../TimeLine'
+import { useGameState } from '../GameState'
 import { VolumeControl } from '../VolumeControl'
 import { PlayButton } from '../Buttons/PlayButton'
 import { PauseButton } from '../Buttons/PauseButton'
@@ -13,84 +12,52 @@ import { SettingsButton } from '../Buttons/SettingsButton'
 import { FullscreenButton } from '../Buttons/FullscreenButton'
 import { ControlsStyle as cs } from '../Controls.style'
 
-interface ReplayModeProps {
-  class: string
-  game: Game
-  root: Element
-  visible: boolean
-}
+export function ReplayMode(props: { class: string; game: Game; root: Element; visible: boolean }) {
+  const gameState = useGameState()
 
-export class ReplayMode extends Component<ReplayModeProps> {
-  private offPlay?: Unsubscribe
-  private offPause?: Unsubscribe
-  private offStop?: Unsubscribe
-
-  componentDidMount() {
-    this.offPlay = this.props.game.player.events.on('play', this.onPlayStateChange)
-    this.offPause = this.props.game.player.events.on('pause', this.onPlayStateChange)
-    this.offStop = this.props.game.player.events.on('stop', this.onPlayStateChange)
+  const onPlayClick = () => {
+    props.game.player.play()
   }
 
-  componentWillUnmount() {
-    this.offPlay?.()
-    this.offPause?.()
-    this.offStop?.()
+  const onPauseClick = () => {
+    props.game.player.pause()
   }
 
-  onPlayClick = () => {
-    this.props.game.player.play()
+  const onSpeedDown = () => {
+    props.game.player.speedDown()
   }
 
-  onPauseClick = () => {
-    this.props.game.player.pause()
+  const onSpeedUp = () => {
+    props.game.player.speedUp()
   }
 
-  onSpeedDown = () => {
-    this.props.game.player.speedDown()
+  const onVolumeClick = () => {
+    props.game.soundSystem.toggleMute()
   }
 
-  onSpeedUp = () => {
-    this.props.game.player.speedUp()
-  }
+  return (
+    <div class={props.class}>
+      <TimeLine game={props.game} />
 
-  onVolumeClick = () => {
-    this.props.game.soundSystem.toggleMute()
-  }
+      <div class={cs.buttons}>
+        <div class={cs.left}>
+          <SpeedDownButton onClick={() => onSpeedDown()} />
+          {gameState.isPaused || !gameState.isPlaying ? (
+            <PlayButton onClick={() => onPlayClick()} />
+          ) : (
+            <PauseButton onClick={() => onPauseClick()} />
+          )}
+          <SpeedUpButton onClick={() => onSpeedUp()} />
+          <VolumeButton onClick={() => onVolumeClick()} />
+          <VolumeControl game={props.game} />
+          <Time player={props.game.player} />
+        </div>
 
-  onPlayStateChange = () => {
-    this.forceUpdate()
-  }
-
-  render() {
-    const game = this.props.game
-    const player = game.player
-    const playing = player.isPlaying
-    const paused = player.isPaused
-
-    return (
-      <div class={this.props.class}>
-        <TimeLine game={game} />
-
-        <div class={cs.buttons}>
-          <div class={cs.left}>
-            <SpeedDownButton onClick={this.onSpeedDown} />
-            {paused || !playing ? (
-              <PlayButton onClick={this.onPlayClick} />
-            ) : (
-              <PauseButton onClick={this.onPauseClick} />
-            )}
-            <SpeedUpButton onClick={this.onSpeedUp} />
-            <VolumeButton onClick={this.onVolumeClick} />
-            <VolumeControl game={game} />
-            <Time player={player} />
-          </div>
-
-          <div class={cs.right}>
-            <SettingsButton game={game} />
-            <FullscreenButton active={true} root={this.props.root} />
-          </div>
+        <div class={cs.right}>
+          <SettingsButton game={props.game} />
+          <FullscreenButton active={true} root={props.root} />
         </div>
       </div>
-    )
-  }
+    </div>
+  )
 }

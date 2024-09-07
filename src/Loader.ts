@@ -198,7 +198,7 @@ export class Loader {
       return
     }
 
-    const replay = await Replay.parseIntoChunks(buffer)
+    const replay = Replay.parseIntoChunks(buffer)
     this.replay.done(replay)
 
     this.loadMap(`${replay.maps[0].name}.bsp`)
@@ -243,7 +243,7 @@ export class Loader {
       return
     }
 
-    const map = await BspParser.parse(name, buffer)
+    const map = BspParser.parse(name, buffer)
     this.map.done(map)
 
     map.entities
@@ -360,7 +360,7 @@ export class Loader {
       return
     }
 
-    const wad = await Wad.parse(buffer)
+    const wad = Wad.parse(buffer)
     wadItem.done(wad)
 
     if (!this.map || !this.map.data) {

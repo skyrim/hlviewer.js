@@ -1,66 +1,51 @@
-import { h, Component } from 'preact'
+import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { Unsubscribe } from 'nanoevents'
 import { formatTime } from '../../Time'
 import type { ReplayPlayer } from '../../ReplayPlayer'
 import { Time as s } from './style'
 
-interface TimeProps {
-  player: ReplayPlayer
-}
+export function Time(props: { player: ReplayPlayer }) {
+  let offPlay: Unsubscribe | undefined = undefined
+  let offPause: Unsubscribe | undefined = undefined
+  let offStop: Unsubscribe | undefined = undefined
 
-interface TimeState {
-  isPlaying: boolean
-}
+  const [isPlaying, setIsPlaying] = createSignal(false)
 
-export class Time extends Component<TimeProps, TimeState> {
-  private offPlay?: Unsubscribe
-  private offPause?: Unsubscribe
-  private offStop?: Unsubscribe
+  onMount(() => {
+    offPlay = props.player.events.on('play', onPlay)
+    offPause = props.player.events.on('pause', onPauseOrStop)
+    offStop = props.player.events.on('stop', onPauseOrStop)
+  })
 
-  componentDidMount() {
-    this.offPlay = this.props.player.events.on('play', this.onPlay)
-    this.offPause = this.props.player.events.on('pause', this.onPauseOrStop)
-    this.offStop = this.props.player.events.on('stop', this.onPauseOrStop)
+  onCleanup(() => {
+    offPlay?.()
+    offPause?.()
+    offStop?.()
+  })
+
+  const onPlay = () => {
+    setIsPlaying(true)
   }
 
-  componentWillUnmount() {
-    this.offPlay?.()
-    this.offPause?.()
-    this.offStop?.()
+  const onPauseOrStop = () => {
+    setIsPlaying(false)
   }
 
-  onPlay = () => {
-    this.setState(
-      {
-        isPlaying: true
-      },
-      this.update
-    )
-  }
-
-  onPauseOrStop = () => {
-    this.setState({
-      isPlaying: false
-    })
-  }
-
-  update = () => {
-    if (!this.state.isPlaying) {
+  const update = () => {
+    if (!isPlaying()) {
       return
     }
 
-    this.forceUpdate()
-    setTimeout(this.update, 100)
+    // this.forceUpdate()
+    setTimeout(update, 100)
   }
 
-  render() {
-    const current = formatTime(this.props.player.currentTime)
-    const total = formatTime(this.props.player.replay.length)
+  const current = () => formatTime(props.player.currentTime)
+  const total = () => formatTime(props.player.replay.length)
 
-    return (
-      <div class={s.time}>
-        {current} / {total}
-      </div>
-    )
-  }
+  return (
+    <div class={s.time}>
+      {current()} / {total()}
+    </div>
+  )
 }

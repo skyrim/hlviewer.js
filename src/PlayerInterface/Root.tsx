@@ -1,118 +1,103 @@
-import { h, Component } from 'preact'
-import type { Unsubscribe } from 'nanoevents'
+import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createStore } from 'solid-js/store'
 import { Loading } from './Loading'
 import { FreeMode } from './FreeMode'
 import { ReplayMode } from './ReplayMode'
 import { Fullscreen } from '../Fullscreen'
+import { GameStateContext } from './GameState'
 import { type Game, PlayerMode } from '../Game'
 import { RootStyle as s } from './Root.style'
 
-interface RootProps {
-  game: Game
-  root: Element
-}
+export function Root(props: { game: Game; root: Element }) {
+  let screen: HTMLButtonElement | null = null
+  let fadeOut: ReturnType<typeof setTimeout> | undefined = undefined
 
-interface RootState {
-  title: string
-  isActive: boolean
-  isLoading: boolean
-  isMouseOver: boolean
-  isVisible: boolean
-}
+  const [title, setTitle] = createSignal(props.game.title)
+  const [isActive, setIsActive] = createSignal(false)
+  const [isLoading, setIsLoading] = createSignal(false)
+  const [isMouseOver, setIsMouseOver] = createSignal(false)
+  const [isVisible, setIsVisible] = createSignal(false)
 
-export class Root extends Component<RootProps, RootState> {
-  private node: HTMLButtonElement | null = null
-  private fadeOut: NodeJS.Timeout | undefined
-  private offLoadStart?: Unsubscribe
-  private offLoad?: Unsubscribe
-  private offModeChange?: Unsubscribe
-  private offTitleChange?: Unsubscribe
+  const [gameState, setGameState] = createStore({
+    mode: props.game.mode,
+    isPlaying: props.game.player.isPlaying,
+    isPaused: props.game.player.isPaused
+  })
 
-  constructor(props: RootProps) {
-    super(props)
-
-    this.state = {
-      title: props.game.title,
-      isActive: false,
-      isLoading: false,
-      isMouseOver: false,
-      isVisible: false
-    }
-  }
-
-  componentDidMount() {
-    if (!this.node) {
+  onMount(() => {
+    if (!screen) {
       return
     }
 
-    const game = this.props.game
-    const root = this.props.root
+    const game = props.game
+    const root = props.root
 
-    this.node.appendChild(game.getCanvas())
+    screen.appendChild(game.getCanvas())
 
-    this.offLoadStart = game.events.on('loadstart', this.onLoadStart)
-    this.offLoad = game.events.on('load', this.onLoadEnd)
-    this.offModeChange = game.events.on('modechange', this.onModeChange)
-    this.offTitleChange = game.events.on('titlechange', this.onTitleChange)
+    const offLoadStart = game.events.on('loadstart', () => setIsLoading(true))
+    const offLoad = game.events.on('load', () => setIsLoading(false))
+    const offModeChange = game.events.on('modechange', (mode: PlayerMode) => setGameState({ mode }))
+    const offTitleChange = game.events.on('titlechange', (title: string) => setTitle(title))
+    const offPlay = props.game.player.events.on('play', () => setGameState({ isPlaying: true, isPaused: false }))
+    const offPause = props.game.player.events.on('pause', () => setGameState({ isPlaying: true, isPaused: true }))
+    const offStop = props.game.player.events.on('stop', () => setGameState({ isPlaying: false, isPaused: false }))
 
-    root.addEventListener('click', this.onRootClick)
-    window.addEventListener('click', this.onWindowClick)
-    window.addEventListener('keydown', this.onKeyDown)
-    document.addEventListener('pointerlockchange', this.onPointerLockChange, false)
+    window.addEventListener('click', onWindowClick)
+    window.addEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerlockchange', onPointerLockChange, false)
+    
+    root.addEventListener('click', onRootClick)
+    root.addEventListener('mouseover', onMouseEnter)
+    root.addEventListener('mousemove', onMouseMove)
+    root.addEventListener('mouseout', onMouseLeave)
+    root.addEventListener('contextmenu', onContextMenu)
 
-    root.addEventListener('mouseover', this.onMouseEnter)
-    root.addEventListener('mousemove', this.onMouseMove)
-    root.addEventListener('mouseout', this.onMouseLeave)
-    root.addEventListener('contextmenu', this.onContextMenu)
-  }
+    onCleanup(() => {
+      offLoadStart?.()
+      offLoad?.()
+      offModeChange?.()
+      offTitleChange?.()
+      offPlay?.()
+      offPause?.()
+      offStop?.()
 
-  componentWillUnmount() {
-    const root = this.props.root
+      props.root.removeEventListener('click', onRootClick)
+      window.removeEventListener('click', onWindowClick)
+      window.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerlockchange', onPointerLockChange, false)
 
-    this.offLoadStart?.()
-    this.offLoad?.()
-    this.offModeChange?.()
-    this.offTitleChange?.()
+      props.root.removeEventListener('mouseover', onMouseEnter)
+      props.root.removeEventListener('mousemove', onMouseMove)
+      props.root.removeEventListener('mouseout', onMouseLeave)
+      props.root.removeEventListener('contextmenu', onContextMenu)
+    })
+  })
 
-    root.removeEventListener('click', this.onRootClick)
-    window.removeEventListener('click', this.onWindowClick)
-    window.removeEventListener('keydown', this.onKeyDown)
-    document.removeEventListener('pointerlockchange', this.onPointerLockChange, false)
-
-    root.removeEventListener('mouseover', this.onMouseEnter)
-    root.removeEventListener('mousemove', this.onMouseMove)
-    root.removeEventListener('mouseout', this.onMouseLeave)
-    root.removeEventListener('contextmenu', this.onContextMenu)
-  }
-
-  onPointerLockChange = () => {
-    if (document.pointerLockElement === this.props.root) {
-      this.props.game.pointerLocked = true
+  const onPointerLockChange = () => {
+    if (document.pointerLockElement === props.root) {
+      props.game.pointerLocked = true
     } else {
-      this.props.game.pointerLocked = false
+      props.game.pointerLocked = false
     }
   }
 
-  onContextMenu = (e: Event) => {
+  const onContextMenu = (e: Event) => {
     e.preventDefault()
   }
 
-  onWindowClick = () => {
-    this.setState({ isActive: false })
+  const onWindowClick = () => {
+    setIsActive(false)
   }
 
-  onRootClick = (e: Event) => {
-    e.stopPropagation()
-    this.setState({ isActive: true })
-    this.fadeReset()
+  const onRootClick = () => {
+    setIsActive(true)
+    fadeReset()
   }
 
-  onKeyDown = (e: KeyboardEvent) => {
-    if (!this.state.isActive) {
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (!isActive()) {
       return
     }
-
-    const game = this.props.game
 
     switch (e.which) {
       case 70: {
@@ -120,117 +105,99 @@ export class Root extends Component<RootProps, RootState> {
         if (Fullscreen.isInFullscreen()) {
           Fullscreen.exit()
         } else {
-          Fullscreen.enter(this.props.root)
+          Fullscreen.enter(props.root)
         }
-        this.fadeReset()
+        fadeReset()
         break
       }
 
       case 77: {
         // M
-        game.soundSystem.toggleMute()
-        this.fadeReset()
+        props.game.soundSystem.toggleMute()
+        fadeReset()
         break
       }
 
       case 38: {
         // arrow up
-        game.soundSystem.setVolume(game.soundSystem.getVolume() + 0.05)
-        this.fadeReset()
+        props.game.soundSystem.setVolume(props.game.soundSystem.getVolume() + 0.05)
+        fadeReset()
         break
       }
       case 40: {
         // arrow down
-        game.soundSystem.setVolume(game.soundSystem.getVolume() - 0.05)
-        this.fadeReset()
+        props.game.soundSystem.setVolume(props.game.soundSystem.getVolume() - 0.05)
+        fadeReset()
         break
       }
 
       case 74: // J
       case 37: {
         // arrow left
-        game.player.seek(game.player.currentTime - 5)
-        this.fadeReset()
+        props.game.player.seek(props.game.player.currentTime - 5)
+        fadeReset()
         break
       }
       case 76: // L
       case 39: {
         // arrow right
-        game.player.seek(game.player.currentTime + 5)
-        this.fadeReset()
+        props.game.player.seek(props.game.player.currentTime + 5)
+        fadeReset()
         break
       }
 
       case 75: // K
       case 32: {
         // space
-        if (this.props.game.mode !== PlayerMode.REPLAY) {
+        if (gameState.mode !== PlayerMode.REPLAY) {
           return
         }
 
-        if (!game.player.isPlaying || game.player.isPaused) {
-          game.player.play()
+        if (!props.game.player.isPlaying || props.game.player.isPaused) {
+          props.game.player.play()
         } else {
-          game.player.pause()
+          props.game.player.pause()
         }
         break
       }
     }
   }
 
-  onModeChange = () => {
-    this.forceUpdate()
+  const onMouseEnter = () => {
+    setIsMouseOver(true)
+    fadeReset()
   }
 
-  onLoadStart = () => {
-    this.setState({ isLoading: true })
-  }
-
-  onLoadEnd = () => {
-    this.setState({ isLoading: false })
-  }
-
-  onTitleChange = (title: string) => {
-    this.setState({ title })
-  }
-
-  onMouseEnter = () => {
-    this.setState({ isMouseOver: true })
-    this.fadeReset()
-  }
-
-  onMouseMove = () => {
-    if (this.state.isMouseOver && !Fullscreen.isInFullscreen()) {
-      this.fadeReset()
+  const onMouseMove = () => {
+    if (isMouseOver() && !Fullscreen.isInFullscreen()) {
+      fadeReset()
     }
   }
 
-  onMouseLeave = () => {
-    this.setState({
-      isMouseOver: false,
-      isVisible: false
-    })
+  const onMouseLeave = () => {
+    setIsMouseOver(false)
+    setIsVisible(false)
 
-    clearTimeout(this.fadeOut)
-    this.fadeOut = undefined
+    clearTimeout(fadeOut)
+    fadeOut = undefined
   }
 
-  fadeReset = () => {
-    if (!this.state.isVisible) {
-      this.setState({ isVisible: true })
+  const fadeReset = () => {
+    if (!isVisible()) {
+      setIsVisible(true)
     }
 
-    clearTimeout(this.fadeOut)
-    this.fadeOut = setTimeout(() => {
-      this.setState({ isVisible: false })
-      this.fadeOut = undefined
+    clearTimeout(fadeOut)
+    fadeOut = setTimeout(() => {
+      setIsVisible(false)
+      fadeOut = undefined
     }, 5000)
   }
 
-  onScreenClick = () => {
-    switch (this.props.game.mode) {
+  const onScreenClick = () => {
+    switch (gameState.mode) {
       case PlayerMode.REPLAY: {
-        const player = this.props.game.player
+        const player = props.game.player
         if (!player.isPlaying || player.isPaused) {
           player.play()
         } else {
@@ -240,52 +207,50 @@ export class Root extends Component<RootProps, RootState> {
       }
 
       case PlayerMode.FREE: {
-        this.props.root.requestPointerLock()
-
+        props.root.requestPointerLock()
         break
       }
     }
   }
 
-  onScreenDblClick = () => {
+  const onScreenDblClick = () => {
     if (Fullscreen.isInFullscreen()) {
       Fullscreen.exit()
     } else {
-      Fullscreen.enter(this.props.root)
+      Fullscreen.enter(props.root)
     }
   }
 
-  render() {
-    const game = this.props.game
-    const isVisible = this.state.isVisible
+  return (
+    <GameStateContext.Provider value={gameState}>
+      <div class={isVisible() ? s.rootVisible : s.root}>
+        <div class={isVisible() ? s.titleVisible : s.title}>{title()}</div>
 
-    return (
-      <div class={isVisible ? s.rootVisible : s.root}>
-        <div class={isVisible ? s.titleVisible : s.title}>{this.state.title}</div>
-
-        <Loading game={game} visible={this.state.isLoading} />
+        <Loading game={props.game} visible={isLoading()} />
 
         <button
           type="button"
           class={s.screen}
           ref={(node) => {
-            this.node = node
+            screen = node
           }}
-          onClick={this.onScreenClick}
-          onDblClick={this.onScreenDblClick}
+          onClick={() => onScreenClick()}
+          onDblClick={() => onScreenDblClick()}
         />
 
-        {game.mode === PlayerMode.FREE ? (
-          <FreeMode class={isVisible ? s.controlsVisible : s.controls} game={game} root={this.props.root} />
-        ) : (
+        <Show when={gameState.mode === PlayerMode.FREE}>
+          <FreeMode class={isVisible() ? s.controlsVisible : s.controls} game={props.game} root={props.root} />
+        </Show>
+
+        <Show when={gameState.mode === PlayerMode.REPLAY}>
           <ReplayMode
-            class={isVisible ? s.controlsVisible : s.controls}
-            game={game}
-            root={this.props.root}
-            visible={this.state.isMouseOver}
+            class={isVisible() ? s.controlsVisible : s.controls}
+            game={props.game}
+            root={props.root}
+            visible={isMouseOver()}
           />
-        )}
+        </Show>
       </div>
-    )
-  }
+    </GameStateContext.Provider>
+  )
 }

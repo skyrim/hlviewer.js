@@ -206,7 +206,7 @@ export interface BspLumpTexInfo {
 export type BspLumpLightmap = Uint8Array
 
 export const BspParser = {
-  parse(name: string, buffer: ArrayBuffer): Bsp {
+  parse(name: string, buffer: ArrayBuffer) {
     const r = new Reader(buffer)
     const version = r.ui()
     if (version !== 30) {

@@ -1,6 +1,6 @@
 import { Time } from '../Time'
 import type { Game } from '../../Game'
-import { TimeLine } from '../TimeLine'
+import { Timeline } from '../Timeline'
 import { useGameState } from '../GameState'
 import { VolumeControl } from '../VolumeControl'
 import { PlayButton } from '../Buttons/PlayButton'
@@ -10,7 +10,6 @@ import { SpeedUpButton } from '../Buttons/SpeedUpButton'
 import { SpeedDownButton } from '../Buttons/SpeedDownButton'
 import { SettingsButton } from '../Buttons/SettingsButton'
 import { FullscreenButton } from '../Buttons/FullscreenButton'
-import { ControlsStyle as cs } from '../Controls.style'
 
 export function ReplayMode(props: { class: string; game: Game; root: Element; visible: boolean }) {
   const gameState = useGameState()
@@ -37,10 +36,10 @@ export function ReplayMode(props: { class: string; game: Game; root: Element; vi
 
   return (
     <div class={props.class}>
-      <TimeLine game={props.game} />
+      <Timeline game={props.game} />
 
-      <div class={cs.buttons}>
-        <div class={cs.left}>
+      <div class="hlv-buttons">
+        <div class="hlv-buttons-left">
           <SpeedDownButton onClick={() => onSpeedDown()} />
           {gameState.isPaused || !gameState.isPlaying ? (
             <PlayButton onClick={() => onPlayClick()} />
@@ -53,7 +52,7 @@ export function ReplayMode(props: { class: string; game: Game; root: Element; vi
           <Time player={props.game.player} />
         </div>
 
-        <div class={cs.right}>
+        <div class="hlv-buttons-right">
           <SettingsButton game={props.game} />
           <FullscreenButton active={true} root={props.root} />
         </div>

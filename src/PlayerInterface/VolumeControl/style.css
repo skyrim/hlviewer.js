@@ -1,0 +1,56 @@
+.hlv-volume {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 80px;
+  height: 26px;
+  margin-left: 6px;
+  margin-right: 14px;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.hlv-volume-line {
+  height: 4px;
+  background-color: #fff;
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+}
+
+.hlv-volume-ghostline {
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.5);
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+}
+
+.hlv-volume-knob {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #fff;
+  border-radius: 6px;
+  left: 100%;
+  margin-left: -6px;
+}
+
+.hlv-volume-ghostknob {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #fff;
+  border-radius: 8px;
+  left: 0;
+  margin-left: -4px;
+  display: none;
+}
+
+.hlv-volume:hover .hlv-volume-ghostknob {
+  display: block;
+}

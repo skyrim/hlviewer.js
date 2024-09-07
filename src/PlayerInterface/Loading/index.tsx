@@ -1,8 +1,7 @@
-import type { Unsubscribe } from 'nanoevents'
 import { createSignal, For, onCleanup, onMount } from 'solid-js'
 import type { Game } from '../../Game'
 import type { LoadItem } from '../../Loader'
-import { LoadingStyle as s } from './style'
+import './style.css'
 
 const itemTypeGroupName: { [name: string]: string } = {
   replay: 'Replay',
@@ -14,20 +13,16 @@ const itemTypeGroupName: { [name: string]: string } = {
 }
 
 export function Loading(props: { game: Game; visible: boolean }) {
-  let offLoadStart: Unsubscribe | undefined = undefined
-  let offProgress: Unsubscribe | undefined = undefined
-
   const [items, setItems] = createSignal<{ [name: string]: { name: string; progress: number }[] }>({})
 
   onMount(() => {
     const loaderEvents = props.game.loader.events
-    offLoadStart = loaderEvents.on('loadstart', onItemLoad)
-    offProgress = loaderEvents.on('progress', onItemProgress)
-  })
-
-  onCleanup(() => {
-    offLoadStart?.()
-    offProgress?.()
+    const offLoadStart = loaderEvents.on('loadstart', onItemLoad)
+    const offProgress = loaderEvents.on('progress', onItemProgress)
+    onCleanup(() => {
+      offLoadStart?.()
+      offProgress?.()
+    })
   })
 
   const onItemLoad = (item: LoadItem) => {
@@ -78,8 +73,13 @@ export function Loading(props: { game: Game; visible: boolean }) {
   }
 
   return (
-    <div class={props.visible ? s.loading : s.loadingHidden}>
-      <div class={s.spinner}>
+    <div
+      classList={{
+        'hlv-loading': true,
+        visible: props.visible
+      }}
+    >
+      <div class="hlv-loading-spinner">
         <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="80px" height="80px" viewBox="0 0 80 80">
           <title>Loading</title>
           <path
@@ -89,15 +89,15 @@ export function Loading(props: { game: Game; visible: boolean }) {
         </svg>
       </div>
 
-      <ul class={s.log}>
+      <div class="hlv-loading-log">
         <For each={Object.entries(items())}>
           {([name, items]) => (
-            <li class={s.logItem}>
+            <div class="hlv-loading-log-item">
               {formatItem(name, items.reduce((prev, cur) => prev + cur.progress, 0) / items.length)}
-            </li>
+            </div>
           )}
         </For>
-      </ul>
+      </div>
     </div>
   )
 }

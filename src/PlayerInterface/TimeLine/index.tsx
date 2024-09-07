@@ -1,31 +1,38 @@
 import { createSignal, onCleanup, onMount } from 'solid-js'
-import type { Unsubscribe } from 'nanoevents'
 import type { Game } from '../../Game'
-import { TimeLine as s } from './style'
+import './style.css'
+import { formatTime } from '../../Time'
 
-export function TimeLine(props: { game: Game }) {
-  let offPostUpdate: Unsubscribe | undefined = undefined
-
+export function Timeline(props: { game: Game }) {
   const [progress, setProgress] = createSignal(0)
   const [ghostKnobActive, setGhostKnobActive] = createSignal(false)
   const [ghostKnobPos, setGhostKnobPos] = createSignal('0%')
-  // const [onPostUpdate, setOnPostUpdate] = createSignal(null)
+  const [ghostTime, setGhostTime] = createSignal(0)
 
   onMount(() => {
-    offPostUpdate = props.game.events.on('postupdate', () => {
+    const offPostUpdate = props.game.events.on('postupdate', () => {
       setProgress(props.game.player.currentTime / props.game.player.replay.length)
+    })
+    onCleanup(() => {
+      offPostUpdate?.()
     })
   })
 
-  onCleanup(() => {
-    offPostUpdate?.()
-  })
-
-  const onClick = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
+  let isMouseDown = false
+  const onMouseDown = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
+    isMouseDown = true
     const rects = e.currentTarget.getClientRects()[0]
     const progress = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
     props.game.player.seekByPercent(progress * 100)
     props.game.player.pause()
+
+    window.addEventListener(
+      'mouseup',
+      () => {
+        isMouseDown = false
+      },
+      { once: true }
+    )
   }
 
   const onMouseEnter = () => {
@@ -33,13 +40,16 @@ export function TimeLine(props: { game: Game }) {
   }
 
   const onMouseMove = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
-    if (!ghostKnobActive()) {
-      return
-    }
-
     const rects = e.currentTarget.getClientRects()[0]
     const progressPos = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
-    setGhostKnobPos(`${progressPos * 100}%`)
+    if (ghostKnobActive()) {
+      setGhostKnobPos(`${progressPos * 100}%`)
+      setGhostTime(props.game.player.replay.length * progressPos)
+    }
+    if (isMouseDown) {
+      props.game.player.seekByPercent(progressPos * 100)
+      props.game.player.pause()
+    }
   }
 
   const onMouseLeave = () => {
@@ -59,16 +69,19 @@ export function TimeLine(props: { game: Game }) {
   return (
     <button
       type="button"
-      class={s.timeline}
-      onClick={(e) => onClick(e)}
-      onMouseEnter={() => onMouseEnter()}
+      class="hlv-timeline"
+      onMouseDown={(e) => onMouseDown(e)}
       onMouseMove={(e) => onMouseMove(e)}
+      onMouseEnter={() => onMouseEnter()}
       onMouseLeave={() => onMouseLeave()}
     >
-      <div class={s.ghostLine} />
-      <div class={s.line} style={{ right: lineOffset() }} />
-      <div class={s.knob} style={{ left: knobOffset() }} />
-      <div class={s.ghostKnob} style={{ left: ghostKnobPos() }} />
+      <div class="hlv-timeline-ghostline" />
+      <div class="hlv-timeline-line" style={{ right: lineOffset() }} />
+      <div class="hlv-timeline-knob" style={{ left: knobOffset() }} />
+      <div class="hlv-timeline-ghostknob" style={{ left: ghostKnobPos() }} />
+      <div class="hlv-timeline-ghosttime" style={{ left: ghostKnobPos() }}>
+        {formatTime(ghostTime())}
+      </div>
     </button>
   )
 }

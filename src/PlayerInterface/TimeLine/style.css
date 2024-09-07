@@ -1,0 +1,79 @@
+.hlv-timeline {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 26px;
+  cursor: pointer;
+  padding: 0;
+  margin-top: -4px;
+  border: none;
+  background: none;
+  width: 100%;
+}
+
+.hlv-timeline-line {
+  height: 4px;
+  background-color: #fff;
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+}
+
+.hlv-timeline-ghostline {
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.5);
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+}
+
+.hlv-timeline-knob {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #fff;
+  border-radius: 6px;
+  left: 100%;
+  margin-left: -6px;
+}
+
+.hlv-timeline-ghostknob {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #fff;
+  border-radius: 8px;
+  left: 0;
+  margin-left: -4px;
+  display: none;
+}
+
+.hlv-timeline-ghosttime {
+  position: absolute;
+  bottom: 36px;
+  color: #fff;
+  font-size: 12px;
+  background-color: rgba(0, 0, 0, 0.4);
+  padding: 4px 6px;
+  display: none;
+  transform: translateX(-50%);
+  border-radius: 2px;
+}
+
+.hlv-timeline-ghosttime::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.4) transparent transparent transparent;
+}
+
+.hlv-timeline:hover .hlv-timeline-ghostknob,
+.hlv-timeline:hover .hlv-timeline-ghosttime {
+  display: block;
+}

@@ -1,8 +1,6 @@
 import { createSignal } from 'solid-js'
-import { classes } from 'typestyle'
 import { type Game, PlayerMode } from '../../../Game'
-import { ControlsStyle as cs } from '../../Controls.style'
-import { SettingsButtonStyle as s } from './style'
+import './style.css'
 
 export function SettingsButton(props: { game: Game }) {
   const [isOpen, setIsOpen] = createSignal(false)
@@ -26,8 +24,8 @@ export function SettingsButton(props: { game: Game }) {
   }
 
   return (
-    <div class={s.settings}>
-      <button type="button" class={classes(cs.button, s.button)} onClick={() => setIsOpen(!isOpen())}>
+    <div class="hlv-settings">
+      <button type="button" class="hlv-button" onClick={() => setIsOpen(!isOpen())}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <title>Toggle</title>
           <path
@@ -39,12 +37,20 @@ export function SettingsButton(props: { game: Game }) {
         </svg>
       </button>
 
-      <div class={isOpen() ? s.menuOpen : s.menu}>
-        <span class={s.menuItemTitle}>Mode</span>
+      <div
+        classList={{
+          'hlv-settings-menu': true,
+          open: isOpen()
+        }}
+      >
+        <span class="hlv-settings-menu-title">Mode</span>
         {hasReplay ? (
           <button
             type="button"
-            class={props.game.mode === PlayerMode.REPLAY ? s.menuItemSelected : s.menuItem}
+            classList={{
+              'hlv-settings-menu-item': true,
+              selected: props.game.mode === PlayerMode.REPLAY
+            }}
             onClick={() => onReplayModeClick()}
           >
             Replay
@@ -54,7 +60,10 @@ export function SettingsButton(props: { game: Game }) {
         )}
         <button
           type="button"
-          class={props.game.mode === PlayerMode.FREE ? s.menuItemSelected : s.menuItem}
+          classList={{
+            'hlv-settings-menu-item': true,
+            selected: props.game.mode === PlayerMode.FREE
+          }}
           onClick={() => onFreeModeClick()}
         >
           Free

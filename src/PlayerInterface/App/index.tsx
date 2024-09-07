@@ -1,14 +1,14 @@
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { Loading } from './Loading'
-import { FreeMode } from './FreeMode'
-import { ReplayMode } from './ReplayMode'
-import { Fullscreen } from '../Fullscreen'
-import { GameStateContext } from './GameState'
-import { type Game, PlayerMode } from '../Game'
-import { RootStyle as s } from './Root.style'
+import { Loading } from '../Loading'
+import { FreeMode } from '../FreeMode'
+import { ReplayMode } from '../ReplayMode'
+import { Fullscreen } from '../../Fullscreen'
+import { GameStateContext } from '../GameState'
+import { type Game, PlayerMode } from '../../Game'
+import './style.css'
 
-export function Root(props: { game: Game; root: Element }) {
+export function App(props: { game: Game; root: Element }) {
   let screen: HTMLButtonElement | null = null
   let fadeOut: ReturnType<typeof setTimeout> | undefined = undefined
 
@@ -45,11 +45,11 @@ export function Root(props: { game: Game; root: Element }) {
     window.addEventListener('click', onWindowClick)
     window.addEventListener('keydown', onKeyDown)
     document.addEventListener('pointerlockchange', onPointerLockChange, false)
-    
+
     root.addEventListener('click', onRootClick)
     root.addEventListener('mouseover', onMouseEnter)
     root.addEventListener('mousemove', onMouseMove)
-    root.addEventListener('mouseout', onMouseLeave)
+    // root.addEventListener('mouseout', onMouseLeave)
     root.addEventListener('contextmenu', onContextMenu)
 
     onCleanup(() => {
@@ -187,11 +187,11 @@ export function Root(props: { game: Game; root: Element }) {
       setIsVisible(true)
     }
 
-    clearTimeout(fadeOut)
-    fadeOut = setTimeout(() => {
-      setIsVisible(false)
-      fadeOut = undefined
-    }, 5000)
+    // clearTimeout(fadeOut)
+    // fadeOut = setTimeout(() => {
+    //   setIsVisible(false)
+    //   fadeOut = undefined
+    // }, 5000)
   }
 
   const onScreenClick = () => {
@@ -223,14 +223,21 @@ export function Root(props: { game: Game; root: Element }) {
 
   return (
     <GameStateContext.Provider value={gameState}>
-      <div class={isVisible() ? s.rootVisible : s.root}>
-        <div class={isVisible() ? s.titleVisible : s.title}>{title()}</div>
+      <div
+        classList={{
+          'hlv-app': true,
+          visible: isVisible(),
+          'mode-free': gameState.mode === PlayerMode.FREE,
+          'mode-replay': gameState.mode === PlayerMode.REPLAY
+        }}
+      >
+        <div class="hlv-title">{title()}</div>
 
         <Loading game={props.game} visible={isLoading()} />
 
         <button
           type="button"
-          class={s.screen}
+          class="hlv-screen"
           ref={(node) => {
             screen = node
           }}
@@ -239,16 +246,11 @@ export function Root(props: { game: Game; root: Element }) {
         />
 
         <Show when={gameState.mode === PlayerMode.FREE}>
-          <FreeMode class={isVisible() ? s.controlsVisible : s.controls} game={props.game} root={props.root} />
+          <FreeMode class="hlv-controls" game={props.game} root={props.root} />
         </Show>
 
         <Show when={gameState.mode === PlayerMode.REPLAY}>
-          <ReplayMode
-            class={isVisible() ? s.controlsVisible : s.controls}
-            game={props.game}
-            root={props.root}
-            visible={isMouseOver()}
-          />
+          <ReplayMode class="hlv-controls" game={props.game} root={props.root} visible={isMouseOver()} />
         </Show>
       </div>
     </GameStateContext.Provider>

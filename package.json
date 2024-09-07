@@ -31,8 +31,7 @@
   "dependencies": {
     "gl-matrix": "^3.4.3",
     "nanoevents": "^9.0.0",
-    "solid-js": "^1.8.22",
-    "typestyle": "^2.0.4"
+    "solid-js": "^1.8.22"
   },
   "devDependencies": {
     "@types/gl-matrix": "^3.2.0",

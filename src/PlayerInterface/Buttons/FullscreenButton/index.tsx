@@ -1,8 +1,6 @@
 import { createSignal, onCleanup, onMount } from 'solid-js'
-import { classes } from 'typestyle'
 import { Fullscreen } from '../../../Fullscreen'
-import { FullscreenButtonStyle as s } from './style'
-import { ControlsStyle as cs } from '../../Controls.style'
+import './style.css'
 
 export function FullscreenButton(props: { active: boolean; root: Element }) {
   const [isInFullscreen, setIsInFullscreen] = createSignal(Fullscreen.isInFullscreen())
@@ -28,7 +26,7 @@ export function FullscreenButton(props: { active: boolean; root: Element }) {
   }
 
   return (
-    <button type="button" class={classes(cs.button, s.button)} onClick={onClick}>
+    <button type="button" class="hlv-button hlv-fullscreen-button" onClick={() => onClick()}>
       {isInFullscreen() ? (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentcolor">
           <title>Exit fullscreen</title>

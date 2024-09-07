@@ -1,31 +1,37 @@
 import { createSignal, onCleanup, onMount } from 'solid-js'
-import type { Unsubscribe } from 'nanoevents'
 import type { Game } from '../../Game'
-import { VolumeControl as s } from './style'
+import './style.css'
 
 export function VolumeControl(props: { game: Game }) {
-  let offVolumeChange: Unsubscribe | undefined = undefined
-
   const [volume, setVolume] = createSignal(props.game.soundSystem.getVolume())
   const [ghostKnobActive, setGhostKnobActive] = createSignal(false)
   const [ghostKnobPos, setGhostKnobPos] = createSignal('5%')
 
   onMount(() => {
-    offVolumeChange = props.game.soundSystem.events.on('volumeChange', onVolumeChange)
-  })
-
-  onCleanup(() => {
-    offVolumeChange?.()
+    const offVolumeChange = props.game.soundSystem.events.on('volumeChange', onVolumeChange)
+    onCleanup(() => {
+      offVolumeChange?.()
+    })
   })
 
   const onVolumeChange = () => {
     setVolume(props.game.soundSystem.getVolume())
   }
 
-  const onClick = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
+  let isMouseDown = false
+  const onMouseDown = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
+    isMouseDown = true
     const rects = e.currentTarget.getClientRects()[0]
     const volume = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
     props.game.soundSystem.setVolume(volume)
+
+    window.addEventListener(
+      'mouseup',
+      () => {
+        isMouseDown = false
+      },
+      { once: true }
+    )
   }
 
   const onMouseEnter = () => {
@@ -33,14 +39,14 @@ export function VolumeControl(props: { game: Game }) {
   }
 
   const onMouseMove = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
-    if (!ghostKnobActive()) {
-      return
-    }
-
     const rects = e.currentTarget.getClientRects()[0]
-    const volumePos = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
-    const pos = `${Math.min(95, Math.max(5, volumePos * 100))}%`
-    setGhostKnobPos(pos)
+    const volume = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
+    if (ghostKnobActive()) {
+      setGhostKnobPos(`${Math.min(95, Math.max(5, volume * 100))}%`)
+    }
+    if (isMouseDown) {
+      props.game.soundSystem.setVolume(volume)
+    }
   }
 
   const onMouseLeave = () => {
@@ -54,16 +60,16 @@ export function VolumeControl(props: { game: Game }) {
   return (
     <button
       type="button"
-      class={s.control}
-      onClick={(e) => onClick(e)}
-      onMouseEnter={() => onMouseEnter()}
+      class="hlv-volume"
+      onMouseDown={(e) => onMouseDown(e)}
       onMouseMove={(e) => onMouseMove(e)}
+      onMouseEnter={() => onMouseEnter()}
       onMouseLeave={() => onMouseLeave()}
     >
-      <div class={s.ghostLine} />
-      <div class={s.line} style={{ right: lineOffset() }} />
-      <div class={s.knob} style={{ left: knobOffset() }} />
-      <div class={s.ghostKnob} style={{ left: ghostKnobPos() }} />
+      <div class="hlv-volume-ghostline" />
+      <div class="hlv-volume-line" style={{ right: lineOffset() }} />
+      <div class="hlv-volume-knob" style={{ left: knobOffset() }} />
+      <div class="hlv-volume-ghostknob" style={{ left: ghostKnobPos() }} />
     </button>
   )
 }

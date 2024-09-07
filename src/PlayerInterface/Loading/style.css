@@ -1,0 +1,51 @@
+.hlv-loading {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  user-select: none;
+  z-index: 0;
+  transition: opacity 2s ease, z-index 1s linear;
+}
+
+.hlv-loading.visible {
+  opacity: 1;
+  z-index: 30;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hlv-loading-spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -40px;
+  margin-top: -40px;
+  animation: rotate 1s linear infinite;
+  height: 80px;
+  width: 80px;
+}
+
+.hlv-loading-log {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 10px;
+  font-family: monospace;
+  top: 20px;
+  right: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-flow: column;
+  gap: 2px;
+}
+
+.hlv-loading-log-item {
+  display: block;
+}

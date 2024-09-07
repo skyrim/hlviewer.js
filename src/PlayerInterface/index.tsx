@@ -1,6 +1,6 @@
 import { render } from 'solid-js/web'
 import type { Game } from '../Game'
-import { Root } from './Root'
+import { App } from './App'
 
 export class PlayerInterface {
   private game: Game
@@ -16,6 +16,6 @@ export class PlayerInterface {
   }
 
   draw() {
-    render(() => <Root game={this.game} root={this.rootNode} />, this.rootNode)
+    render(() => <App game={this.game} root={this.rootNode} />, this.rootNode)
   }
 }

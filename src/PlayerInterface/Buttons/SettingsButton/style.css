@@ -1,0 +1,52 @@
+.hlv-settings {
+  display: flex;
+  flex-flow: row;
+}
+
+.hlv-settings-menu {
+  display: none;
+  position: absolute;
+  right: 8px;
+  padding: 4px;
+  font-size: 14px;
+  background-color: rgba(0, 0, 0, 0.4);
+  flex-flow: column;
+  min-width: 120px;
+  border-radius: 4px;
+}
+
+.mode-free .hlv-settings-menu {
+  bottom: 56px;
+}
+
+.mode-replay .hlv-settings-menu {
+  bottom: 78px;
+}
+
+.hlv-settings-menu.open {
+  display: flex;
+  gap: 4px;
+}
+
+.hlv-settings-menu-title {
+  padding: 6px 8px;
+  font-weight: bold;
+}
+
+.hlv-settings-menu-item {
+  cursor: pointer;
+  padding: 6px 8px;
+  text-align: left;
+  color: #fff;
+  border: none;
+  background: none;
+  border-radius: 4px;
+}
+
+.hlv-settings-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.hlv-settings-menu-item.selected {
+  background-color: rgba(255, 255, 255, 0.2);
+}

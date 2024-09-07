@@ -1,0 +1,113 @@
+.hlv-app {
+  position: relative;
+  color: white;
+  width: 100%;
+  height: 100%;
+  cursor: none;
+  user-select: none;
+}
+
+.hlv-app, .hlv-app * {
+  box-sizing: border-box;
+}
+
+.hlv-app.visible {
+  cursor: default;
+}
+
+.hlv-title {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  z-index: 20;
+  padding: 10px;
+  padding-left: 20px;
+  padding-right: 16px;
+  background-color: rgba(0, 0, 0, 0.4);
+  font-size: 13pt;
+  font-family: 'Roboto', 'Arial', 'Helvetica', sans-serif;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.visible .hlv-title {
+  opacity: 1;
+}
+
+.hlv-controls {
+  z-index: 30;
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  padding: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.4);
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.visible .hlv-controls {
+  opacity: 1;
+}
+
+.hlv-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  z-index: 10;
+  border: none;
+  background: none;
+}
+
+.hlv-controlsx {
+  z-index: 30;
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  padding: 0 16px;
+  background-color: rgba(0, 0, 0, 0.4);
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.visible .hlv-controlsx {
+  opacity: 1;
+}
+
+.hlv-buttons {
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hlv-button {
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  cursor: pointer;
+  border: none;
+  color: #fff;
+  background: none;
+}
+
+.hlv-buttons-left {
+  display: flex;
+  align-items: center;
+}
+
+.hlv-buttons-left .hlv-button {
+  margin-right: 8px;
+}
+
+.hlv-buttons-right {
+  display: flex;
+  align-items: center;
+  width: 70px;
+  height: 100%;
+  justify-content: space-between;
+}

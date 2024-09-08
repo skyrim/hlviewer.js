@@ -47,6 +47,8 @@ export function ReplayMode(props: { class: string; game: Game; root: Element; vi
             <PauseButton onClick={() => onPauseClick()} />
           )}
           <SpeedUpButton onClick={() => onSpeedUp()} />
+          <div />
+          <div />
           <VolumeButton onClick={() => onVolumeClick()} />
           <VolumeControl game={props.game} />
           <Time player={props.game.player} />

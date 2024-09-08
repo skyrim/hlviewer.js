@@ -7,7 +7,8 @@
   user-select: none;
 }
 
-.hlv-app, .hlv-app * {
+.hlv-app,
+.hlv-app * {
   box-sizing: border-box;
 }
 
@@ -24,10 +25,13 @@
   padding-left: 20px;
   padding-right: 16px;
   background-color: rgba(0, 0, 0, 0.4);
-  font-size: 13pt;
+  font-size: 18px;
+  line-height: 22px;
   font-family: 'Roboto', 'Arial', 'Helvetica', sans-serif;
   opacity: 0;
   transition: opacity 0.2s;
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
 }
 
 .visible .hlv-title {
@@ -81,33 +85,40 @@
 .hlv-buttons {
   height: 100%;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
 
 .hlv-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
-  padding: 7px;
+  padding: 0;
   cursor: pointer;
   border: none;
-  color: #fff;
+  color: #fffb;
   background: none;
+}
+
+.hlv-button:hover {
+  color: #fff;
 }
 
 .hlv-buttons-left {
   display: flex;
   align-items: center;
-}
-
-.hlv-buttons-left .hlv-button {
-  margin-right: 8px;
+  gap: 4px;
 }
 
 .hlv-buttons-right {
   display: flex;
   align-items: center;
-  width: 70px;
-  height: 100%;
-  justify-content: space-between;
+  gap: 4px;
 }
+
+/* .hlv-buttons-left > *,
+.hlv-buttons-right > * {
+  background-color: red;
+} */

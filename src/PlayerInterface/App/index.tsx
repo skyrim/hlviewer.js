@@ -20,6 +20,7 @@ export function App(props: { game: Game; root: Element }) {
 
   const [gameState, setGameState] = createStore({
     mode: props.game.mode,
+    volume: props.game.soundSystem.getVolume(),
     isPlaying: props.game.player.isPlaying,
     isPaused: props.game.player.isPaused
   })
@@ -41,6 +42,9 @@ export function App(props: { game: Game; root: Element }) {
     const offPlay = props.game.player.events.on('play', () => setGameState({ isPlaying: true, isPaused: false }))
     const offPause = props.game.player.events.on('pause', () => setGameState({ isPlaying: true, isPaused: true }))
     const offStop = props.game.player.events.on('stop', () => setGameState({ isPlaying: false, isPaused: false }))
+    const offVolumeChange = props.game.soundSystem.events.on('volumeChange', () => {
+      setGameState({ volume: props.game.soundSystem.getVolume() })
+    })
 
     window.addEventListener('click', onWindowClick)
     window.addEventListener('keydown', onKeyDown)
@@ -49,7 +53,7 @@ export function App(props: { game: Game; root: Element }) {
     root.addEventListener('click', onRootClick)
     root.addEventListener('mouseover', onMouseEnter)
     root.addEventListener('mousemove', onMouseMove)
-    // root.addEventListener('mouseout', onMouseLeave)
+    root.addEventListener('mouseout', onMouseLeave)
     root.addEventListener('contextmenu', onContextMenu)
 
     onCleanup(() => {
@@ -60,6 +64,7 @@ export function App(props: { game: Game; root: Element }) {
       offPlay?.()
       offPause?.()
       offStop?.()
+      offVolumeChange?.()
 
       props.root.removeEventListener('click', onRootClick)
       window.removeEventListener('click', onWindowClick)
@@ -85,8 +90,11 @@ export function App(props: { game: Game; root: Element }) {
     e.preventDefault()
   }
 
-  const onWindowClick = () => {
-    setIsActive(false)
+  const onWindowClick = (e: MouseEvent) => {
+    const target = e.target as HTMLElement
+    if (!target.closest('.hlv-app')) {
+      setIsActive(false)
+    }
   }
 
   const onRootClick = () => {
@@ -99,9 +107,8 @@ export function App(props: { game: Game; root: Element }) {
       return
     }
 
-    switch (e.which) {
-      case 70: {
-        // F
+    switch (e.code) {
+      case 'KeyF': {
         if (Fullscreen.isInFullscreen()) {
           Fullscreen.exit()
         } else {
@@ -111,44 +118,38 @@ export function App(props: { game: Game; root: Element }) {
         break
       }
 
-      case 77: {
-        // M
+      case 'KeyM': {
         props.game.soundSystem.toggleMute()
         fadeReset()
         break
       }
 
-      case 38: {
-        // arrow up
+      case 'ArrowUp': {
         props.game.soundSystem.setVolume(props.game.soundSystem.getVolume() + 0.05)
         fadeReset()
         break
       }
-      case 40: {
-        // arrow down
+      case 'ArrowDown': {
         props.game.soundSystem.setVolume(props.game.soundSystem.getVolume() - 0.05)
         fadeReset()
         break
       }
 
-      case 74: // J
-      case 37: {
-        // arrow left
+      case 'KeyJ':
+      case 'ArrowLeft': {
         props.game.player.seek(props.game.player.currentTime - 5)
         fadeReset()
         break
       }
-      case 76: // L
-      case 39: {
-        // arrow right
+      case 'KeyL':
+      case 'ArrowRight': {
         props.game.player.seek(props.game.player.currentTime + 5)
         fadeReset()
         break
       }
 
-      case 75: // K
-      case 32: {
-        // space
+      case 'KeyK':
+      case 'Space': {
         if (gameState.mode !== PlayerMode.REPLAY) {
           return
         }
@@ -187,11 +188,11 @@ export function App(props: { game: Game; root: Element }) {
       setIsVisible(true)
     }
 
-    // clearTimeout(fadeOut)
-    // fadeOut = setTimeout(() => {
-    //   setIsVisible(false)
-    //   fadeOut = undefined
-    // }, 5000)
+    clearTimeout(fadeOut)
+    fadeOut = setTimeout(() => {
+      setIsVisible(false)
+      fadeOut = undefined
+    }, 2000)
   }
 
   const onScreenClick = () => {

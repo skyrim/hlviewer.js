@@ -13,7 +13,7 @@
 
 .hlv-timeline-line {
   height: 4px;
-  background-color: #fff;
+  background-color: #bbb;
   position: absolute;
   left: 0;
   right: 0;
@@ -22,7 +22,7 @@
 
 .hlv-timeline-ghostline {
   height: 4px;
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: #bbb3;
   position: absolute;
   left: 0;
   right: 0;
@@ -33,21 +33,10 @@
   position: absolute;
   width: 12px;
   height: 12px;
-  background-color: #fff;
+  background-color: #bbb;
   border-radius: 6px;
   left: 100%;
   margin-left: -6px;
-}
-
-.hlv-timeline-ghostknob {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background-color: #fff;
-  border-radius: 8px;
-  left: 0;
-  margin-left: -4px;
-  display: none;
 }
 
 .hlv-timeline-ghosttime {
@@ -60,6 +49,7 @@
   display: none;
   transform: translateX(-50%);
   border-radius: 2px;
+  pointer-events: none;
 }
 
 .hlv-timeline-ghosttime::after {
@@ -73,7 +63,11 @@
   border-color: rgba(0, 0, 0, 0.4) transparent transparent transparent;
 }
 
-.hlv-timeline:hover .hlv-timeline-ghostknob,
+.hlv-timeline:hover .hlv-timeline-knob,
+.hlv-timeline:hover .hlv-timeline-line {
+  background-color: #fff;
+}
+
 .hlv-timeline:hover .hlv-timeline-ghosttime {
   display: block;
 }

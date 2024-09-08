@@ -3,6 +3,14 @@
   flex-flow: row;
 }
 
+.hlv-settings .hlv-button {
+  transition: transform 0.2s;
+}
+
+.hlv-settings.open .hlv-button {
+  transform: rotate(45deg);
+}
+
 .hlv-settings-menu {
   display: none;
   position: absolute;
@@ -23,7 +31,7 @@
   bottom: 78px;
 }
 
-.hlv-settings-menu.open {
+.hlv-settings.open .hlv-settings-menu {
   display: flex;
   gap: 4px;
 }

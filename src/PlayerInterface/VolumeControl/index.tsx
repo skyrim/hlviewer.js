@@ -5,24 +5,19 @@ import './style.css'
 export function VolumeControl(props: { game: Game }) {
   const gameState = useGameState()
 
-  let isMouseDown = false
   const onMouseDown = (e: MouseEvent & { currentTarget: HTMLDivElement }) => {
-    isMouseDown = true
     const rects = e.currentTarget.getClientRects()[0]
     const volume = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
     props.game.soundSystem.setVolume(volume)
 
     const onMouseMove = (e: MouseEvent) => {
       const volume = Math.max(0, Math.min(1 - (rects.right - e.pageX) / (rects.right - rects.left), 1))
-      if (isMouseDown) {
-        props.game.soundSystem.setVolume(volume)
-      }
+      props.game.soundSystem.setVolume(volume)
     }
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener(
       'mouseup',
       () => {
-        isMouseDown = false
         window.removeEventListener('mousemove', onMouseMove)
       },
       { once: true }

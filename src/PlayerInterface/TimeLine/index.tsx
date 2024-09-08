@@ -18,9 +18,7 @@ export function Timeline(props: { game: Game }) {
     })
   })
 
-  let isMouseDown = false
   const onMouseDown = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
-    isMouseDown = true
     const rects = e.currentTarget.getClientRects()[0]
     const progress = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
     props.game.player.seekByPercent(progress * 100)
@@ -35,7 +33,6 @@ export function Timeline(props: { game: Game }) {
     window.addEventListener(
       'mouseup',
       () => {
-        isMouseDown = false
         window.removeEventListener('mousemove', onMouseMove)
       },
       { once: true }

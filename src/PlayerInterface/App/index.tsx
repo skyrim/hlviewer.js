@@ -20,6 +20,7 @@ export function App(props: { game: Game; root: Element }) {
 
   const [gameState, setGameState] = createStore({
     mode: props.game.mode,
+    time: props.game.player.currentTime,
     volume: props.game.soundSystem.getVolume(),
     isPlaying: props.game.player.isPlaying,
     isPaused: props.game.player.isPaused
@@ -46,6 +47,20 @@ export function App(props: { game: Game; root: Element }) {
       setGameState({ volume: props.game.soundSystem.getVolume() })
     })
 
+    let interval: number
+    const onPlay = () => {
+      interval = setInterval(() => {
+        setGameState({ time: props.game.player.currentTime })
+      }, 100)
+    }
+    const onPauseOrStop = () => {
+      clearInterval(interval)
+    }
+    const offPlayTimer = props.game.player.events.on('play', onPlay)
+    const offPauseTimer = props.game.player.events.on('pause', onPauseOrStop)
+    const offStopTimer = props.game.player.events.on('stop', onPauseOrStop)
+    const offSeekTimer = props.game.player.events.on('seek', (time) => setGameState({ time }))
+
     window.addEventListener('click', onWindowClick)
     window.addEventListener('keydown', onKeyDown)
     document.addEventListener('pointerlockchange', onPointerLockChange, false)
@@ -65,6 +80,10 @@ export function App(props: { game: Game; root: Element }) {
       offPause?.()
       offStop?.()
       offVolumeChange?.()
+      offPlayTimer?.()
+      offPauseTimer?.()
+      offStopTimer?.()
+      offSeekTimer?.()
 
       props.root.removeEventListener('click', onRootClick)
       window.removeEventListener('click', onWindowClick)

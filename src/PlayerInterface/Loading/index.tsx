@@ -40,8 +40,6 @@ export function Loading(props: { game: Game; visible: boolean }) {
       progress: 0
     })
 
-    console.log(item)
-
     setItems(item.type, typeItems)
   }
 

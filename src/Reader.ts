@@ -119,10 +119,10 @@ export class Reader {
     return r
   }
 
-  arr(length: number, f: () => any) {
+  arr<T>(length: number, f: () => T) {
     let n = length
     f.bind(this)
-    const r = []
+    const r: T[] = []
     while (n-- > 0) {
       r.push(f())
     }
@@ -131,67 +131,63 @@ export class Reader {
   }
 
   arrx(length: number, type: ReaderDataType, nstrlen = 0) {
-    let n = length
-    let r: any
-
     switch (type) {
       case ReaderDataType.UByte: {
-        r = new Uint8Array(this.data.buffer, this.tell(), n)
-        this.skip(n)
-        break
+        const r = new Uint8Array(this.data.buffer, this.tell(), length)
+        this.skip(length)
+        return r
       }
-
       case ReaderDataType.Byte: {
-        r = new Int8Array(this.data.buffer, this.tell(), n)
-        this.skip(n)
-        break
+        const r = new Int8Array(this.data.buffer, this.tell(), length)
+        this.skip(length)
+        return r
       }
-
-      case ReaderDataType.UShort:
-        r = new Uint16Array(this.data.buffer, this.tell(), n)
-        this.skip(n * 2)
-        break
-
-      case ReaderDataType.Short:
-        r = new Int16Array(this.data.buffer, this.tell(), n)
-        this.skip(n * 2)
-        break
-
-      case ReaderDataType.UInt:
-        r = new Uint32Array(this.data.buffer, this.tell(), n)
-        this.skip(n * 4)
-        break
-
-      case ReaderDataType.Int:
-        r = new Int32Array(this.data.buffer, this.tell(), n)
-        this.skip(n * 4)
-        break
-
-      case ReaderDataType.Float:
-        r = new Float32Array(this.data.buffer, this.tell(), n)
-        this.skip(n * 4)
-        break
-
-      case ReaderDataType.Double:
-        r = new Float64Array(this.data.buffer, this.tell(), n)
-        this.skip(n * 8)
-        break
-
-      case ReaderDataType.NString:
-        r = []
+      case ReaderDataType.UShort: {
+        const r = new Uint16Array(this.data.buffer, this.tell(), length)
+        this.skip(length * 2)
+        return r
+      }
+      case ReaderDataType.Short: {
+        const r = new Int16Array(this.data.buffer, this.tell(), length)
+        this.skip(length * 2)
+        return r
+      }
+      case ReaderDataType.UInt: {
+        const r = new Uint32Array(this.data.buffer, this.tell(), length)
+        this.skip(length * 4)
+        return r
+      }
+      case ReaderDataType.Int: {
+        const r = new Int32Array(this.data.buffer, this.tell(), length)
+        this.skip(length * 4)
+        return r
+      }
+      case ReaderDataType.Float: {
+        const r = new Float32Array(this.data.buffer, this.tell(), length)
+        this.skip(length * 4)
+        return r
+      }
+      case ReaderDataType.Double: {
+        const r = new Float64Array(this.data.buffer, this.tell(), length)
+        this.skip(length * 8)
+        return r
+      }
+      case ReaderDataType.NString: {
+        let n = length
+        const r = []
         while (n-- > 0) {
-          r.push(r.nstr(nstrlen))
+          r.push(this.nstr(nstrlen))
         }
-        break
-
-      case ReaderDataType.String:
-        r = []
+        return r
+      }
+      case ReaderDataType.String: {
+        let n = length
+        const r = []
         while (n-- > 0) {
-          r.push(r.str())
+          r.push(this.str())
         }
-        break
+        return r
+      }
     }
-
-    return r
   }
 }

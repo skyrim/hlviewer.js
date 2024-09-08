@@ -87,6 +87,17 @@
         height: 100%;
       }
     </style>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-85913275-8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || []
+      function gtag() {
+        dataLayer.push(arguments)
+      }
+      gtag('js', new Date())
+
+      gtag('config', 'UA-85913275-8')
+    </script>
   </head>
   <body>
     <header>
@@ -127,7 +138,8 @@
       <div id="hlv-target"></div>
     </div>
 
-    <script type="module" src="/src/index.ts"></script>
+    <link rel="stylesheet" href="https://unpkg.com/hlviewer.js@0.8.0/dist/hlviewer.css" />
+    <script type="module" src="https://unpkg.com/hlviewer.js@0.8.0/dist/hlviewer.min.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         var viewer = HLViewer.init('#hlv-target', 'res')

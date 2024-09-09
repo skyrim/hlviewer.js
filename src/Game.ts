@@ -121,14 +121,7 @@ export class Game {
   worldScene: WorldScene
   skyScene: SkyScene
 
-  constructor(params: {
-    config: Config
-    canvas: HTMLCanvasElement
-    context: Context
-    renderer: Renderer
-    worldScene: WorldScene
-    skyScene: SkyScene
-  }) {
+  constructor(params: { config: Config; canvas: HTMLCanvasElement; context: Context; renderer: Renderer; worldScene: WorldScene; skyScene: SkyScene }) {
     this.sounds = []
     this.soundSystem = new SoundSystem()
 
@@ -340,12 +333,16 @@ export class Game {
       const downKey = Keyboard.KEYS.C
       const upKey = Keyboard.KEYS.SPACE
       if (keyboard.keys[KEY_W] !== keyboard.keys[KEY_S]) {
+        const yaw = camera.rotation[1]
+        const pitch = camera.rotation[0]
         if (keyboard.keys[KEY_W]) {
-          camera.position[1] -= Math.cos(camera.rotation[1] + Math.PI / 2) * ds
-          camera.position[0] += Math.sin(camera.rotation[1] + Math.PI / 2) * ds
+          camera.position[0] += Math.cos(yaw) * Math.cos(pitch) * ds
+          camera.position[1] += Math.sin(yaw) * Math.cos(pitch) * ds
+          camera.position[2] -= Math.sin(pitch) * ds
         } else if (keyboard.keys[KEY_S]) {
-          camera.position[1] -= Math.cos(camera.rotation[1] - Math.PI / 2) * ds
-          camera.position[0] += Math.sin(camera.rotation[1] - Math.PI / 2) * ds
+          camera.position[0] -= Math.cos(yaw) * Math.cos(pitch) * ds
+          camera.position[1] -= Math.sin(yaw) * Math.cos(pitch) * ds
+          camera.position[2] += Math.sin(pitch) * ds
         }
       }
 

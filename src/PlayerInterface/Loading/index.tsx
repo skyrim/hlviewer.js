@@ -1,4 +1,5 @@
-import { createSignal, For, onCleanup, onMount } from 'solid-js'
+import { For, onCleanup, onMount } from 'solid-js'
+import { createStore } from 'solid-js/store'
 import type { Game } from '../../Game'
 import type { LoadItem } from '../../Loader'
 import './style.css'
@@ -13,7 +14,7 @@ const itemTypeGroupName: { [name: string]: string } = {
 }
 
 export function Loading(props: { game: Game; visible: boolean }) {
-  const [items, setItems] = createSignal<{ [name: string]: { name: string; progress: number }[] }>({})
+  const [items, setItems] = createStore<{ [name: string]: { name: string; progress: number }[] }>({})
 
   onMount(() => {
     const loaderEvents = props.game.loader.events
@@ -26,7 +27,7 @@ export function Loading(props: { game: Game; visible: boolean }) {
   })
 
   const onItemLoad = (item: LoadItem) => {
-    const typeItems = items()[item.type] ? items()[item.type] : []
+    const typeItems = items[item.type] ? items[item.type] : []
 
     for (let i = 0; i < typeItems.length; ++i) {
       if (typeItems[i] === item) {
@@ -39,19 +40,18 @@ export function Loading(props: { game: Game; visible: boolean }) {
       progress: 0
     })
 
-    setItems({ ...items(), [item.type]: typeItems })
+    setItems(item.type, typeItems)
   }
 
   const onItemProgress = (item: LoadItem) => {
-    if (!items()[item.type]) {
+    if (!items[item.type]) {
       return
     }
 
-    const typeItems = items()[item.type]
-
+    const typeItems = items[item.type]
     for (let i = 0; i < typeItems.length; ++i) {
       if (typeItems[i].name === item.name) {
-        typeItems[i].progress = item.progress
+        setItems(item.type, i, { progress: item.progress })
         break
       }
     }
@@ -90,7 +90,7 @@ export function Loading(props: { game: Game; visible: boolean }) {
       </div>
 
       <div class="hlv-loading-log">
-        <For each={Object.entries(items())}>
+        <For each={Object.entries(items)}>
           {([name, items]) => (
             <div class="hlv-loading-log-item">
               {formatItem(name, items.reduce((prev, cur) => prev + cur.progress, 0) / items.length)}

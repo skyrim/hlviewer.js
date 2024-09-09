@@ -1,7 +1,7 @@
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { Game } from '../../Game'
-import './style.css'
 import { formatTime } from '../../Time'
+import './style.css'
 
 export function Timeline(props: { game: Game }) {
   const [progress, setProgress] = createSignal(0)
@@ -18,38 +18,38 @@ export function Timeline(props: { game: Game }) {
     })
   })
 
-  let isMouseDown = false
   const onMouseDown = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
-    isMouseDown = true
     const rects = e.currentTarget.getClientRects()[0]
     const progress = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
     props.game.player.seekByPercent(progress * 100)
     props.game.player.pause()
 
+    const onMouseMove = (e: MouseEvent) => {
+      const progressPos = Math.max(0, Math.min(1 - (rects.right - e.pageX) / (rects.right - rects.left), 1))
+      props.game.player.seekByPercent(progressPos * 100)
+      props.game.player.pause()
+    }
+    window.addEventListener('mousemove', onMouseMove)
     window.addEventListener(
       'mouseup',
       () => {
-        isMouseDown = false
+        window.removeEventListener('mousemove', onMouseMove)
       },
       { once: true }
     )
   }
 
-  const onMouseEnter = () => {
-    setGhostKnobActive(true)
-  }
-
   const onMouseMove = (e: MouseEvent & { currentTarget: HTMLButtonElement }) => {
     const rects = e.currentTarget.getClientRects()[0]
-    const progressPos = 1 - (rects.right - e.pageX) / (rects.right - rects.left)
+    const progressPos = Math.max(0, Math.min(1 - (rects.right - e.pageX) / (rects.right - rects.left), 1))
     if (ghostKnobActive()) {
       setGhostKnobPos(`${progressPos * 100}%`)
       setGhostTime(props.game.player.replay.length * progressPos)
     }
-    if (isMouseDown) {
-      props.game.player.seekByPercent(progressPos * 100)
-      props.game.player.pause()
-    }
+  }
+
+  const onMouseEnter = () => {
+    setGhostKnobActive(true)
   }
 
   const onMouseLeave = () => {
@@ -78,7 +78,6 @@ export function Timeline(props: { game: Game }) {
       <div class="hlv-timeline-ghostline" />
       <div class="hlv-timeline-line" style={{ right: lineOffset() }} />
       <div class="hlv-timeline-knob" style={{ left: knobOffset() }} />
-      <div class="hlv-timeline-ghostknob" style={{ left: ghostKnobPos() }} />
       <div class="hlv-timeline-ghosttime" style={{ left: ghostKnobPos() }}>
         {formatTime(ghostTime())}
       </div>

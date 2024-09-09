@@ -64,7 +64,7 @@ export class ReplayPlayer {
       this.isPaused = false
     }
 
-    this.events.emit('play')
+    this.events.emit('play', this.currentTime)
   }
 
   pause() {
@@ -72,12 +72,12 @@ export class ReplayPlayer {
       this.isPaused = true
     }
 
-    this.events.emit('pause')
+    this.events.emit('pause', this.currentTime)
   }
 
   stop() {
     this.reset()
-    this.events.emit('stop')
+    this.events.emit('stop', 0)
   }
 
   speedUp() {
@@ -120,6 +120,7 @@ export class ReplayPlayer {
             }
           }
 
+          this.events.emit('seek', t)
           updateGame(this.game, this.state)
 
           return

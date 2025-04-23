@@ -130,6 +130,16 @@ export class Reader {
     return r
   }
 
+  arrx(length: number, type: ReaderDataType.UByte): Uint8Array
+  arrx(length: number, type: ReaderDataType.Byte): Int8Array
+  arrx(length: number, type: ReaderDataType.UShort): Uint16Array
+  arrx(length: number, type: ReaderDataType.Short): Int16Array
+  arrx(length: number, type: ReaderDataType.UInt): Uint32Array
+  arrx(length: number, type: ReaderDataType.Int): Int32Array
+  arrx(length: number, type: ReaderDataType.Float): Float32Array
+  arrx(length: number, type: ReaderDataType.Double): Float64Array
+  arrx(length: number, type: ReaderDataType.NString, nstrlen: number): string[]
+  arrx(length: number, type: ReaderDataType.String): string[]
   arrx(length: number, type: ReaderDataType, nstrlen = 0) {
     switch (type) {
       case ReaderDataType.UByte: {

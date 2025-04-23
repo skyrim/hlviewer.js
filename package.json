@@ -1,6 +1,6 @@
 {
   "name": "hlviewer.js",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "View GoldSrc maps and replays in browser",
   "keywords": [
     "hlviewer",
@@ -45,7 +45,7 @@
     "@types/pngjs": "^6.0.5",
     "pngjs": "^7.0.0",
     "typescript": "^5.5.4",
-    "vite": "^5.4.3",
+    "vite": "^6.3.2",
     "vite-plugin-solid": "^2.10.2"
   }
 }

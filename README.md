@@ -15,12 +15,12 @@ You can check out the live demo [here](http://skyrim.github.io/hlviewer.js)
 
 Download the library from __dist__ directory and include it in your html.
 ```html
-<link rel="stylesheet" src="your/path/to/hlviewer.style">
+<link rel="stylesheet" href="your/path/to/hlviewer.style">
 <script src="your/path/to/hlviewer.min.js"></script>
 ```
 or use a CDN
 ```html
-<link rel="stylesheet" src="https://unpkg.com/hlviewer.js@0.8.3/dist/hlviewer.js.css">
+<link rel="stylesheet" href="https://unpkg.com/hlviewer.js@0.8.3/dist/hlviewer.js.css">
 <script src="https://unpkg.com/hlviewer.js@0.8.3/dist/hlviewer.min.js"></script>
 ```
 
